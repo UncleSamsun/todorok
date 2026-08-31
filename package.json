@@ -6,8 +6,9 @@
     "node": ">=24 <25"
   },
   "scripts": {
+    "build:packages": "pnpm --filter @todorok/client-domain --filter @todorok/api-client --filter @todorok/validation --filter @todorok/design-tokens build",
+    "test:packages": "pnpm --filter @todorok/client-domain --filter @todorok/api-client --filter @todorok/validation --filter @todorok/design-tokens test",
     "test:web": "pnpm --dir apps/web test",
     "build:web": "pnpm --dir apps/web build"
   }
 }
-
