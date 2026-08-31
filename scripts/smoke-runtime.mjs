@@ -1,3 +1,5 @@
+import { fetchWithRetry } from './runtime-health.mjs'
+
 const baseUrl = process.env.TODOROK_BASE_URL ?? 'http://localhost'
 const endpoints = [
   '/',
@@ -7,7 +9,7 @@ const endpoints = [
 ]
 
 for (const endpoint of endpoints) {
-  const response = await fetch(new URL(endpoint, baseUrl))
+  const response = await fetchWithRetry(new URL(endpoint, baseUrl))
   if (!response.ok) {
     throw new Error(`${endpoint} 응답 실패: HTTP ${response.status}`)
   }

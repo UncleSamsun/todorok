@@ -7,6 +7,7 @@ const commands = [
   ['corepack', ['pnpm', 'test:web']],
   ['corepack', ['pnpm', 'build:packages']],
   ['corepack', ['pnpm', 'build:web']],
+  ['node', ['--test', 'scripts/runtime-health.test.mjs']],
   ['docker', ['compose', '--env-file', '.env.example', '-f', 'infra/docker/compose.yml', 'config', '--quiet']],
   ['node', ['scripts/check-record-policy.mjs']],
 ]
