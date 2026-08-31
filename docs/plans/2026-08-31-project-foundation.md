@@ -6,7 +6,7 @@
 
 **Tech Stack:** Java 25 LTS, Spring Boot 4.1.1, Gradle 9.7.1 Kotlin DSL, React 19.2, TypeScript, Vite 8, Node.js 24 LTS, pnpm 10, PostgreSQL 17.11, Apache Kafka 4.3.1, Docker Compose v2.
 
-**Spec:** `docs/PRD.md` §16~20, `docs/ISSUE_ROADMAP.md` F-001.
+**Spec:** `docs/PRD.md` §16~20, GitHub issue #1.
 
 ## Global Constraints
 
@@ -712,4 +712,4 @@ git commit -m "ci: 서비스·웹 빌드와 저장소 정책 검증"
 - [ ] Kafka와 PostgreSQL healthy
 - [ ] 전체 컨테이너 메모리 3.5GB 미만
 - [ ] 기록 정책 검사 PASS
-- [ ] F-001 수용 기준을 PR 본문에서 모두 체크
+- [ ] 이슈 #1 수용 기준을 PR 본문에서 모두 체크

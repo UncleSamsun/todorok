@@ -2,6 +2,8 @@
 
 달력 기반 할 일 관리에 운동·공부·클라이밍 수행 기록을 연결하는 iPhone 우선 PWA입니다.
 
+GitHub: https://github.com/UncleSamsun/todorok
+
 현재 단계는 제품 설계입니다. 구현 기준은 [PRD](docs/PRD.md)를 따릅니다.
 
 ## 현재 결정
