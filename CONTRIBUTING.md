@@ -22,6 +22,7 @@
 - `main`과 `develop`에는 직접 커밋하거나 푸시하지 않는다.
 - 기능과 일반 수정은 `develop`을 기준으로 분기한다.
 - 긴급 수정만 `main`을 기준으로 분기하고 `develop`에도 역병합한다.
+- 브랜치 slug는 기능을 알아볼 수 있는 간결한 영어로 작성한다.
 
 ## 3. 이슈
 
@@ -29,17 +30,19 @@
 - 이슈는 문제, 범위, 비범위, 수용 기준, 테스트, 문서 영향과 의존성을 포함한다.
 - 구현 중 범위가 커지면 새 이슈로 분리한다.
 - 하나의 Pull Request는 원칙적으로 하나의 이슈만 닫는다.
+- Pull Request 본문에는 반드시 `Closes #<issue-number>`를 작성한다.
+- 이슈와 Pull Request 제목·본문은 원칙적으로 한글로 작성한다.
 
 ## 4. 커밋
 
 Conventional Commits 형식을 사용한다.
 
 ```text
-feat(planner): add task rollover policy
-fix(activity): prevent duplicate past records
-test(notification): cover retry idempotency
-docs(prd): clarify climbing timer recovery
-chore(infra): add local kafka healthcheck
+feat(planner): 할 일 자동 이월 정책 추가
+fix(activity): 지난 기록 중복 생성 방지
+test(notification): 알림 재시도 멱등성 검증
+docs(prd): 클라이밍 타이머 복구 규칙 명확화
+chore(infra): 로컬 Kafka 상태 검사 추가
 ```
 
 - 커밋은 독립적으로 검토·되돌리기 가능한 크기로 유지한다.
@@ -54,6 +57,7 @@ chore(infra): add local kafka healthcheck
 - 1인 프로젝트라도 diff review를 수행한다.
 - PRD와 문서가 구현 결과와 일치하는지 확인한다.
 - 기능 브랜치는 squash merge를 기본으로 하되, 의미 있는 단계별 커밋 보존이 필요하면 rebase merge를 사용한다.
+- squash·merge 커밋 제목과 릴리스 로그는 원칙적으로 한글로 작성한다.
 
 ## 6. 기록 정책
 
@@ -68,4 +72,3 @@ chore(infra): add local kafka healthcheck
 - 관련 단위·통합·계약·E2E 테스트가 통과한다.
 - 데이터 마이그레이션과 롤백 영향을 검토했다.
 - 관측 가능한 로그·메트릭과 실패 경로를 확인했다.
-

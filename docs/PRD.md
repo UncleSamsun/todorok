@@ -2,7 +2,7 @@
 title: TODOROK MVP PRD
 product: TODOROK
 status: approved
-version: 1.1.0
+version: 1.2.0
 created: 2026-08-31
 updated: 2026-08-31
 owner: 김민준
@@ -590,6 +590,8 @@ PostgreSQL
 - 기능 하나를 이슈 하나로 관리한다.
 - 이슈에는 문제, 범위, 비범위, 수용 기준, 테스트, 문서 변경과 의존성을 작성한다.
 - 하나의 Pull Request는 원칙적으로 하나의 기능 이슈만 닫는다.
+- Pull Request 본문에는 항상 `Closes #<issue-number>`를 포함해 이슈와 연결한다.
+- 이슈 제목·본문과 Pull Request 제목·본문은 원칙적으로 한글로 작성한다.
 - 범위가 커지면 기존 이슈에 계속 추가하지 않고 하위 이슈로 분리한다.
 
 ### 29.3 Git Flow와 GitHub Flow 혼합
@@ -600,18 +602,26 @@ PostgreSQL
 - `fix/<issue-number>-<slug>`: 일반 버그 수정 브랜치다.
 - `release/<version>`: `develop`에서 분기해 릴리스 검증 후 `main`에 병합하고 태그를 생성한다.
 - `hotfix/<issue-number>-<slug>`: `main`에서 분기해 긴급 수정 후 `main`과 `develop` 양쪽에 반영한다.
+- 브랜치의 `<slug>`는 기능을 알아볼 수 있는 간결한 영어로 작성한다.
 - `main`과 `develop`에는 직접 커밋하거나 직접 푸시하지 않는다.
 - 1인 프로젝트라도 Pull Request, CI, 자체 diff review와 수용 기준 확인을 생략하지 않는다.
 
 ### 29.4 커밋
 
 - 커밋은 되돌릴 수 있는 기능 단위로 작게 유지한다.
-- Conventional Commits 형식을 사용한다. 예: `feat(planner): add task rollover policy`.
+- Conventional Commits 형식은 유지하되 설명은 원칙적으로 한글로 작성한다. 예: `feat(planner): 할 일 자동 이월 정책 추가`.
 - 테스트가 실패하거나 문서와 코드가 불일치한 상태는 커밋하지 않는다.
 - 스펙 변경이 필요한 기능은 PRD 수정 커밋을 구현 커밋보다 먼저 둔다.
+- squash·merge 커밋 제목과 릴리스 로그도 원칙적으로 한글로 작성한다.
 
 ### 29.5 기록 정책
 
 - 프로젝트 산출물과 Git·GitHub 기록에는 AI 도구, 모델 또는 자동 작성 주체의 이름을 남기지 않는다.
 - 금지 범위에는 커밋 메시지, author·co-author trailer, 브랜치명, 이슈, Pull Request, 댓글, 문서, changelog와 릴리스 노트가 포함된다.
 - 프로젝트 기록의 작성자와 책임자는 실제 프로젝트 소유자와 기여자만 사용한다.
+
+### 29.6 공개 저장소
+
+- GitHub 공개 저장소는 `UncleSamsun/todorok`을 사용한다.
+- 공개 저장소에 비밀값, 개인 일정·운동·공부 데이터와 운영 백업을 커밋하지 않는다.
+- 실제 사용자 데이터가 필요한 테스트는 합성 fixture만 사용한다.

@@ -152,7 +152,7 @@ packages:
 
 ```bash
 git add settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat package.json pnpm-workspace.yaml .npmrc
-git commit -m "chore(build): establish java monorepo toolchain"
+git commit -m "chore(build): Java 모노레포 도구 체계 구성"
 ```
 
 ### Task 2: 공용 이벤트 계약 모듈
@@ -252,7 +252,7 @@ Expected: PASS.
 
 ```bash
 git add libs/event-contracts
-git commit -m "feat(contracts): define versioned domain event envelope"
+git commit -m "feat(contracts): 버전형 도메인 이벤트 계약 정의"
 ```
 
 ### Task 3: planner-service 기동과 헬스 계약
@@ -336,7 +336,7 @@ Expected: PASS.
 
 ```bash
 git add services/planner-service
-git commit -m "feat(planner): add service application foundation"
+git commit -m "feat(planner): 플래너 서비스 기반 구성"
 ```
 
 ### Task 4: activity-service 기동과 헬스 계약
@@ -410,7 +410,7 @@ management:
 
 ```bash
 git add services/activity-service
-git commit -m "feat(activity): add service application foundation"
+git commit -m "feat(activity): 활동 서비스 기반 구성"
 ```
 
 ### Task 5: notification-service 기동과 헬스 계약
@@ -484,7 +484,7 @@ management:
 
 ```bash
 git add services/notification-service
-git commit -m "feat(notification): add service application foundation"
+git commit -m "feat(notification): 알림 서비스 기반 구성"
 ```
 
 ### Task 6: PostgreSQL·Kafka 로컬 인프라
@@ -566,7 +566,7 @@ Expected: 세 스키마가 모두 출력된다.
 
 ```bash
 git add infra/docker .env.example scripts
-git commit -m "chore(infra): add local postgres and kafka stack"
+git commit -m "chore(infra): 로컬 PostgreSQL과 Kafka 구성"
 ```
 
 ### Task 7: React PWA 셸과 공유 클라이언트 패키지
@@ -626,7 +626,7 @@ it('renders the approved product name', () => {
 
 ```bash
 git add apps/web packages
-git commit -m "feat(web): add installable pwa shell"
+git commit -m "feat(web): 설치형 React PWA 셸 구성"
 ```
 
 ### Task 8: Nginx와 전체 서비스 Compose
@@ -651,7 +651,7 @@ git commit -m "feat(web): add installable pwa shell"
 
 ```bash
 git add infra/nginx infra/docker services/*/Dockerfile scripts
-git commit -m "chore(runtime): compose services behind nginx"
+git commit -m "chore(runtime): Nginx 뒤에 전체 서비스 구성"
 ```
 
 ### Task 9: CI와 기록 정책 검사
@@ -699,7 +699,7 @@ for (const [command, args] of commands) {
 
 ```bash
 git add .github/workflows scripts
-git commit -m "ci: verify services web build and repository policy"
+git commit -m "ci: 서비스·웹 빌드와 저장소 정책 검증"
 ```
 
 ## Final Verification
