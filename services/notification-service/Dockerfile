@@ -12,4 +12,3 @@ WORKDIR /app
 COPY --from=builder /workspace/services/notification-service/build/libs/*.jar app.jar
 EXPOSE 8083
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
-

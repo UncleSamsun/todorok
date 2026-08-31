@@ -12,4 +12,3 @@ FROM nginx:1.28.0-alpine
 COPY infra/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY --from=web-builder /workspace/apps/web/dist /usr/share/nginx/html
 EXPOSE 80
-

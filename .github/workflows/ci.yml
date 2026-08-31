@@ -1,0 +1,51 @@
+name: 통합 검증
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 빌드·테스트·정책 검사
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RECORD_POLICY_FORBIDDEN_TERMS: ${{ secrets.RECORD_POLICY_FORBIDDEN_TERMS }}
+
+    steps:
+      - name: 저장소 가져오기
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Java 25 준비
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Gradle 캐시 준비
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: pnpm 준비
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.24.0
+          run_install: false
+
+      - name: Node.js 24 준비
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: 프런트엔드 의존성 설치
+        run: pnpm install --frozen-lockfile
+
+      - name: 전체 검증 실행
+        run: node scripts/verify-all.mjs
