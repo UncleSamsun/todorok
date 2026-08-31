@@ -4,7 +4,7 @@
 
 **Architecture:** 하나의 저장소에서 서비스별 독립 Spring Boot 애플리케이션과 공용 이벤트 계약 모듈을 관리한다. 로컬·초기 운영은 Docker Compose의 PostgreSQL 17.11과 Kafka 4.3.1 KRaft를 공유하되 각 서비스는 별도 스키마와 계정을 사용한다.
 
-**Tech Stack:** Java 25 LTS, Spring Boot 4.1.1, Gradle 9.7.1 Kotlin DSL, React 19.2, TypeScript, Vite 8, Node.js 24 LTS, pnpm 10, PostgreSQL 17.11, Apache Kafka 4.3.1, Docker Compose v2.
+**Tech Stack:** Java 25 LTS, Spring Boot 4.1.1, Gradle 9.7.1 Kotlin DSL, React 19.2, TypeScript, Vite 8, Node.js 24 LTS, pnpm 11.24.0, PostgreSQL 17.11, Apache Kafka 4.3.1, Docker Compose v2.
 
 **Spec:** `docs/PRD.md` §16~20, GitHub issue #1.
 
@@ -48,6 +48,7 @@ scripts/                          로컬 검증 진입점
 - Create: `gradle/wrapper/gradle-wrapper.properties`
 - Create: `gradlew`
 - Create: `gradlew.bat`
+- Create: `.gitattributes`
 - Create: `package.json`
 - Create: `pnpm-workspace.yaml`
 - Create: `.npmrc`
@@ -64,6 +65,10 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
+}
+
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 dependencyResolutionManagement {
@@ -139,7 +144,7 @@ packages:
 {
   "name": "todorok",
   "private": true,
-  "packageManager": "pnpm@10",
+  "packageManager": "pnpm@11.24.0",
   "engines": { "node": ">=24 <25" },
   "scripts": {
     "test:web": "pnpm --dir apps/web test",
@@ -151,7 +156,7 @@ packages:
 - [ ] **Step 7: 커밋한다**
 
 ```bash
-git add settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat package.json pnpm-workspace.yaml .npmrc
+git add settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat package.json pnpm-workspace.yaml .npmrc .gitattributes
 git commit -m "chore(build): Java 모노레포 도구 체계 구성"
 ```
 

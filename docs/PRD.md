@@ -2,7 +2,7 @@
 title: TODOROK MVP PRD
 product: TODOROK
 status: approved
-version: 1.2.0
+version: 1.2.1
 created: 2026-08-31
 updated: 2026-08-31
 owner: 김민준
@@ -288,7 +288,7 @@ Spring 기반 최소 MSA를 AWS Lightsail 단일 VM에서 Docker Compose로 운�
 - Spring Boot 4.1.1
 - Gradle 9.7.1 Kotlin DSL
 - React 19.2 + TypeScript + Vite 8
-- Node.js 24 LTS + pnpm 10
+- Node.js 24 LTS + pnpm 11.24.0
 - PostgreSQL 17.11
 - Apache Kafka 4.3.1 KRaft
 - Docker Compose v2
