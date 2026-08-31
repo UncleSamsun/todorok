@@ -1,10 +1,10 @@
 # TODOROK Project Foundation Implementation Plan
 
-**Goal:** 세 개의 Spring 서비스, Vue PWA 셸, PostgreSQL, Kafka와 CI가 함께 동작하는 최소 모노레포 기반을 만든다.
+**Goal:** 세 개의 Spring 서비스, React PWA 셸, 향후 React Native와 공유할 클라이언트 패키지, PostgreSQL, Kafka와 CI가 함께 동작하는 최소 모노레포 기반을 만든다.
 
 **Architecture:** 하나의 저장소에서 서비스별 독립 Spring Boot 애플리케이션과 공용 이벤트 계약 모듈을 관리한다. 로컬·초기 운영은 Docker Compose의 PostgreSQL 17.11과 Kafka 4.3.1 KRaft를 공유하되 각 서비스는 별도 스키마와 계정을 사용한다.
 
-**Tech Stack:** Java 25 LTS, Spring Boot 4.1.1, Gradle 9.7.1 Kotlin DSL, Vue 3, TypeScript, Vite 8, Node.js 24 LTS, pnpm 10, PostgreSQL 17.11, Apache Kafka 4.3.1, Docker Compose v2.
+**Tech Stack:** Java 25 LTS, Spring Boot 4.1.1, Gradle 9.7.1 Kotlin DSL, React 19.2, TypeScript, Vite 8, Node.js 24 LTS, pnpm 10, PostgreSQL 17.11, Apache Kafka 4.3.1, Docker Compose v2.
 
 **Spec:** `docs/PRD.md` §16~20, `docs/ISSUE_ROADMAP.md` F-001.
 
@@ -23,7 +23,11 @@
 ## File Map
 
 ```text
-apps/web/                         Vue PWA
+apps/web/                         React DOM PWA
+packages/client-domain/           웹·모바일 공유 순수 도메인 타입·계산
+packages/api-client/              웹·모바일 공유 API 타입·호출 계층
+packages/validation/              웹·모바일 공유 입력 검증·오류 매핑
+packages/design-tokens/           웹·모바일 공유 디자인 토큰
 libs/event-contracts/             서비스 간 이벤트 DTO와 직렬화 계약
 services/planner-service/         인증·Task·일정·메모 경계
 services/activity-service/        운동·공부·클라이밍 경계
@@ -44,6 +48,9 @@ scripts/                          로컬 검증 진입점
 - Create: `gradle/wrapper/gradle-wrapper.properties`
 - Create: `gradlew`
 - Create: `gradlew.bat`
+- Create: `package.json`
+- Create: `pnpm-workspace.yaml`
+- Create: `.npmrc`
 
 **Interfaces:**
 - Produces: Gradle 프로젝트 `:libs:event-contracts`, `:services:planner-service`, `:services:activity-service`, `:services:notification-service`.
@@ -119,10 +126,32 @@ Run: `./gradlew projects`
 
 Expected: 네 개 하위 프로젝트가 모두 표시되고 BUILD SUCCESSFUL.
 
-- [ ] **Step 6: 커밋한다**
+- [ ] **Step 6: 프런트엔드·공유 패키지 pnpm workspace를 작성한다**
+
+```yaml
+# pnpm-workspace.yaml
+packages:
+  - "apps/*"
+  - "packages/*"
+```
+
+```json
+{
+  "name": "todorok",
+  "private": true,
+  "packageManager": "pnpm@10",
+  "engines": { "node": ">=24 <25" },
+  "scripts": {
+    "test:web": "pnpm --dir apps/web test",
+    "build:web": "pnpm --dir apps/web build"
+  }
+}
+```
+
+- [ ] **Step 7: 커밋한다**
 
 ```bash
-git add settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat
+git add settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat package.json pnpm-workspace.yaml .npmrc
 git commit -m "chore(build): establish java monorepo toolchain"
 ```
 
@@ -540,36 +569,63 @@ git add infra/docker .env.example scripts
 git commit -m "chore(infra): add local postgres and kafka stack"
 ```
 
-### Task 7: Vue PWA 셸
+### Task 7: React PWA 셸과 공유 클라이언트 패키지
 
 **Files:**
 - Create: `apps/web/package.json`
 - Create: `apps/web/vite.config.ts`
-- Create: `apps/web/src/main.ts`
-- Create: `apps/web/src/App.vue`
-- Create: `apps/web/src/App.test.ts`
+- Create: `apps/web/src/main.tsx`
+- Create: `apps/web/src/App.tsx`
+- Create: `apps/web/src/App.test.tsx`
 - Create: `apps/web/public/manifest.webmanifest`
+- Create: `packages/client-domain/package.json`
+- Create: `packages/client-domain/src/index.ts`
+- Create: `packages/api-client/package.json`
+- Create: `packages/api-client/src/index.ts`
+- Create: `packages/validation/package.json`
+- Create: `packages/validation/src/index.ts`
+- Create: `packages/design-tokens/package.json`
+- Create: `packages/design-tokens/src/index.ts`
 
 **Interfaces:**
 - Produces: PWA route `/` and manifest `/manifest.webmanifest`.
 
-- [ ] **Step 1: 앱 이름 렌더링 테스트를 작성한다**
+- [ ] **Step 1: 프레임워크에 의존하지 않는 공유 도메인 타입을 작성한다**
 
 ```ts
+export type TaskType = 'GENERAL' | 'WORKOUT' | 'STUDY' | 'CLIMBING'
+export type TaskStatus = 'PLANNED' | 'COMPLETED' | 'SKIPPED'
+
+export interface TaskSummary {
+  id: string
+  title: string
+  scheduledDate: string
+  type: TaskType
+  status: TaskStatus
+}
+```
+
+- [ ] **Step 2: React 앱 이름 렌더링 테스트를 작성한다**
+
+```ts
+import { render, screen } from '@testing-library/react'
+import { App } from './App'
+
 it('renders the approved product name', () => {
-  render(App)
+  render(<App />)
   expect(screen.getByRole('heading', { name: '토도록' })).toBeVisible()
 })
 ```
 
-- [ ] **Step 2: `pnpm --dir apps/web test`가 App 부재로 실패하는지 확인한다**
-- [ ] **Step 3: Vue 3 앱 셸과 `토도록` 제목을 구현한다**
-- [ ] **Step 4: manifest에 `name`, `short_name`, `id`, `start_url`, `display: standalone`을 작성한다**
-- [ ] **Step 5: `pnpm --dir apps/web test`와 `pnpm --dir apps/web build`가 PASS인지 확인한다**
-- [ ] **Step 6: 커밋한다**
+- [ ] **Step 3: `pnpm --dir apps/web test`가 App 부재로 실패하는지 확인한다**
+- [ ] **Step 4: React 19.2 앱 셸과 `토도록` 제목을 구현한다**
+- [ ] **Step 5: manifest에 `name`, `short_name`, `id`, `start_url`, `display: standalone`을 작성한다**
+- [ ] **Step 6: 공유 패키지에서 브라우저 전역 객체 참조가 없는지 TypeScript 빌드로 확인한다**
+- [ ] **Step 7: `pnpm --dir apps/web test`와 `pnpm --dir apps/web build`가 PASS인지 확인한다**
+- [ ] **Step 8: 커밋한다**
 
 ```bash
-git add apps/web
+git add apps/web packages
 git commit -m "feat(web): add installable pwa shell"
 ```
 

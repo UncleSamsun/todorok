@@ -2,7 +2,7 @@
 title: TODOROK MVP PRD
 product: TODOROK
 status: approved
-version: 1.0.0
+version: 1.1.0
 created: 2026-08-31
 updated: 2026-08-31
 owner: 김민준
@@ -287,7 +287,7 @@ Spring 기반 최소 MSA를 AWS Lightsail 단일 VM에서 Docker Compose로 운�
 - Java 25 LTS
 - Spring Boot 4.1.1
 - Gradle 9.7.1 Kotlin DSL
-- Vue 3 + TypeScript + Vite 8
+- React 19.2 + TypeScript + Vite 8
 - Node.js 24 LTS + pnpm 10
 - PostgreSQL 17.11
 - Apache Kafka 4.3.1 KRaft
@@ -335,7 +335,20 @@ PostgreSQL
 - 알림 예약, 발송, 재시도와 실패 이력
 - HTTP는 헬스체크와 최소 관리 API만 제공
 
-### 16.3 이벤트 후보
+### 16.3 클라이언트 확장 구조
+
+- MVP 웹은 React DOM 기반 PWA로 구현한다.
+- 향후 iPhone 네이티브 앱은 Expo 기반 React Native로 구현한다.
+- 웹 컴포넌트와 React Native 화면 컴포넌트는 직접 공유하지 않는다.
+- `client-domain`: Task·Activity·Routine의 클라이언트 도메인 타입과 순수 계산 로직을 공유한다.
+- `api-client`: OpenAPI 기반 요청·응답 타입과 API 호출 계층을 공유한다.
+- `validation`: 입력 스키마와 오류 매핑을 공유한다.
+- `design-tokens`: 색상, 간격, 타이포그래피 토큰을 공유한다.
+- 공유 패키지는 DOM, 브라우저 전역 객체와 네이티브 모듈에 직접 의존하지 않는다.
+- 웹 전용 PWA·Service Worker·Wake Lock 구현은 `apps/web`에 둔다.
+- 네이티브 앱을 시작할 때 `apps/mobile`을 추가하고 공유 패키지를 소비한다.
+
+### 16.4 이벤트 후보
 
 - `TaskScheduled`
 - `TaskRolledOver`
@@ -344,7 +357,7 @@ PostgreSQL
 - `RoutineAdvanced`
 - `NotificationRequested`
 
-### 16.4 데이터 일관성
+### 16.5 데이터 일관성
 
 - 서비스는 다른 서비스의 DB 스키마를 직접 조회하지 않는다.
 - 서비스 내부 DB 변경과 Kafka 발행은 outbox 패턴으로 연결한다.
@@ -549,8 +562,8 @@ PostgreSQL
 
 ## 27. 열린 결정
 
-- 웹 프런트엔드 프레임워크
 - 인증 방식과 토큰 수명·갱신 정책
+- React Native 앱 착수 시점과 Expo SDK 버전
 - 도메인과 상표 최종 확인
 - 기본 알림 시간과 방해 금지 정책
 - 운동 프로그램 원문 데이터의 공개 배포·저작권 범위
