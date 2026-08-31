@@ -12,7 +12,7 @@ services:
       ACTIVITY_DB_PASSWORD: ${ACTIVITY_DB_PASSWORD}
       NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
@@ -41,7 +41,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_HEAP_OPTS: -Xms512m -Xmx512m
     ports:
-      - "9092:9092"
+      - "127.0.0.1:9092:9092"
     volumes:
       - kafka-data:/var/lib/kafka/data
     healthcheck:
@@ -51,7 +51,97 @@ services:
       retries: 20
     mem_limit: 768m
 
+  planner-service:
+    build:
+      context: ../..
+      dockerfile: services/planner-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      JAVA_TOOL_OPTIONS: >-
+        -XX:InitialRAMPercentage=20
+        -XX:MaxRAMPercentage=60
+        -XX:+ExitOnOutOfMemoryError
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    mem_limit: 512m
+
+  activity-service:
+    build:
+      context: ../..
+      dockerfile: services/activity-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      JAVA_TOOL_OPTIONS: >-
+        -XX:InitialRAMPercentage=20
+        -XX:MaxRAMPercentage=60
+        -XX:+ExitOnOutOfMemoryError
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    mem_limit: 640m
+
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      JAVA_TOOL_OPTIONS: >-
+        -XX:InitialRAMPercentage=20
+        -XX:MaxRAMPercentage=60
+        -XX:+ExitOnOutOfMemoryError
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    mem_limit: 384m
+
+  nginx:
+    build:
+      context: ../..
+      dockerfile: infra/nginx/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      planner-service:
+        condition: service_healthy
+      activity-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    mem_limit: 64m
+
 volumes:
   postgres-data:
   kafka-data:
-
