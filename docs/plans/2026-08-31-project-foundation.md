@@ -52,6 +52,11 @@ scripts/                          로컬 검증 진입점
 - Create: `package.json`
 - Create: `pnpm-workspace.yaml`
 - Create: `.npmrc`
+- Create: `pnpm-lock.yaml`
+- Create: `libs/event-contracts/.gitkeep`
+- Create: `services/planner-service/.gitkeep`
+- Create: `services/activity-service/.gitkeep`
+- Create: `services/notification-service/.gitkeep`
 
 **Interfaces:**
 - Produces: Gradle 프로젝트 `:libs:event-contracts`, `:services:planner-service`, `:services:activity-service`, `:services:notification-service`.
@@ -121,6 +126,8 @@ subprojects {
 
 - [ ] **Step 4: Gradle Wrapper를 9.7.1로 생성한다**
 
+Gradle 9.7.1은 포함된 프로젝트 디렉터리가 없으면 설정 단계에서 실패하므로 네 하위 프로젝트 디렉터리와 `.gitkeep`을 먼저 생성한다.
+
 Run: `gradle wrapper --gradle-version 9.7.1 --distribution-type bin`
 
 Expected: `./gradlew --version` 출력에 Gradle 9.7.1과 Java 25가 표시된다.
@@ -156,7 +163,7 @@ packages:
 - [ ] **Step 7: 커밋한다**
 
 ```bash
-git add settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat package.json pnpm-workspace.yaml .npmrc .gitattributes
+git add settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc .gitattributes libs/*/.gitkeep services/*/.gitkeep
 git commit -m "chore(build): Java 모노레포 도구 체계 구성"
 ```
 

@@ -1,0 +1,13 @@
+{
+  "name": "todorok",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test:web": "pnpm --dir apps/web test",
+    "build:web": "pnpm --dir apps/web build"
+  }
+}
+
