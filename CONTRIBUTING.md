@@ -1,0 +1,71 @@
+# TODOROK 개발 가이드
+
+## 1. 기준 문서
+
+`docs/PRD.md`가 제품 요구사항의 단일 기준 문서다.
+
+- 동작, 상태, 화면 흐름, 서비스 경계 또는 수용 기준 변경이 필요하면 PRD를 먼저 수정한다.
+- 이슈와 Pull Request에서 영향을 받는 PRD 섹션과 수용 기준을 명시한다.
+- 코드와 PRD가 충돌하면 최신 승인 PRD를 기준으로 코드를 수정한다.
+
+## 2. 브랜치
+
+| 브랜치 | 용도 |
+|---|---|
+| `main` | 배포 가능한 릴리스 |
+| `develop` | 다음 릴리스 통합 |
+| `feature/<issue-number>-<slug>` | 기능 개발 |
+| `fix/<issue-number>-<slug>` | 일반 버그 수정 |
+| `release/<version>` | 릴리스 검증 |
+| `hotfix/<issue-number>-<slug>` | 운영 긴급 수정 |
+
+- `main`과 `develop`에는 직접 커밋하거나 푸시하지 않는다.
+- 기능과 일반 수정은 `develop`을 기준으로 분기한다.
+- 긴급 수정만 `main`을 기준으로 분기하고 `develop`에도 역병합한다.
+
+## 3. 이슈
+
+- 기능 하나를 이슈 하나로 관리한다.
+- 이슈는 문제, 범위, 비범위, 수용 기준, 테스트, 문서 영향과 의존성을 포함한다.
+- 구현 중 범위가 커지면 새 이슈로 분리한다.
+- 하나의 Pull Request는 원칙적으로 하나의 이슈만 닫는다.
+
+## 4. 커밋
+
+Conventional Commits 형식을 사용한다.
+
+```text
+feat(planner): add task rollover policy
+fix(activity): prevent duplicate past records
+test(notification): cover retry idempotency
+docs(prd): clarify climbing timer recovery
+chore(infra): add local kafka healthcheck
+```
+
+- 커밋은 독립적으로 검토·되돌리기 가능한 크기로 유지한다.
+- 테스트 실패 상태를 커밋하지 않는다.
+- 스펙 변경 커밋은 구현 커밋보다 먼저 둔다.
+- 관련 없는 변경을 한 커밋에 섞지 않는다.
+
+## 5. Pull Request
+
+- 이슈를 연결하고 수용 기준 충족 여부를 체크한다.
+- CI 통과 전 병합하지 않는다.
+- 1인 프로젝트라도 diff review를 수행한다.
+- PRD와 문서가 구현 결과와 일치하는지 확인한다.
+- 기능 브랜치는 squash merge를 기본으로 하되, 의미 있는 단계별 커밋 보존이 필요하면 rebase merge를 사용한다.
+
+## 6. 기록 정책
+
+- 프로젝트 산출물과 Git·GitHub 기록에는 AI 도구, 모델 또는 자동 작성 주체의 이름을 남기지 않는다.
+- 커밋 author·co-author, 메시지, 브랜치, 이슈, Pull Request, 댓글, 문서, changelog와 릴리스 노트에 동일하게 적용한다.
+- 실제 프로젝트 소유자와 기여자만 작성자·책임자로 기록한다.
+
+## 7. 완료 기준
+
+- PRD와 구현이 일치한다.
+- 수용 기준을 자동 또는 수동 테스트로 검증했다.
+- 관련 단위·통합·계약·E2E 테스트가 통과한다.
+- 데이터 마이그레이션과 롤백 영향을 검토했다.
+- 관측 가능한 로그·메트릭과 실패 경로를 확인했다.
+

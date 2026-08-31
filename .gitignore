@@ -1,0 +1,36 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Java / Gradle
+.gradle/
+build/
+out/
+*.class
+
+# JavaScript
+node_modules/
+dist/
+.vite/
+coverage/
+
+# IDE and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Runtime data
+data/
+logs/
+*.log
+*.pid
+
+# Test artifacts
+test-results/
+playwright-report/
+
