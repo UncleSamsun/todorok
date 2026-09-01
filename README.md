@@ -4,7 +4,7 @@
 
 GitHub: https://github.com/UncleSamsun/todorok
 
-현재 단계는 기반 구현과 MVP 기술 검토 완료입니다. 구현 기준은 [PRD](docs/PRD.md)와 [MVP 구현 계획](docs/plans/2026-09-01-mvp-implementation-plan.md)을 따릅니다.
+현재 단계는 기반 구현과 MVP 기술·디자인 검토 완료입니다. 구현 기준은 [PRD](docs/PRD.md), [디자인 시스템](DESIGN.md), [MVP 구현 계획](docs/plans/2026-09-01-mvp-implementation-plan.md)을 따릅니다.
 
 ## 현재 결정
 
@@ -19,7 +19,7 @@ GitHub: https://github.com/UncleSamsun/todorok
 - Persistence: Spring Data JPA·Flyway
 - 이벤트 전달: Kafka Connect·Debezium outbox와 consumer inbox
 - 배포: AWS Lightsail 4GB + Docker Compose + Nginx
-- 상태: PRD 1.3.0과 전체 MVP 구현 계획 승인 완료
+- 상태: PRD 1.4.0, 디자인 시스템 1.0.0과 전체 MVP 구현 계획 승인 완료
 
 ## 개발 원칙
 
