@@ -2,9 +2,9 @@
 title: TODOROK MVP PRD
 product: TODOROK
 status: approved
-version: 1.2.1
+version: 1.3.0
 created: 2026-08-31
-updated: 2026-08-31
+updated: 2026-09-01
 owner: 김민준
 ---
 
@@ -82,6 +82,8 @@ owner: 김민준
 - 서비스별 물리 DB 인스턴스
 - 대규모 사용자와 트래픽 최적화
 - 실시간 공동 편집
+- 오프라인 조회·수정·재전송과 기기 간 충돌 병합
+- 사용자별 시간대와 앱 실행 전 자정 이월
 
 ## 8. 정보 구조
 
@@ -105,14 +107,22 @@ owner: 김민준
 
 - 유형: `GENERAL`, `WORKOUT`, `STUDY`, `CLIMBING`
 - 상태: `PLANNED`, `COMPLETED`, `SKIPPED`
-- 주요 값: 제목, 예정일, 반복 규칙, 유형, 할 일 메모, 생성자, 현재 활성 여부
+- `task_series`는 반복 제목, 유형, 메모와 반복 규칙을 보관한다.
+- `task`는 달력에 표시되는 개별 회차이며 일회성 Task는 series 없이 저장한다.
+- 시리즈별 활성 `PLANNED` Task는 DB partial unique index로 하나만 허용한다.
+- 일반 반복은 `DAILY`, `WEEKLY`, `MONTHLY`와 간격·요일 또는 일자·시작·종료 조건만 지원한다.
+- 운동 프로그램 세션 생성은 일반 반복 규칙과 별도 엔진에서 처리한다.
 - `MISSED`는 영구 이력이 아니라 날짜 이월 처리 중 사용하는 전이 상태다.
+- 계획 Task 삭제는 soft delete, series·category·template 삭제는 archive로 처리한다.
 
 ### 9.2 Activity Record
 
-- 실제 수행 결과를 저장한다.
-- 원본 Task와 연결한다.
-- 실제 수행 날짜, 기록 생성 시각, 도메인별 값, 완료 기록 메모를 가진다.
+- 공통 header에 사용자, 원본 Task, 유형, 실제 수행 날짜, 생성 시각, 상태, 완료 기록 메모와 command ID를 저장한다.
+- 상태는 `COMPLETED`, `PARTIAL`, `VOIDED`를 사용한다.
+- 운동·공부·클라이밍 detail table을 공통 header와 같은 ID로 연결한다.
+- 운동 세트와 클라이밍 라운드는 관계형으로, 공부 자유 값과 snapshot만 JSONB로 저장한다.
+- `PARTIAL`은 Task를 완료하지 않고 `VOIDED`는 기존 완료를 되돌리는 이벤트를 발생시킨다.
+- 건너뜀은 Activity를 만들지 않고 Task occurrence의 `SKIPPED` 상태로 보존한다.
 - 계획 Task를 Activity Record로 덮어쓰지 않는다.
 
 ### 9.3 Daily Sticky Note
@@ -136,6 +146,9 @@ owner: 김민준
 - `건너뜀`은 사용자가 명시적으로 선택한다.
 - 기록 화면을 닫으면 당일에는 `PLANNED` 상태를 유지한다.
 - 건너뜀은 해당 날짜에 남으며 다음 날로 이월하지 않는다.
+- 일반 완료와 건너뜀은 명시적 reopen command로 되돌릴 수 있다.
+- 기록형 완료 취소는 Activity를 삭제하지 않고 `VOIDED`로 바꾸며 Task와 프로그램 진행을 재계산한다.
+- Activity 값 수정은 revision을 증가시키고 correction 이벤트를 발행한다.
 
 ### 10.3 자동 이월
 
@@ -143,6 +156,9 @@ owner: 김민준
 - 이월 시 새 Task를 매일 복제하지 않는다.
 - 이전 날짜의 미수행 기록은 삭제하며 활성 Task 하나만 유지한다.
 - 이월 연산은 멱등해야 하며 여러 번 실행해도 중복 Task가 생기지 않아야 한다.
+- 날짜 기준은 `Asia/Seoul`로 고정한다.
+- 오늘 화면 조회 시에만 멱등 이월 command를 실행한다.
+- 앱 실행 전 자정 이월과 사용자별 시간대는 지원하지 않는다.
 
 ### 10.4 지난 기록
 
@@ -168,6 +184,9 @@ owner: 김민준
 - 날짜별 줄글 메모다.
 - 기본 화면에서는 일부만 보이고 선택 시 전체 편집창을 연다.
 - 별도 저장 버튼 없이 자동 저장한다.
+- 입력이 멈춘 뒤 500ms debounce로 PATCH하며 초기 MVP에서는 저장 요청 직렬화 queue를 두지 않는다.
+- 저장 성공·실패 상태와 수동 재시도를 표시한다.
+- 최대 길이는 20,000자다.
 
 ## 12. 공부
 
@@ -181,8 +200,10 @@ owner: 김민준
 
 ### 12.2 기록 템플릿 버전
 
-- 카테고리 설정 변경은 이후 기록부터 적용한다.
-- 과거 Activity Record에는 당시 항목명·형식·단위 스냅샷을 보존한다.
+- 카테고리 설정 변경은 기존 version을 수정하지 않고 새 template version을 생성해 이후 기록부터 적용한다.
+- field definition은 관계형으로 이름·형식·단위·순서를 저장한다.
+- 과거 Activity Record에는 template version과 당시 항목명·형식·단위·순서 snapshot을 JSONB로 보존한다.
+- 값 JSONB에는 사용자가 실제 입력한 field ID만 저장하고 서버가 template version에 따라 타입을 검증한다.
 - 입력하지 않은 항목은 없는 값으로 저장한다.
 
 ## 13. 운동 커리큘럼
@@ -221,6 +242,9 @@ owner: 김민준
 - 프로그램 이름, 원문 링크, 적용 조건, 버전과 주의사항을 저장한다.
 - `의학적으로 검증됨` 대신 `출처 기반 프로그램`으로 표시한다.
 - 앱은 임의로 훈련 강도를 올리지 않는다.
+- 프로그램은 불변 catalog version과 content checksum으로 관리하고 enrollment가 시작 version을 고정 참조한다.
+- catalog는 JSON Schema로 구조·주차·세트 합계를 검증하고 같은 key·version·checksum import는 한 번만 적용한다.
+- 이용 범위 확인 전 실제 전체 운동표는 공개 저장소 밖 private catalog로 주입하고 공개 테스트는 합성 fixture를 사용한다.
 
 ## 14. 클라이밍 크림프 트레이닝
 
@@ -258,6 +282,10 @@ owner: 김민준
 - 중단 시 수행한 라운드까지만 부분 기록으로 저장한다.
 - 단순 interval 누적이 아니라 단계 종료 시각을 기준으로 남은 시간을 계산한다.
 - 지원 환경에서는 Screen Wake Lock으로 화면 꺼짐을 방지한다.
+- `client-domain`에 timestamp와 phase 배열만 사용하는 순수 상태 기계를 둔다.
+- 상태는 `IDLE`, `PREPARING`, `WORK`, `REST`, `PAUSED`, `FINISHED`, `ABORTED`를 사용한다.
+- 여러 phase가 지난 뒤 복귀하면 현재 phase로 즉시 이동하고 지나간 알림을 연속 재생하지 않는다.
+- React는 표시·음향·진동·Wake Lock·visibility adapter만 담당한다.
 
 ### 14.4 안전
 
@@ -271,10 +299,13 @@ owner: 김민준
 - iPhone Safari에서 홈 화면에 추가할 수 있어야 한다.
 - standalone 모드, 앱 아이콘, 시작 URL과 고유 manifest ID를 제공한다.
 - iPhone 화면을 우선 설계하고 노트북에서 반응형으로 확장한다.
-- 앱 셸과 당일 일정 조회는 최소 오프라인 캐시를 제공한다.
-- 오프라인 수정은 로컬 재전송 큐에 보관하고 연결 회복 시 멱등 API로 동기화한다.
+- 네트워크 연결을 전제로 하며 오프라인 캐시·변경 queue·Background Sync·충돌 병합을 제공하지 않는다.
+- 네트워크 저장 실패는 명확한 오류와 수동 재시도를 제공한다.
 - 웹 푸시는 홈 화면 설치와 사용자 동작 기반 권한 요청을 전제로 한다.
 - 타이머의 정확성은 브라우저 이벤트 지연과 무관하게 종료 시각 기준으로 복구되어야 한다.
+- React Router와 TanStack Query를 사용하고 별도 전역 상태 store는 두지 않는다.
+- 오늘 화면만 초기 bundle에 포함하고 운동·공부·클라이밍·설정은 route lazy loading한다.
+- 초기 JavaScript gzip 150KB, 개별 lazy chunk 100KB를 CI 예산으로 둔다.
 
 ## 16. 시스템 아키텍처
 
@@ -320,6 +351,7 @@ PostgreSQL
 - Task, 반복 규칙, 자동 이월과 지난 기록 오케스트레이션
 - 할 일 메모와 날짜별 스티키노트
 - 활동 완료 이벤트를 반영한 Task 상태 변경
+- 비대칭 키 access JWT 발급, refresh session과 최초 사용자 bootstrap
 
 #### activity-service
 
@@ -327,6 +359,7 @@ PostgreSQL
 - 공부 카테고리와 기록 템플릿
 - 운동 프로그램, 사용자 등록, 세션, 진급
 - 클라이밍 세션과 부분 기록
+- Task 이벤트의 최소 reference projection과 기록 대상 검증
 
 #### notification-service
 
@@ -356,13 +389,40 @@ PostgreSQL
 - `ActivitySkipped`
 - `RoutineAdvanced`
 - `NotificationRequested`
+- `TaskChanged`, `TaskDeleted`
+- `ActivityVoided`, `ActivityCorrected`
 
 ### 16.5 데이터 일관성
 
 - 서비스는 다른 서비스의 DB 스키마를 직접 조회하지 않는다.
-- 서비스 내부 DB 변경과 Kafka 발행은 outbox 패턴으로 연결한다.
-- Consumer는 중복 이벤트를 받아도 결과가 한 번만 반영되도록 멱등하게 구현한다.
+- planner·activity의 동일 구조 outbox table을 단일 Kafka Connect·Debezium PostgreSQL connector가 감시한다.
+- Debezium은 `pgoutput`과 persistent replication slot 하나를 사용한다.
+- Consumer는 `processed_event(event_id)` unique inbox를 로컬 결과와 같은 트랜잭션에 저장한다.
+- activity-service는 Task reference projection으로 소유자·유형·상태를 검증하고 projection 지연 시 재시도 가능한 409 오류를 반환한다.
+- Activity 저장 직후 클라이언트는 `동기화 중`을 표시하고 planner projection 반영 후 확정한다.
 - 분산 트랜잭션을 사용하지 않는다.
+
+### 16.6 인증·API·계약
+
+- 공개 회원가입은 제공하지 않고 최초 사용자는 일회성 bootstrap command로 생성한다.
+- access JWT는 10분 동안 유효하며 React 메모리에만 보관한다.
+- refresh token은 30일 회전형 opaque 값으로 발급하고 해시만 DB에 저장하며 HttpOnly·Secure·SameSite=Lax cookie로 전달한다.
+- refresh token 재사용을 탐지하면 해당 session chain을 폐기한다.
+- planner가 비대칭 키로 서명하고 activity·notification은 Spring Security Resource Server로 공개키를 독립 검증한다.
+- REST의 기준 파일은 `contracts/openapi/*-v1.yaml`이며 Spring Boot 4 API interface·DTO와 TypeScript Fetch client를 생성한다.
+- 외부 경로는 `/api/planner/v1/**`, `/api/activity/v1/**`를 사용한다.
+- 이벤트 기준 파일은 버전별 JSON Schema이며 fixture 계약 테스트로 Java record 직렬화를 검증한다.
+- Schema Registry는 사용하지 않는다.
+- 오류는 RFC 9457 `ProblemDetail`과 `code`, `traceId`, `retryable`, `fieldErrors` 확장 필드를 사용한다.
+
+### 16.7 Persistence
+
+- 일반 aggregate 저장과 CRUD는 Spring Data JPA·Hibernate를 사용한다.
+- Flyway만 스키마를 변경하고 Hibernate는 `ddl-auto=validate`를 사용한다.
+- Open Session in View를 비활성화하고 양방향 entity 관계와 API entity 직접 반환을 금지한다.
+- mutable aggregate는 optimistic version을 가진다.
+- 달력 range DTO projection과 JSONB·partial index·locking 등 PostgreSQL 특화 기능은 명시적 JPQL 또는 native query로 구현한다.
+- query 수와 N+1 회귀를 통합 테스트에서 검증한다.
 
 ## 17. 배포와 운영
 
@@ -373,6 +433,7 @@ PostgreSQL
 - Docker Compose
 - PostgreSQL
 - Kafka KRaft 단일 브로커
+- Kafka Connect·Debezium PostgreSQL connector 단일 worker
 - S3 일일 암호화 백업
 - ECR 컨테이너 이미지
 - GitHub Actions OIDC 배포
@@ -384,11 +445,21 @@ PostgreSQL
 - activity-service: 512~640MB
 - notification-service: 256MB
 - Kafka: 512~768MB
+- Kafka Connect: heap 512MB, 컨테이너 768MB
 - PostgreSQL: 384~512MB
 - Nginx: 64MB 이하
 - 2GB swap을 보조로 두되 정상 메모리 대체 수단으로 사용하지 않는다.
 
-### 17.3 8GB 승급 조건
+### 17.3 DB migration과 배포 순서
+
+- 각 서비스가 자기 스키마의 Flyway migration을 소유한다.
+- 운영에서는 서비스 기동 전에 동일 이미지의 일회성 migration job을 순서대로 실행한다.
+- migration이 하나라도 실패하면 새 서비스 기동을 중단하고 기존 버전을 유지한다.
+- 운영 서비스에서는 Flyway 자동 실행을 끄고 Hibernate는 `validate`만 사용한다.
+- 파괴적 변경은 추가·호환 코드·데이터 이관·제거의 expand/contract 단계로 나눈다.
+- 적용한 migration 파일은 수정하지 않고 새 version을 추가한다.
+
+### 17.4 8GB 승급 조건
 
 다음 중 하나가 재현되면 Lightsail 8GB로 확장한다.
 
@@ -423,6 +494,12 @@ PostgreSQL
 - 1인 정상 사용에서 주요 읽기 API p95 500ms 이내를 목표로 한다.
 - 오늘 화면의 첫 사용 가능 상태는 일반 네트워크에서 2초 이내를 목표로 한다.
 - 메모 입력은 500ms debounce 자동 저장을 사용한다.
+- 달력 range summary는 최대 42일이며 선택 날짜 detail과 분리한다.
+- Activity 상세는 사용자가 열 때 지연 조회하고 긴 이력은 keyset pagination을 사용한다.
+- Spring Boot의 Hikari·Tomcat·Kafka consumer 기본 동시성 값으로 시작하고 metric에서 포화가 확인될 때 조정한다.
+- PostgreSQL replication slot WAL은 2GB로 제한하고 slot 비활성·safe WAL·디스크 사용률을 감시한다.
+- Kafka domain topic은 7일 또는 partition당 1GB, dead-letter는 30일 또는 1GB를 보존한다.
+- 발행 완료 outbox는 7일, consumer inbox는 30일 후 정리한다.
 
 ### 19.3 신뢰성
 
@@ -432,7 +509,7 @@ PostgreSQL
 - Kafka 장애 시 DB 트랜잭션은 보존하고 outbox 재처리로 발행을 복구한다.
 - Activity Record는 저장됐지만 planner 반영이 지연되면 UI에 `동기화 중` 상태를 표시한다.
 - 알림 발송 실패는 Task·Activity 완료를 취소하지 않으며 notification-service에서 재시도·실패 이력으로 관리한다.
-- 클라이밍 타이머는 서버 연결이 끊겨도 로컬에서 계속 실행하고 종료 후 기록을 재전송한다.
+- 클라이밍 타이머는 이미 열린 화면에서 로컬로 계속 실행하지만 네트워크 저장 실패는 현재 화면에서 수동 재시도한다.
 
 ### 19.4 접근성
 
@@ -443,13 +520,18 @@ PostgreSQL
 
 ## 20. 테스트 전략
 
-- 도메인 규칙은 단위 테스트로 검증한다.
-- PostgreSQL·Kafka 연동은 Testcontainers 통합 테스트로 검증한다.
+- Task·반복·이월·Activity·진급·타이머·refresh 보안 규칙은 branch 100% 단위 테스트를 요구한다.
+- 전체 기준은 line 85%, branch 80% 이상을 PR·release gate에서 적용한다.
+- repository는 PostgreSQL, messaging은 Kafka, outbox 왕복은 PostgreSQL·Kafka·Debezium Testcontainers로 분리한다.
+- H2와 embedded Kafka는 사용하지 않는다.
 - 서비스 API는 OpenAPI 계약과 Consumer Contract Test로 고정한다.
 - 이월, 지난 기록, 반복 재생성, outbox, Consumer 멱등성을 핵심 회귀 테스트로 둔다.
-- PWA는 iPhone Safari 홈 화면 설치 상태와 노트북 브라우저를 각각 E2E 검증한다.
+- 일반 PR은 영향받은 Chromium 흐름, 플랫폼 기능 PR과 develop은 WebKit을 추가한다.
+- release는 macOS Safari와 실제 iPhone에서 설치·로그인·푸시·타이머·Wake Lock을 검증한다.
 - 타이머는 실제 시간 대기 대신 가상 시계를 주입해 단계 전환·복귀를 테스트한다.
 - Docker Compose 전체 기동 후 4GB 메모리 예산을 부하 테스트한다.
+- Kafka·Connect·DB·consumer 중단은 결정론적 fault-injection과 Toxiproxy로 검증한다.
+- 개발 중 60초, 커밋 전 2분, 기능 PR 10분, develop 15분, release 30분, 배포 smoke 5분을 목표로 단계별 gate를 적용한다.
 
 ## 21. 핵심 수용 기준
 
@@ -490,14 +572,22 @@ PostgreSQL
 ### AC-7 PWA
 
 - iPhone 홈 화면에서 독립 앱처럼 실행된다.
-- 네트워크 단절 시 앱 셸과 마지막 당일 일정이 열린다.
-- 복구 후 오프라인 변경이 중복 없이 동기화된다.
+- 네트워크 연결 상태에서 오늘 일정과 기록 기능이 동작한다.
+- 네트워크 저장 실패 시 오류와 수동 재시도가 표시된다.
 
 ### AC-8 알림 격리
 
 - notification-service가 중단되어도 할 일과 활동 기록 생성·완료가 가능하다.
 - 서비스 복구 후 미발송 알림이 중복 없이 재시도된다.
 - 발송 실패 원인과 최종 상태를 조회할 수 있다.
+
+### AC-9 알림 정책
+
+- 알림은 기본 비활성화하고 홈 화면 설치 후 설정의 사용자 동작으로만 권한을 요청한다.
+- 활성화 시 기본 오전 8시 오늘 요약을 제공하며 시간을 수정할 수 있다.
+- 개별 Task 알림은 사용자가 시간과 reminder를 명시한 경우에만 예약한다.
+- 기본 방해 금지는 22시~07시이며 해당 시간의 개별 알림은 다음 날로 미루지 않고 만료 처리한다.
+- 오늘 요약은 오전 10시, 개별 알림은 예정 시각 30분 이후까지 실패하면 만료 처리한다.
 
 ## 22. 성공 지표
 
@@ -530,7 +620,7 @@ PostgreSQL
 4. 운동 프로그램 엔진과 푸시업·풀업 데이터
 5. 클라이밍 10분 타이머와 부분 기록
 6. notification-service와 PWA 웹 푸시
-7. 오프라인 재전송 큐와 iPhone 설치 경험
+7. iPhone 설치 경험과 온라인 저장 오류 처리
 8. AWS Lightsail 배포, 백업 복구, 4GB 부하 테스트
 
 ## 25. 대안 검토
@@ -562,13 +652,10 @@ PostgreSQL
 
 ## 27. 열린 결정
 
-- 인증 방식과 토큰 수명·갱신 정책
 - React Native 앱 착수 시점과 Expo SDK 버전
 - 도메인과 상표 최종 확인
-- 기본 알림 시간과 방해 금지 정책
 - 운동 프로그램 원문 데이터의 공개 배포·저작권 범위
 - 크림프 루틴 원본 영상·작성자와 이용 범위
-- PWA 오프라인 충돌 해결 UX
 
 ## 28. 다음 단계
 
