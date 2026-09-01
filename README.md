@@ -4,7 +4,7 @@
 
 GitHub: https://github.com/UncleSamsun/todorok
 
-현재 단계는 제품 설계입니다. 구현 기준은 [PRD](docs/PRD.md)를 따릅니다.
+현재 단계는 기반 구현과 MVP 기술 검토 완료입니다. 구현 기준은 [PRD](docs/PRD.md)와 [MVP 구현 계획](docs/plans/2026-09-01-mvp-implementation-plan.md)을 따릅니다.
 
 ## 현재 결정
 
@@ -16,8 +16,10 @@ GitHub: https://github.com/UncleSamsun/todorok
 - 서비스: planner / activity / notification
 - 메시징: Kafka KRaft 단일 브로커
 - 데이터베이스: PostgreSQL 단일 인스턴스, 서비스별 스키마·계정 분리
+- Persistence: Spring Data JPA·Flyway
+- 이벤트 전달: Kafka Connect·Debezium outbox와 consumer inbox
 - 배포: AWS Lightsail 4GB + Docker Compose + Nginx
-- 상태: PRD 승인 완료, 구현 계획 작성 중
+- 상태: PRD 1.3.0과 전체 MVP 구현 계획 승인 완료
 
 ## 개발 원칙
 
