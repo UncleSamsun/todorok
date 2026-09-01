@@ -10,6 +10,7 @@
 build/
 out/
 *.class
+*.tsbuildinfo
 
 # JavaScript
 node_modules/
@@ -33,4 +34,3 @@ logs/
 # Test artifacts
 test-results/
 playwright-report/
-

@@ -1,12 +1,12 @@
 # TODOROK Project Foundation Implementation Plan
 
-**Goal:** 세 개의 Spring 서비스, Vue PWA 셸, PostgreSQL, Kafka와 CI가 함께 동작하는 최소 모노레포 기반을 만든다.
+**Goal:** 세 개의 Spring 서비스, React PWA 셸, 향후 React Native와 공유할 클라이언트 패키지, PostgreSQL, Kafka와 CI가 함께 동작하는 최소 모노레포 기반을 만든다.
 
 **Architecture:** 하나의 저장소에서 서비스별 독립 Spring Boot 애플리케이션과 공용 이벤트 계약 모듈을 관리한다. 로컬·초기 운영은 Docker Compose의 PostgreSQL 17.11과 Kafka 4.3.1 KRaft를 공유하되 각 서비스는 별도 스키마와 계정을 사용한다.
 
-**Tech Stack:** Java 25 LTS, Spring Boot 4.1.1, Gradle 9.7.1 Kotlin DSL, Vue 3, TypeScript, Vite 8, Node.js 24 LTS, pnpm 10, PostgreSQL 17.11, Apache Kafka 4.3.1, Docker Compose v2.
+**Tech Stack:** Java 25 LTS, Spring Boot 4.1.1, Gradle 9.7.1 Kotlin DSL, React 19.2, TypeScript, Vite 8, Node.js 24 LTS, pnpm 11.24.0, PostgreSQL 17.11, Apache Kafka 4.3.1, Docker Compose v2.
 
-**Spec:** `docs/PRD.md` §16~20, `docs/ISSUE_ROADMAP.md` F-001.
+**Spec:** `docs/PRD.md` §16~20, GitHub issue #1.
 
 ## Global Constraints
 
@@ -23,7 +23,11 @@
 ## File Map
 
 ```text
-apps/web/                         Vue PWA
+apps/web/                         React DOM PWA
+packages/client-domain/           웹·모바일 공유 순수 도메인 타입·계산
+packages/api-client/              웹·모바일 공유 API 타입·호출 계층
+packages/validation/              웹·모바일 공유 입력 검증·오류 매핑
+packages/design-tokens/           웹·모바일 공유 디자인 토큰
 libs/event-contracts/             서비스 간 이벤트 DTO와 직렬화 계약
 services/planner-service/         인증·Task·일정·메모 경계
 services/activity-service/        운동·공부·클라이밍 경계
@@ -44,6 +48,15 @@ scripts/                          로컬 검증 진입점
 - Create: `gradle/wrapper/gradle-wrapper.properties`
 - Create: `gradlew`
 - Create: `gradlew.bat`
+- Create: `.gitattributes`
+- Create: `package.json`
+- Create: `pnpm-workspace.yaml`
+- Create: `.npmrc`
+- Create: `pnpm-lock.yaml`
+- Create: `libs/event-contracts/.gitkeep`
+- Create: `services/planner-service/.gitkeep`
+- Create: `services/activity-service/.gitkeep`
+- Create: `services/notification-service/.gitkeep`
 
 **Interfaces:**
 - Produces: Gradle 프로젝트 `:libs:event-contracts`, `:services:planner-service`, `:services:activity-service`, `:services:notification-service`.
@@ -57,6 +70,10 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
+}
+
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 dependencyResolutionManagement {
@@ -109,6 +126,8 @@ subprojects {
 
 - [ ] **Step 4: Gradle Wrapper를 9.7.1로 생성한다**
 
+Gradle 9.7.1은 포함된 프로젝트 디렉터리가 없으면 설정 단계에서 실패하므로 네 하위 프로젝트 디렉터리와 `.gitkeep`을 먼저 생성한다.
+
 Run: `gradle wrapper --gradle-version 9.7.1 --distribution-type bin`
 
 Expected: `./gradlew --version` 출력에 Gradle 9.7.1과 Java 25가 표시된다.
@@ -119,11 +138,33 @@ Run: `./gradlew projects`
 
 Expected: 네 개 하위 프로젝트가 모두 표시되고 BUILD SUCCESSFUL.
 
-- [ ] **Step 6: 커밋한다**
+- [ ] **Step 6: 프런트엔드·공유 패키지 pnpm workspace를 작성한다**
+
+```yaml
+# pnpm-workspace.yaml
+packages:
+  - "apps/*"
+  - "packages/*"
+```
+
+```json
+{
+  "name": "todorok",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "engines": { "node": ">=24 <25" },
+  "scripts": {
+    "test:web": "pnpm --dir apps/web test",
+    "build:web": "pnpm --dir apps/web build"
+  }
+}
+```
+
+- [ ] **Step 7: 커밋한다**
 
 ```bash
-git add settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat
-git commit -m "chore(build): establish java monorepo toolchain"
+git add settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc .gitattributes libs/*/.gitkeep services/*/.gitkeep
+git commit -m "chore(build): Java 모노레포 도구 체계 구성"
 ```
 
 ### Task 2: 공용 이벤트 계약 모듈
@@ -223,7 +264,7 @@ Expected: PASS.
 
 ```bash
 git add libs/event-contracts
-git commit -m "feat(contracts): define versioned domain event envelope"
+git commit -m "feat(contracts): 버전형 도메인 이벤트 계약 정의"
 ```
 
 ### Task 3: planner-service 기동과 헬스 계약
@@ -307,7 +348,7 @@ Expected: PASS.
 
 ```bash
 git add services/planner-service
-git commit -m "feat(planner): add service application foundation"
+git commit -m "feat(planner): 플래너 서비스 기반 구성"
 ```
 
 ### Task 4: activity-service 기동과 헬스 계약
@@ -381,7 +422,7 @@ management:
 
 ```bash
 git add services/activity-service
-git commit -m "feat(activity): add service application foundation"
+git commit -m "feat(activity): 활동 서비스 기반 구성"
 ```
 
 ### Task 5: notification-service 기동과 헬스 계약
@@ -455,7 +496,7 @@ management:
 
 ```bash
 git add services/notification-service
-git commit -m "feat(notification): add service application foundation"
+git commit -m "feat(notification): 알림 서비스 기반 구성"
 ```
 
 ### Task 6: PostgreSQL·Kafka 로컬 인프라
@@ -537,40 +578,67 @@ Expected: 세 스키마가 모두 출력된다.
 
 ```bash
 git add infra/docker .env.example scripts
-git commit -m "chore(infra): add local postgres and kafka stack"
+git commit -m "chore(infra): 로컬 PostgreSQL과 Kafka 구성"
 ```
 
-### Task 7: Vue PWA 셸
+### Task 7: React PWA 셸과 공유 클라이언트 패키지
 
 **Files:**
 - Create: `apps/web/package.json`
 - Create: `apps/web/vite.config.ts`
-- Create: `apps/web/src/main.ts`
-- Create: `apps/web/src/App.vue`
-- Create: `apps/web/src/App.test.ts`
+- Create: `apps/web/src/main.tsx`
+- Create: `apps/web/src/App.tsx`
+- Create: `apps/web/src/App.test.tsx`
 - Create: `apps/web/public/manifest.webmanifest`
+- Create: `packages/client-domain/package.json`
+- Create: `packages/client-domain/src/index.ts`
+- Create: `packages/api-client/package.json`
+- Create: `packages/api-client/src/index.ts`
+- Create: `packages/validation/package.json`
+- Create: `packages/validation/src/index.ts`
+- Create: `packages/design-tokens/package.json`
+- Create: `packages/design-tokens/src/index.ts`
 
 **Interfaces:**
 - Produces: PWA route `/` and manifest `/manifest.webmanifest`.
 
-- [ ] **Step 1: 앱 이름 렌더링 테스트를 작성한다**
+- [ ] **Step 1: 프레임워크에 의존하지 않는 공유 도메인 타입을 작성한다**
 
 ```ts
+export type TaskType = 'GENERAL' | 'WORKOUT' | 'STUDY' | 'CLIMBING'
+export type TaskStatus = 'PLANNED' | 'COMPLETED' | 'SKIPPED'
+
+export interface TaskSummary {
+  id: string
+  title: string
+  scheduledDate: string
+  type: TaskType
+  status: TaskStatus
+}
+```
+
+- [ ] **Step 2: React 앱 이름 렌더링 테스트를 작성한다**
+
+```ts
+import { render, screen } from '@testing-library/react'
+import { App } from './App'
+
 it('renders the approved product name', () => {
-  render(App)
+  render(<App />)
   expect(screen.getByRole('heading', { name: '토도록' })).toBeVisible()
 })
 ```
 
-- [ ] **Step 2: `pnpm --dir apps/web test`가 App 부재로 실패하는지 확인한다**
-- [ ] **Step 3: Vue 3 앱 셸과 `토도록` 제목을 구현한다**
-- [ ] **Step 4: manifest에 `name`, `short_name`, `id`, `start_url`, `display: standalone`을 작성한다**
-- [ ] **Step 5: `pnpm --dir apps/web test`와 `pnpm --dir apps/web build`가 PASS인지 확인한다**
-- [ ] **Step 6: 커밋한다**
+- [ ] **Step 3: `pnpm --dir apps/web test`가 App 부재로 실패하는지 확인한다**
+- [ ] **Step 4: React 19.2 앱 셸과 `토도록` 제목을 구현한다**
+- [ ] **Step 5: manifest에 `name`, `short_name`, `id`, `start_url`, `display: standalone`을 작성한다**
+- [ ] **Step 6: 공유 패키지에서 브라우저 전역 객체 참조가 없는지 TypeScript 빌드로 확인한다**
+- [ ] **Step 7: `pnpm --dir apps/web test`와 `pnpm --dir apps/web build`가 PASS인지 확인한다**
+- [ ] **Step 8: 커밋한다**
 
 ```bash
-git add apps/web
-git commit -m "feat(web): add installable pwa shell"
+git add apps/web packages
+git commit -m "feat(web): 설치형 React PWA 셸 구성"
 ```
 
 ### Task 8: Nginx와 전체 서비스 Compose
@@ -595,7 +663,7 @@ git commit -m "feat(web): add installable pwa shell"
 
 ```bash
 git add infra/nginx infra/docker services/*/Dockerfile scripts
-git commit -m "chore(runtime): compose services behind nginx"
+git commit -m "chore(runtime): Nginx 뒤에 전체 서비스 구성"
 ```
 
 ### Task 9: CI와 기록 정책 검사
@@ -643,7 +711,7 @@ for (const [command, args] of commands) {
 
 ```bash
 git add .github/workflows scripts
-git commit -m "ci: verify services web build and repository policy"
+git commit -m "ci: 서비스·웹 빌드와 저장소 정책 검증"
 ```
 
 ## Final Verification
@@ -656,4 +724,4 @@ git commit -m "ci: verify services web build and repository policy"
 - [ ] Kafka와 PostgreSQL healthy
 - [ ] 전체 컨테이너 메모리 3.5GB 미만
 - [ ] 기록 정책 검사 PASS
-- [ ] F-001 수용 기준을 PR 본문에서 모두 체크
+- [ ] 이슈 #1 수용 기준을 PR 본문에서 모두 체크
