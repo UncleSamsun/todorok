@@ -1,5 +1,9 @@
 apiPackage: io.todorok.activity.api
 modelPackage: io.todorok.activity.api.model
+globalProperties:
+  apis: ''
+  models: ''
+  supportingFiles: ApiUtil.java
 additionalProperties:
   interfaceOnly: true
   skipDefaultInterface: true

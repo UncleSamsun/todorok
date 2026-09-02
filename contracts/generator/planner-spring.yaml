@@ -1,5 +1,9 @@
 apiPackage: io.todorok.planner.api
 modelPackage: io.todorok.planner.api.model
+globalProperties:
+  apis: ''
+  models: ''
+  supportingFiles: ApiUtil.java
 additionalProperties:
   interfaceOnly: true
   skipDefaultInterface: true

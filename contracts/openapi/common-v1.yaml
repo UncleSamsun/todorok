@@ -8,20 +8,24 @@ components:
     FieldError:
       type: object
       additionalProperties: false
+      required: [field, code, message]
       properties:
-        field:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
+        field: { type: string, minLength: 1 }
+        code: { type: string, pattern: '^[A-Z][A-Z0-9_]+$' }
+        message: { type: string, minLength: 1 }
     ProblemDetails:
       type: object
       additionalProperties: false
+      required: [type, title, status, code, traceId, retryable]
       properties:
-        type:
-          type: string
-        title:
-          type: string
-        status:
-          type: integer
+        type: { type: string, format: uri-reference }
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string }
+        instance: { type: string, format: uri-reference }
+        code: { type: string, pattern: '^[A-Z][A-Z0-9_]+$' }
+        traceId: { type: string, minLength: 1 }
+        retryable: { type: boolean }
+        fieldErrors:
+          type: array
+          items: { $ref: '#/components/schemas/FieldError' }
