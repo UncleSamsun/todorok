@@ -472,8 +472,7 @@ class PlannerMigrationApplicationTest {
             assertThat(context.getBeansOfType(Flyway.class)).hasSize(1);
             assertThat(context.getBeansOfType(EntityManagerFactory.class)).isEmpty();
             assertThat(context.getBeansOfType(KafkaAdmin.class)).isEmpty();
-            assertThat(context.getEnvironment().getProperty("spring.main.web-application-type"))
-                    .isEqualTo("none");
+            assertThat(context).isNotInstanceOf(WebServerApplicationContext.class);
         }
     }
 
@@ -503,7 +502,7 @@ Expected: FAIL, `PlannerMigrationApplication`이 없다.
 @Configuration(proxyBeanMethods = false)
 @EnableAutoConfiguration(exclude = {
         HibernateJpaAutoConfiguration.class,
-        KafkaAutoConfiguration.class
+        DataJpaRepositoriesAutoConfiguration.class
 })
 public class PlannerMigrationApplication {
     public static ConfigurableApplicationContext run(String... args) {
@@ -531,7 +530,7 @@ package io.todorok.migration.activity;
 @Configuration(proxyBeanMethods = false)
 @EnableAutoConfiguration(exclude = {
         HibernateJpaAutoConfiguration.class,
-        KafkaAutoConfiguration.class
+        DataJpaRepositoriesAutoConfiguration.class
 })
 public class ActivityMigrationApplication {
     public static ConfigurableApplicationContext run(String... args) {
@@ -556,7 +555,7 @@ package io.todorok.migration.notification;
 @Configuration(proxyBeanMethods = false)
 @EnableAutoConfiguration(exclude = {
         HibernateJpaAutoConfiguration.class,
-        KafkaAutoConfiguration.class
+        DataJpaRepositoriesAutoConfiguration.class
 })
 public class NotificationMigrationApplication {
     public static ConfigurableApplicationContext run(String... args) {
@@ -593,7 +592,7 @@ activity와 notification은 `default-schema`와 `schemas`를 각각 자기 schem
 
 - [ ] **Step 5: activity·notification migration test 작성**
 
-`ActivityMigrationApplicationTest`는 JDBC로 `activity` schema를 만든 뒤 `ActivityMigrationApplication.run`에 container의 URL·username·password command-line argument를 전달한다. `NotificationMigrationApplicationTest`는 `notification` schema와 `NotificationMigrationApplication.run`을 사용한다. 두 test 모두 Flyway bean 1개, EntityManagerFactory 0개, KafkaAdmin 0개, web application type `none`을 검증한다.
+`ActivityMigrationApplicationTest`는 JDBC로 `activity` schema를 만든 뒤 `ActivityMigrationApplication.run`에 container의 URL·username·password command-line argument를 전달한다. `NotificationMigrationApplicationTest`는 `notification` schema와 `NotificationMigrationApplication.run`을 사용한다. 두 test 모두 Flyway bean 1개, EntityManagerFactory 0개, KafkaAdmin 0개이며 context가 `WebServerApplicationContext`가 아닌 것을 검증한다.
 
 - [ ] **Step 6: migration jar task 작성**
 
@@ -609,6 +608,7 @@ springBoot {
 tasks.register<BootJar>("migrationBootJar") {
     group = "build"
     archiveClassifier.set("migration")
+    targetJavaVersion.set(JavaVersion.VERSION_25)
     mainClass.set("io.todorok.migration.planner.PlannerMigrationApplication")
     classpath(sourceSets.main.get().runtimeClasspath)
 }

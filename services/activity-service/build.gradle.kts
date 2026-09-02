@@ -1,7 +1,25 @@
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 plugins {
     java
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.dependency.management)
+}
+
+springBoot {
+    mainClass.set("io.todorok.activity.ActivityApplication")
+}
+
+tasks.register<BootJar>("migrationBootJar") {
+    group = "build"
+    archiveClassifier.set("migration")
+    targetJavaVersion.set(JavaVersion.VERSION_25)
+    mainClass.set("io.todorok.migration.activity.ActivityMigrationApplication")
+    classpath(sourceSets.main.get().runtimeClasspath)
+}
+
+tasks.named("assemble") {
+    dependsOn("migrationBootJar")
 }
 
 dependencies {
