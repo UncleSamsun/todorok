@@ -61,6 +61,14 @@ packages/api-client/src/generated/planner/
 packages/api-client/src/generated/activity/
 ```
 
+## 한눈에 보는 계약 흐름
+
+![API·이벤트 계약 흐름](../../diagrams/api-event-contract-flow.svg)
+
+- 위쪽 흐름은 OpenAPI 원본과 생성 설정으로 Java API·DTO와 TypeScript client를 만들고 각 서비스와 React가 사용하는 과정이다.
+- 아래쪽 흐름은 이벤트 JSON Schema를 Java record와 정상·오류 fixture로 검증하는 과정이다.
+- 두 흐름은 CI 계약 검증에서 합쳐지며 원본·생성물·직렬화 결과가 모두 일치해야 통과한다.
+
 ## OpenAPI 계약
 
 ### 공통 요소
