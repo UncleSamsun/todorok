@@ -16,4 +16,4 @@ additionalProperties:
   annotationLibrary: none
   hideGenerationTimestamp: true
   openApiNullable: false
-  sourceFolder: src/generated/java
+  sourceFolder: java

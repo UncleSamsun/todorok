@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, stat } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, stat, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -7,6 +7,12 @@ import test from 'node:test'
 
 test('네 계약 생성기가 결정된 출력 루트를 만든다', async () => {
   const outputRoot = await mkdtemp(path.join(os.tmpdir(), 'todorok-contracts-'))
+  const staleFile = path.join(
+    outputRoot,
+    'services/planner-service/src/generated/java/Stale.java',
+  )
+  await mkdir(path.dirname(staleFile), { recursive: true })
+  await writeFile(staleFile, 'final class Stale {}')
   const result = spawnSync(
     process.execPath,
     ['scripts/generate-contracts.mjs', '--output-root', outputRoot],
@@ -18,4 +24,9 @@ test('네 계약 생성기가 결정된 출력 루트를 만든다', async () =>
   await stat(path.join(outputRoot, 'services/activity-service/src/generated/java'))
   await stat(path.join(outputRoot, 'packages/api-client/src/generated/planner'))
   await stat(path.join(outputRoot, 'packages/api-client/src/generated/activity'))
+  await assert.rejects(access(staleFile), { code: 'ENOENT' })
+  await assert.rejects(
+    access(path.join(outputRoot, 'packages/api-client/src/generated/planner/.gitignore')),
+    { code: 'ENOENT' },
+  )
 })

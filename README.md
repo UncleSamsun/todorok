@@ -27,3 +27,11 @@ GitHub: https://github.com/UncleSamsun/todorok
 - 기능 하나를 이슈 하나와 Pull Request 하나로 관리합니다.
 - `main`·`develop` 직접 커밋을 금지합니다.
 - 상세 규칙은 [CONTRIBUTING.md](CONTRIBUTING.md)를 따릅니다.
+
+## API·이벤트 계약
+
+- `contracts/openapi/`가 planner·activity REST API의 원본입니다.
+- `contracts/events/`가 서비스 간 이벤트의 원본이고 `contracts/fixtures/`에 정상·오류 예시가 있습니다.
+- `pnpm contracts:generate`로 Spring API interface·DTO와 TypeScript Fetch client를 생성합니다.
+- `pnpm contracts:check`로 저장소의 생성물이 원본과 일치하는지 검사합니다.
+- `services/*/src/generated`와 `packages/api-client/src/generated` 파일은 직접 수정하지 않습니다.

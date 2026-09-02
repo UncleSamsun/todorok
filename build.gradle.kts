@@ -17,6 +17,8 @@ fun registerContractTask(
     output: String,
 ) = tasks.register<GenerateTask>(taskName) {
     notCompatibleWithConfigurationCache("계약 생성기는 구성 캐시 직렬화를 지원하지 않음")
+    cleanupOutput.set(true)
+    openapiGeneratorIgnoreList.set(listOf(".gitignore"))
     generatorName.set(generator)
     inputSpec.set(layout.projectDirectory.file(spec).asFile.absolutePath)
     configFile.set(layout.projectDirectory.file(config).asFile.absolutePath)
@@ -28,14 +30,14 @@ registerContractTask(
     "spring",
     "contracts/openapi/planner-v1.yaml",
     "contracts/generator/planner-spring.yaml",
-    "services/planner-service",
+    "services/planner-service/src/generated",
 )
 registerContractTask(
     "generateActivitySpring",
     "spring",
     "contracts/openapi/activity-v1.yaml",
     "contracts/generator/activity-spring.yaml",
-    "services/activity-service",
+    "services/activity-service/src/generated",
 )
 registerContractTask(
     "generatePlannerTypeScript",
