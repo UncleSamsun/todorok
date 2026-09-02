@@ -82,7 +82,8 @@ class PlannerPersistenceIntegrationTest {
                 "select service_name from planner.service_metadata",
                 String.class)).isEqualTo("planner-service");
         assertThat(jdbc.queryForObject(
-                "select count(*) from planner.flyway_schema_history where success",
+                "select count(*) from planner.flyway_schema_history "
+                        + "where success and version is not null",
                 Integer.class)).isEqualTo(2);
         assertThat(jdbc.queryForList(
                 "select schema_name from information_schema.schemata "
@@ -95,7 +96,8 @@ class PlannerPersistenceIntegrationTest {
     void rerunningFlywayMakesNoChanges() {
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         assertThat(jdbc.queryForObject(
-                "select count(*) from planner.flyway_schema_history where success",
+                "select count(*) from planner.flyway_schema_history "
+                        + "where success and version is not null",
                 Integer.class)).isEqualTo(2);
     }
 
@@ -245,7 +247,8 @@ class ActivityPersistenceIntegrationTest {
                 "select service_name from activity.service_metadata",
                 String.class)).isEqualTo("activity-service");
         assertThat(jdbc.queryForObject(
-                "select count(*) from activity.flyway_schema_history where success",
+                "select count(*) from activity.flyway_schema_history "
+                        + "where success and version is not null",
                 Integer.class)).isEqualTo(2);
         assertThat(jdbc.queryForList(
                 "select schema_name from information_schema.schemata "
@@ -258,7 +261,8 @@ class ActivityPersistenceIntegrationTest {
     void rerunningFlywayMakesNoChanges() {
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         assertThat(jdbc.queryForObject(
-                "select count(*) from activity.flyway_schema_history where success",
+                "select count(*) from activity.flyway_schema_history "
+                        + "where success and version is not null",
                 Integer.class)).isEqualTo(2);
     }
 
@@ -357,7 +361,8 @@ assertThat(jdbc.queryForObject(
         "select service_name from notification.service_metadata",
         String.class)).isEqualTo("notification-service");
 assertThat(jdbc.queryForObject(
-        "select count(*) from notification.flyway_schema_history where success",
+        "select count(*) from notification.flyway_schema_history "
+                + "where success and version is not null",
         Integer.class)).isEqualTo(2);
 assertThat(jdbc.queryForList(
         "select schema_name from information_schema.schemata "
@@ -371,7 +376,8 @@ assertThat(jdbc.queryForList(
     void rerunningFlywayMakesNoChanges() {
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         assertThat(jdbc.queryForObject(
-                "select count(*) from notification.flyway_schema_history where success",
+                "select count(*) from notification.flyway_schema_history "
+                        + "where success and version is not null",
                 Integer.class)).isEqualTo(2);
     }
 

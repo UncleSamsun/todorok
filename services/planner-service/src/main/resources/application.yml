@@ -1,6 +1,22 @@
 spring:
   application:
     name: planner-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/todorok?currentSchema=planner}
+    username: ${SPRING_DATASOURCE_USERNAME:planner_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:replace-with-planner-password}
+  flyway:
+    enabled: false
+    default-schema: planner
+    schemas: planner
+    create-schemas: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: planner
 
 server:
   port: 8081
@@ -14,4 +30,3 @@ management:
     health:
       probes:
         enabled: true
-
