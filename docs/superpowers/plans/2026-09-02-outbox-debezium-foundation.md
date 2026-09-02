@@ -345,7 +345,7 @@ void retriesThreeTimesThenPublishesDeadLetter() {
     assertThat(deadLetter.value()).isEqualTo("broken-event");
     assertThat(lastHeader(deadLetter, KafkaHeaders.DLT_ORIGINAL_TOPIC))
             .isEqualTo("source-topic".getBytes(UTF_8));
-    assertThat(lastHeader(deadLetter, KafkaHeaders.DLT_EXCEPTION_FQCN))
+    assertThat(lastHeader(deadLetter, KafkaHeaders.DLT_EXCEPTION_CAUSE_FQCN))
             .isEqualTo(IllegalStateException.class.getName().getBytes(UTF_8));
 }
 ```
