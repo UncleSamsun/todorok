@@ -28,7 +28,17 @@ async function filesUnder(root, relative = '') {
 }
 
 async function digest(file) {
-  return createHash('sha256').update(await readFile(file)).digest('hex')
+  const content = await readFile(file)
+  let comparable = content
+  if (!content.includes(0)) {
+    try {
+      const text = new TextDecoder('utf-8', { fatal: true }).decode(content)
+      comparable = Buffer.from(text.replace(/\r\n?/g, '\n'))
+    } catch {
+      comparable = content
+    }
+  }
+  return createHash('sha256').update(comparable).digest('hex')
 }
 
 export async function compareTrees(expected, actual) {

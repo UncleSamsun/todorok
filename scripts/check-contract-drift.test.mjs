@@ -16,3 +16,15 @@ test('생성 파일 내용이 다르면 경로를 반환한다', async () => {
 
   assert.deepEqual(await compareTrees(expected, actual), ['Api.java'])
 })
+
+test('운영체제에 따른 텍스트 줄바꿈 차이는 drift로 보지 않는다', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'todorok-line-ending-'))
+  const expected = path.join(root, 'expected')
+  const actual = path.join(root, 'actual')
+  await mkdir(expected)
+  await mkdir(actual)
+  await writeFile(path.join(expected, 'FILES'), 'one\ntwo\n')
+  await writeFile(path.join(actual, 'FILES'), 'one\r\ntwo\r\n')
+
+  assert.deepEqual(await compareTrees(expected, actual), [])
+})
