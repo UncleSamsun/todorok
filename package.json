@@ -6,6 +6,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
+    "contracts:generate": "node scripts/generate-contracts.mjs",
     "build:packages": "pnpm --filter @todorok/client-domain --filter @todorok/api-client --filter @todorok/validation --filter @todorok/design-tokens build",
     "test:packages": "pnpm --filter @todorok/client-domain --filter @todorok/api-client --filter @todorok/validation --filter @todorok/design-tokens test",
     "test:web": "pnpm --dir apps/web test",

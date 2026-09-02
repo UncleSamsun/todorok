@@ -1,0 +1,15 @@
+apiPackage: io.todorok.activity.api
+modelPackage: io.todorok.activity.api.model
+additionalProperties:
+  interfaceOnly: true
+  skipDefaultInterface: true
+  useSpringBoot4: true
+  useJackson3: true
+  useJakartaEe: true
+  useTags: true
+  useSwaggerUI: false
+  documentationProvider: none
+  annotationLibrary: none
+  hideGenerationTimestamp: true
+  openApiNullable: false
+  sourceFolder: src/generated/java

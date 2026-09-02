@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: 토도록 Activity API
+  version: 1.0.0
+servers:
+  - url: /api/activity/v1
+paths: {}
+components:
+  schemas:
+    ProblemDetails:
+      $ref: './common-v1.yaml#/components/schemas/ProblemDetails'

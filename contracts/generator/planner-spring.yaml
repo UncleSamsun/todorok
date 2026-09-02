@@ -1,0 +1,15 @@
+apiPackage: io.todorok.planner.api
+modelPackage: io.todorok.planner.api.model
+additionalProperties:
+  interfaceOnly: true
+  skipDefaultInterface: true
+  useSpringBoot4: true
+  useJackson3: true
+  useJakartaEe: true
+  useTags: true
+  useSwaggerUI: false
+  documentationProvider: none
+  annotationLibrary: none
+  hideGenerationTimestamp: true
+  openApiNullable: false
+  sourceFolder: src/generated/java
