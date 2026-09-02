@@ -6,10 +6,15 @@ dependencies {
     implementation(platform("org.springframework.boot:spring-boot-dependencies:4.1.1"))
     api("com.fasterxml.jackson.core:jackson-annotations")
 
-    testImplementation("com.fasterxml.jackson.core:jackson-databind")
-    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    testImplementation("tools.jackson.core:jackson-databind")
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core")
+    testImplementation("com.networknt:json-schema-validator:3.0.6")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+sourceSets {
+    test {
+        resources.srcDir(rootProject.file("contracts"))
+    }
+}

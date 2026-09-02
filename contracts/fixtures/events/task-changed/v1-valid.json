@@ -1,0 +1,14 @@
+{
+  "eventId": "00000000-0000-0000-0000-000000000011",
+  "type": "TASK_CHANGED",
+  "version": 1,
+  "occurredAt": "2026-09-02T00:01:00Z",
+  "userId": "00000000-0000-0000-0000-000000000012",
+  "payload": {
+    "taskId": "00000000-0000-0000-0000-000000000013",
+    "taskType": "STUDY",
+    "scheduledDate": "2026-09-02",
+    "status": "COMPLETED",
+    "changeType": "COMPLETED"
+  }
+}

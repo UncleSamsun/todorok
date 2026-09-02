@@ -3,7 +3,6 @@ package io.todorok.contracts;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -11,7 +10,8 @@ import org.junit.jupiter.api.Test;
 
 class EventEnvelopeTest {
 
-    private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+    private final tools.jackson.databind.ObjectMapper mapper =
+            tools.jackson.databind.json.JsonMapper.builder().findAndAddModules().build();
 
     @Test
     void preservesIdentityAndVersionDuringJsonRoundTrip() throws Exception {

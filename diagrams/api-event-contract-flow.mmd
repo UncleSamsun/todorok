@@ -1,0 +1,18 @@
+graph LR
+  O["OpenAPI 원본<br/>common · planner · activity"] --> G["생성 설정<br/>Spring · TypeScript"]
+  G --> R["코드 생성기<br/>7.24.0"]
+  R --> J["Java API interface와 DTO"]
+  R --> T["TypeScript Fetch client"]
+  J --> S["planner · activity 서비스"]
+  T --> W["React PWA"]
+
+  E["이벤트 JSON Schema<br/>envelope · 핵심 이벤트 4개"] --> C["Java event record"]
+  E --> F["정상 · 오류 fixture"]
+  C --> V["직렬화 · Schema 계약 테스트"]
+  F --> V
+
+  O --> Q["CI 계약 검증"]
+  J --> Q
+  T --> Q
+  V --> Q
+  Q --> P["계약 일치 시 통과"]

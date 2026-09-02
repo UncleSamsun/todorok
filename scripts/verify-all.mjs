@@ -2,6 +2,8 @@ import { spawnSync } from 'node:child_process'
 
 const gradleCommand = process.platform === 'win32' ? 'gradlew.bat' : './gradlew'
 const commands = [
+  ['node', ['--test', 'scripts/contracts-generation.test.mjs', 'scripts/openapi-contract.test.mjs', 'scripts/check-contract-drift.test.mjs']],
+  ['node', ['scripts/check-contract-drift.mjs']],
   [gradleCommand, ['test', '--no-daemon', '--max-workers=1']],
   ['corepack', ['pnpm', 'test:packages']],
   ['corepack', ['pnpm', 'test:web']],
