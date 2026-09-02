@@ -16,6 +16,7 @@ fun registerContractTask(
     config: String,
     output: String,
 ) = tasks.register<GenerateTask>(taskName) {
+    notCompatibleWithConfigurationCache("계약 생성기는 구성 캐시 직렬화를 지원하지 않음")
     generatorName.set(generator)
     inputSpec.set(layout.projectDirectory.file(spec).asFile.absolutePath)
     configFile.set(layout.projectDirectory.file(config).asFile.absolutePath)

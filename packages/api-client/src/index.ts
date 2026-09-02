@@ -1,8 +1,3 @@
-export interface ApiRequest {
-  path: string
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
-  body?: unknown
-}
-export interface ApiTransport {
-  request<T>(request: ApiRequest): Promise<T>
-}
+export * as activity from './generated/activity/src'
+export * as planner from './generated/planner/src'
+export type { ApiRequest, ApiTransport } from './transport'
