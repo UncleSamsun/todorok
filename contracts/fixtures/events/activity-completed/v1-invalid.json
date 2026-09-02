@@ -1,0 +1,14 @@
+{
+  "eventId": "00000000-0000-0000-0000-000000000021",
+  "type": "ACTIVITY_COMPLETED",
+  "version": 1,
+  "occurredAt": "2026-09-02T00:02:00Z",
+  "userId": "00000000-0000-0000-0000-000000000022",
+  "payload": {
+    "activityId": "00000000-0000-0000-0000-000000000023",
+    "taskId": "00000000-0000-0000-0000-000000000024",
+    "activityType": "CLIMBING",
+    "completedAt": "not-a-date",
+    "outcome": "10라운드 완료"
+  }
+}

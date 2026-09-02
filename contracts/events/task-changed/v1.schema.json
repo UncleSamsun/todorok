@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://todorok.app/schemas/events/task-changed/v1",
+  "title": "Task changed event v1",
+  "type": "object",
+  "required": ["eventId", "type", "version", "occurredAt", "userId", "payload"],
+  "allOf": [
+    { "$ref": "https://todorok.app/schemas/events/envelope/v1" },
+    {
+      "properties": {
+        "type": { "const": "TASK_CHANGED" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["taskId", "taskType", "scheduledDate", "status", "changeType"],
+          "properties": {
+            "taskId": { "type": "string", "format": "uuid" },
+            "taskType": { "enum": ["TODO", "WORKOUT", "STUDY", "CLIMBING"] },
+            "scheduledDate": { "type": "string", "format": "date" },
+            "status": { "enum": ["PLANNED", "COMPLETED", "SKIPPED", "DELETED"] },
+            "changeType": { "enum": ["CREATED", "UPDATED", "COMPLETED", "REOPENED", "DELETED", "ROLLED_OVER"] }
+          }
+        }
+      }
+    }
+  ]
+}
