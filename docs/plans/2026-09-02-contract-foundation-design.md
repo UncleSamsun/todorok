@@ -117,14 +117,14 @@ fieldErrors: 필드별 code·message 목록
 - `GET /api/activity/v1/activities`
 - `POST /api/activity/v1/activities/{activityId}/void`
 
-운동·공부·클라이밍 세부 값은 판별 가능한 detail 구조로 표현하되, 프로그램 catalog와 템플릿 관리 API는 후속 계약 확장으로 남긴다.
+운동·공부·클라이밍 세부 값은 `activityType`과 JSON object `detail`로 표현한다. 초기 생성 client에서 지원이 제한된 `oneOf` union은 사용하지 않고, #6에서 서비스별 record와 validation으로 구체화한다. 프로그램 catalog와 템플릿 관리 API는 후속 계약 확장으로 남긴다.
 
 ## 코드 생성
 
 - OpenAPI Generator `7.24.0`을 고정한다.
 - Gradle plugin을 생성기의 단일 실행 진입점으로 사용한다.
-- Spring 생성은 `interfaceOnly`, `useSpringBoot3`, `useJakartaEe`, `skipDefaultInterface`, `useTags`를 사용한다.
-- Spring Boot 4에서도 Jakarta namespace를 유지하고 생성 interface·DTO의 컴파일로 호환성을 검증한다.
+- Spring 생성은 `interfaceOnly`, `useSpringBoot4`, `useJackson3`, `useJakartaEe`, `skipDefaultInterface`, `useTags`를 사용한다.
+- Spring Boot 4·Jackson 3·Jakarta namespace를 생성 interface·DTO의 컴파일로 검증한다.
 - TypeScript는 `typescript-fetch`를 사용하고 planner·activity client를 별도 namespace로 생성한다.
 - 생성 시각·문서·예제 테스트 등 비결정적이거나 불필요한 출력은 끈다.
 - `packages/api-client/src/index.ts`는 생성 namespace와 공통 transport 진입점만 노출한다.
@@ -163,6 +163,8 @@ eventId, type, version, occurredAt, userId, payload
 - 네 event payload record
 - Jackson 직렬화 결과가 JSON Schema를 통과하는 계약 테스트
 - 정상 fixture가 통과하고 필수 필드 누락·형식 오류 fixture가 실패하는 테스트
+
+JSON Schema 검증은 Java 17+·Jackson 3 호환 계열인 `com.networknt:json-schema-validator:3.0.6`을 사용하고 Draft 2020-12 format assertion을 활성화한다.
 
 업무 서비스가 공통 계약을 참조하되 이 모듈은 Spring·JPA·Kafka 구현에 의존하지 않는다.
 
