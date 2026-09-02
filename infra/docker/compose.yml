@@ -80,6 +80,16 @@ services:
       retries: 20
     mem_limit: 768m
 
+  kafka-init:
+    image: apache/kafka:4.3.1
+    restart: "no"
+    entrypoint: ["bash", "/kafka-init/initialize-topics.sh"]
+    volumes:
+      - ./kafka:/kafka-init:ro
+    depends_on:
+      kafka:
+        condition: service_healthy
+
   planner-migration:
     <<: *planner-image
     restart: "no"
@@ -135,6 +145,50 @@ services:
       activity-migration:
         condition: service_completed_successfully
 
+  connect:
+    image: quay.io/debezium/connect:3.6.2.Final
+    restart: unless-stopped
+    environment:
+      BOOTSTRAP_SERVERS: kafka:19092
+      GROUP_ID: todorok-connect
+      CONFIG_STORAGE_TOPIC: todorok.connect.configs
+      OFFSET_STORAGE_TOPIC: todorok.connect.offsets
+      STATUS_STORAGE_TOPIC: todorok.connect.status
+      CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      KAFKA_HEAP_OPTS: -Xms512m -Xmx512m
+    ports:
+      - "127.0.0.1:8084:8083"
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      replication-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8083/connectors"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    mem_limit: 768m
+
+  connect-init:
+    build:
+      context: ./connect
+      dockerfile: Dockerfile
+    restart: "no"
+    environment:
+      CONNECT_URL: http://connect:8083
+      POSTGRES_DB: ${POSTGRES_DB}
+      DEBEZIUM_DB_PASSWORD: ${DEBEZIUM_DB_PASSWORD}
+    depends_on:
+      connect:
+        condition: service_healthy
+
   planner-service:
     <<: *planner-image
     restart: unless-stopped
@@ -153,6 +207,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       planner-migration:
         condition: service_completed_successfully
     healthcheck:
@@ -181,6 +237,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       activity-migration:
         condition: service_completed_successfully
     healthcheck:
@@ -209,6 +267,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       notification-migration:
         condition: service_completed_successfully
     healthcheck:

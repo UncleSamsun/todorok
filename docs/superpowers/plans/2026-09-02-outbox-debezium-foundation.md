@@ -524,7 +524,7 @@ git commit -m "feat(messaging): PostgreSQL replication 기반 추가"
 test('Connect와 topic 보존 정책이 고정된다', () => {
   const services = composeServices()
   assert.equal(services.connect.image, 'quay.io/debezium/connect:3.6.2.Final')
-  assert.equal(services.connect.mem_limit, 805306368)
+  assert.equal(services.connect.mem_limit, '805306368')
   assert.match(services.connect.environment.KAFKA_HEAP_OPTS, /-Xmx512m/)
   assert.equal(services['connect-init'].depends_on.connect.condition, 'service_healthy')
   assert.equal(services['kafka-init'].depends_on.kafka.condition, 'service_healthy')
