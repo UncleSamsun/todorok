@@ -19,3 +19,11 @@ create table processed_event (
 );
 
 create index processed_event_processed_at_idx on processed_event(processed_at);
+
+do $$
+begin
+    if exists (select 1 from pg_roles where rolname = 'debezium_app') then
+        execute 'grant select on outbox_event to debezium_app';
+    end if;
+end
+$$;

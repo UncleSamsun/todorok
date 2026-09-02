@@ -18,3 +18,7 @@ dependencies {
     testImplementation("org.postgresql:postgresql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+tasks.test {
+    systemProperty("todorok.repository.root", rootProject.projectDir.absolutePath)
+}
