@@ -652,7 +652,7 @@ class HibernateValidationFailureTest {
             new PostgreSQLContainer("postgres:17.11-alpine");
 
     @Test
-    void rejectsMissingSchema() {
+    void rejectsMissingMappedTable() {
         assertThatThrownBy(() -> new SpringApplicationBuilder(PlannerApplication.class)
                 .web(WebApplicationType.NONE)
                 .properties(Map.of(
@@ -661,12 +661,11 @@ class HibernateValidationFailureTest {
                         "spring.datasource.password", POSTGRES.getPassword(),
                         "spring.flyway.enabled", "true",
                         "spring.flyway.create-schemas", "true",
-                        "spring.flyway.locations", "classpath:db/migration,classpath:db/test-migration",
-                        "spring.jpa.properties.hibernate.default_schema", "missing_schema",
-                        "spring.jpa.hibernate.ddl-auto", "validate"))
+                        "spring.flyway.locations", "classpath:db/migration"))
                 .run())
                 .hasRootCauseInstanceOf(SchemaManagementException.class)
-                .hasStackTraceContaining("Schema-validation");
+                .hasStackTraceContaining(
+                        "Schema validation: missing table [planner.persistence_sample]");
     }
 }
 ```
@@ -691,7 +690,7 @@ context가 생성되면 실패해야 하므로 test를 변경하지 않고 `appl
 
 Run: `gradlew.bat :services:planner-service:test --tests '*HibernateValidationFailureTest' --no-daemon --no-configuration-cache`
 
-Expected: PASS, 존재하지 않는 Hibernate default schema가 context 시작을 거부한다.
+Expected: PASS, test entity가 요구하는 `persistence_sample` table 누락으로 context 시작을 거부한다.
 
 - [ ] **Step 5: 커밋**
 
