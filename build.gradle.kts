@@ -5,6 +5,7 @@ plugins {
 }
 
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+import java.io.File
 
 val contractsOutputRoot = providers.gradleProperty("contractsOutputRoot")
     .orElse(layout.projectDirectory.asFile.absolutePath)
@@ -16,13 +17,12 @@ fun registerContractTask(
     config: String,
     output: String,
 ) = tasks.register<GenerateTask>(taskName) {
-    notCompatibleWithConfigurationCache("계약 생성기는 구성 캐시 직렬화를 지원하지 않음")
     cleanupOutput.set(true)
     openapiGeneratorIgnoreList.set(listOf(".gitignore"))
     generatorName.set(generator)
     inputSpec.set(layout.projectDirectory.file(spec).asFile.absolutePath)
     configFile.set(layout.projectDirectory.file(config).asFile.absolutePath)
-    outputDir.set(layout.dir(contractsOutputRoot.map { root -> file("$root/$output") }))
+    outputDir.set(layout.dir(contractsOutputRoot.map { root -> File(root, output) }))
 }
 
 registerContractTask(

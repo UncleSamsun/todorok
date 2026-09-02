@@ -95,7 +95,7 @@ additionalProperties:
   openApiNullable: false
 ```
 
-planner 설정은 `apiPackage: io.todorok.planner.api`, `modelPackage: io.todorok.planner.api.model`, `sourceFolder: src/generated/java`를 사용한다. activity 설정은 `io.todorok.activity.api`, `io.todorok.activity.api.model`, 같은 source folder를 사용한다.
+planner 설정은 `apiPackage: io.todorok.planner.api`, `modelPackage: io.todorok.planner.api.model`, `sourceFolder: java`를 사용하고 출력 루트는 `services/planner-service/src/generated`로 고정한다. activity 설정은 `io.todorok.activity.api`, `io.todorok.activity.api.model`, 같은 source folder와 `services/activity-service/src/generated` 출력 루트를 사용한다. 각 출력 루트는 생성 전에 정리하고 생성기의 `.gitignore`는 제외해 삭제된 모델과 환경별 파일이 남지 않게 한다.
 
 TypeScript 설정은 다음을 공통으로 사용한다.
 
