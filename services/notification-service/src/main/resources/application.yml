@@ -1,6 +1,22 @@
 spring:
   application:
     name: notification-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/todorok?currentSchema=notification}
+    username: ${SPRING_DATASOURCE_USERNAME:notification_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:replace-with-notification-password}
+  flyway:
+    enabled: false
+    default-schema: notification
+    schemas: notification
+    create-schemas: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: notification
 
 server:
   port: 8083
@@ -14,4 +30,3 @@ management:
     health:
       probes:
         enabled: true
-

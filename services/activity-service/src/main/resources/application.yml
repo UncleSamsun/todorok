@@ -1,6 +1,22 @@
 spring:
   application:
     name: activity-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/todorok?currentSchema=activity}
+    username: ${SPRING_DATASOURCE_USERNAME:activity_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:replace-with-activity-password}
+  flyway:
+    enabled: false
+    default-schema: activity
+    schemas: activity
+    create-schemas: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: activity
 
 server:
   port: 8082
@@ -14,4 +30,3 @@ management:
     health:
       probes:
         enabled: true
-

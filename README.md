@@ -35,3 +35,11 @@ GitHub: https://github.com/UncleSamsun/todorok
 - `pnpm contracts:generate`로 Spring API interface·DTO와 TypeScript Fetch client를 생성합니다.
 - `pnpm contracts:check`로 저장소의 생성물이 원본과 일치하는지 검사합니다.
 - `services/*/src/generated`와 `packages/api-client/src/generated` 파일은 직접 수정하지 않습니다.
+
+## PostgreSQL migration
+
+- 각 서비스는 자기 `src/main/resources/db/migration`과 PostgreSQL schema만 소유합니다.
+- 일반 서비스는 Flyway를 실행하지 않고 Hibernate schema를 검증합니다.
+- 같은 서비스 image의 `/app/migration.jar`가 migration을 먼저 완료한 뒤 `/app/app.jar`가 시작됩니다.
+- 로컬 전체 환경은 `docker compose --env-file .env -f infra/docker/compose.yml up --build`로 실행합니다.
+- 기동 순서는 `postgres → migration 3개 → application 3개 → nginx`입니다.

@@ -1,0 +1,9 @@
+spring:
+  main:
+    web-application-type: none
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    default-schema: notification
+    schemas: notification
+    create-schemas: false
