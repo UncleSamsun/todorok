@@ -1,5 +1,23 @@
 name: todorok
 
+x-planner-image: &planner-image
+  image: todorok/planner-service:local
+  build:
+    context: ../..
+    dockerfile: services/planner-service/Dockerfile
+
+x-activity-image: &activity-image
+  image: todorok/activity-service:local
+  build:
+    context: ../..
+    dockerfile: services/activity-service/Dockerfile
+
+x-notification-image: &notification-image
+  image: todorok/notification-service:local
+  build:
+    context: ../..
+    dockerfile: services/notification-service/Dockerfile
+
 services:
   postgres:
     image: postgres:17.11-alpine
@@ -51,13 +69,51 @@ services:
       retries: 20
     mem_limit: 768m
 
+  planner-migration:
+    <<: *planner-image
+    restart: "no"
+    entrypoint: ["java", "-jar", "/app/migration.jar", "--spring.profiles.active=migration"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=planner
+      SPRING_DATASOURCE_USERNAME: planner_app
+      SPRING_DATASOURCE_PASSWORD: ${PLANNER_DB_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  activity-migration:
+    <<: *activity-image
+    restart: "no"
+    entrypoint: ["java", "-jar", "/app/migration.jar", "--spring.profiles.active=migration"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=activity
+      SPRING_DATASOURCE_USERNAME: activity_app
+      SPRING_DATASOURCE_PASSWORD: ${ACTIVITY_DB_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notification-migration:
+    <<: *notification-image
+    restart: "no"
+    entrypoint: ["java", "-jar", "/app/migration.jar", "--spring.profiles.active=migration"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=notification
+      SPRING_DATASOURCE_USERNAME: notification_app
+      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   planner-service:
-    build:
-      context: ../..
-      dockerfile: services/planner-service/Dockerfile
+    <<: *planner-image
     restart: unless-stopped
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=planner
+      SPRING_DATASOURCE_USERNAME: planner_app
+      SPRING_DATASOURCE_PASSWORD: ${PLANNER_DB_PASSWORD}
+      SPRING_FLYWAY_ENABLED: "false"
       JAVA_TOOL_OPTIONS: >-
         -XX:InitialRAMPercentage=20
         -XX:MaxRAMPercentage=60
@@ -67,6 +123,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      planner-migration:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/actuator/health"]
       interval: 10s
@@ -76,12 +134,14 @@ services:
     mem_limit: 512m
 
   activity-service:
-    build:
-      context: ../..
-      dockerfile: services/activity-service/Dockerfile
+    <<: *activity-image
     restart: unless-stopped
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=activity
+      SPRING_DATASOURCE_USERNAME: activity_app
+      SPRING_DATASOURCE_PASSWORD: ${ACTIVITY_DB_PASSWORD}
+      SPRING_FLYWAY_ENABLED: "false"
       JAVA_TOOL_OPTIONS: >-
         -XX:InitialRAMPercentage=20
         -XX:MaxRAMPercentage=60
@@ -91,6 +151,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      activity-migration:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8082/actuator/health"]
       interval: 10s
@@ -100,12 +162,14 @@ services:
     mem_limit: 640m
 
   notification-service:
-    build:
-      context: ../..
-      dockerfile: services/notification-service/Dockerfile
+    <<: *notification-image
     restart: unless-stopped
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=notification
+      SPRING_DATASOURCE_USERNAME: notification_app
+      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      SPRING_FLYWAY_ENABLED: "false"
       JAVA_TOOL_OPTIONS: >-
         -XX:InitialRAMPercentage=20
         -XX:MaxRAMPercentage=60
@@ -115,6 +179,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      notification-migration:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8083/actuator/health"]
       interval: 10s
