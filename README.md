@@ -19,7 +19,7 @@ GitHub: https://github.com/UncleSamsun/todorok
 - Persistence: Spring Data JPA·Flyway
 - 이벤트 전달: Kafka Connect·Debezium outbox와 consumer inbox
 - 배포: AWS Lightsail 4GB + Docker Compose + Nginx
-- 상태: PRD 1.4.0, 디자인 시스템 1.2.6과 전체 MVP 구현 계획 승인 완료
+- 상태: PRD 1.4.0, 디자인 시스템 1.2.7과 전체 MVP 구현 계획 승인 완료
 
 ## 개발 원칙
 
