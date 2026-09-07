@@ -106,21 +106,21 @@ class ActivityPersistenceIntegrationTest {
         createAt(seoulOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
             "2024-02-01T00:00:00+09:00", studyDetail(1));
         createAt(seoulOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
-            "2024-01-31T23:59:59+09:00", studyDetail(1));
+            "2024-01-31T23:59:59+09:00", studyDetail(2));
         createAt(seoulOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
-            "2024-02-29T23:59:59+09:00", studyDetail(1));
+            "2024-02-29T23:59:59+09:00", studyDetail(4));
         createAt(seoulOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
-            "2024-03-01T00:00:00+09:00", studyDetail(1));
+            "2024-03-01T00:00:00+09:00", studyDetail(8));
 
         UUID utcOwner = UUID.randomUUID();
         createAt(utcOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
             "2024-01-31T15:00:00Z", studyDetail(1));
         createAt(utcOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
-            "2024-01-31T14:59:59Z", studyDetail(1));
+            "2024-01-31T14:59:59Z", studyDetail(2));
         createAt(utcOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
-            "2024-02-29T14:59:59Z", studyDetail(1));
+            "2024-02-29T14:59:59Z", studyDetail(4));
         createAt(utcOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
-            "2024-02-29T15:00:00Z", studyDetail(1));
+            "2024-02-29T15:00:00Z", studyDetail(8));
 
         var seoulSummary = activities.monthlySummary(
             seoulOwner, YearMonth.of(2024, 2), ActivityType.STUDY);
@@ -128,9 +128,13 @@ class ActivityPersistenceIntegrationTest {
             utcOwner, YearMonth.of(2024, 2), ActivityType.STUDY);
 
         assertThat(seoulSummary.getCompletedCount()).isEqualTo(2);
-        assertThat(seoulSummary.getDurationSeconds()).isEqualTo(120L);
+        assertThat(seoulSummary.getDurationSeconds()).isEqualTo(300L);
         assertThat(utcSummary.getCompletedCount()).isEqualTo(2);
-        assertThat(utcSummary.getDurationSeconds()).isEqualTo(120L);
+        assertThat(utcSummary.getDurationSeconds()).isEqualTo(300L);
+
+        // Mutation control: UTC calendar bounds still count two rows but select 4+8 minutes.
+        assertThat(studyDurationBetweenUtcBounds(seoulOwner)).isEqualTo(720L);
+        assertThat(studyDurationBetweenUtcBounds(utcOwner)).isEqualTo(720L);
     }
 
     @Test
@@ -226,7 +230,19 @@ class ActivityPersistenceIntegrationTest {
         activities.correct(owner, original.getActivityId(), new CorrectActivityRequest(
             0L, OffsetDateTime.parse("2024-02-16T10:00:00+09:00"), studyDetail(3))
             .note("summary read-only fixture"));
+        UUID orphanTask = UUID.randomUUID();
+        jdbc.update(
+            "insert into task_reference(task_id,user_id,task_type,scheduled_date,status,version) values (?,?,?,?,?,?)",
+            orphanTask, owner, ActivityType.STUDY.name(),
+            java.time.LocalDate.parse("2024-02-20"), "PLANNED", 0L);
         var before = ownerState(owner);
+        assertThat(before.get("task_reference")).hasSize(2);
+
+        // Detector control is kept separate from the normal read-only calls below.
+        jdbc.update("update task_reference set status='SKIPPED',version=1 where task_id=?", orphanTask);
+        assertThat(ownerState(owner)).isNotEqualTo(before);
+        jdbc.update("update task_reference set status='PLANNED',version=0 where task_id=?", orphanTask);
+        assertThat(ownerState(owner)).isEqualTo(before);
 
         var first = activities.monthlySummary(
             owner, YearMonth.of(2024, 2), ActivityType.STUDY);
@@ -365,14 +381,25 @@ class ActivityPersistenceIntegrationTest {
             new ClimbingDetail().durationSeconds(durationSeconds));
     }
 
+    private long studyDurationBetweenUtcBounds(UUID owner) {
+        return jdbc.queryForObject("""
+            select coalesce(sum(d.duration_minutes::bigint * 60), 0)::bigint
+            from activity_record a join study_detail d on d.activity_id=a.id
+            where a.user_id=? and a.activity_type='STUDY' and a.status='COMPLETED'
+              and a.performed_at>=? and a.performed_at<?
+            """,
+            Long.class,
+            owner,
+            OffsetDateTime.parse("2024-02-01T00:00:00Z"),
+            OffsetDateTime.parse("2024-03-01T00:00:00Z"));
+    }
+
     private Map<String, List<String>> ownerState(UUID owner) {
         var state = new LinkedHashMap<String, List<String>>();
         state.put("activity_record", jsonRows(
             "select a.* from activity_record a where a.user_id=? order by a.id", owner));
         state.put("task_reference", jsonRows("""
-            select t.* from task_reference t
-            where exists (select 1 from activity_record a where a.task_id=t.task_id and a.user_id=?)
-            order by t.task_id
+            select t.* from task_reference t where t.user_id=? order by t.task_id
             """, owner));
         state.put("workout_detail", jsonRows("""
             select d.* from workout_detail d join activity_record a on a.id=d.activity_id
