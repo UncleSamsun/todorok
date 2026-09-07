@@ -85,7 +85,7 @@ planner에는 `task`와 `task_series`의 nullable bindingId/templateId/selectedT
 | POST `/api/activity/v1/templates/{templateId}/versions` | commandId, expectedRevision, name, fields | 201 새 version과 새 revision. archived는 409 |
 | POST `/api/activity/v1/templates/{templateId}/archive` | commandId, expectedRevision | 200 보관 상태. 이미 처리된 동일 command는 같은 결과 |
 | GET `/api/activity/v1/tasks/{taskId}/record-template` | 없음 | owner TaskReference·binding 검증 후 templateId, current templateVersion, archived, 이름, fields. template 없는 기존 Task는 link 없음. projection 미도착은 409 TASK_NOT_READY |
-| POST `/internal/activity/v1/template-selections` | requestId, ownerId, targetType, targetId, taskType, templateId, expectedTemplateVersion | 201 불변 binding·선택 당시 version·서버 표시 metadata. 내부 서비스 전용 |
+| POST `/api/activity/v1/internal/template-selections` | requestId, ownerId, targetType, targetId, taskType, templateId, expectedTemplateVersion | 201 불변 binding·선택 당시 version·서버 표시 metadata. 내부 서비스 전용이며 공개 프록시에서 차단 |
 
 TemplateResponse는 `templateId, domain, kind, archived, revision, currentVersion`을 포함하며 currentVersion은 `templateVersion, name, fields`를 가진다. 관리 command마다 owner·commandId unique와 요청 fingerprint를 저장한다. 같은 command/동일 요청은 최초 응답, 다른 요청은 409 COMMAND_REUSE다. 낙관적 실패에는 새 commandId와 최신 expectedRevision으로 사용자가 검토한 변경을 다시 제출한다. 서버가 사용자의 충돌 초안을 덮어쓰지 않는다.
 
@@ -191,6 +191,8 @@ ActivityService의 단일 SQL header/detail snapshot 조회에 template snapshot
 관계형 template/version/field identity·definition, 관리 OpenAPI와 생성물, 관리 command 멱등, owner·revision·archive·형식·단위·순서·본문 검증, 조회 API를 구현한다. 승인 binding이나 Task 이벤트를 먼저 임시 구현하지 않는다. 실제 DB/HTTP로 불변성·경쟁·소유권·생성 drift를 확인한 후 기반 단계만 완료 판정한다. 실행 인계는 `docs/plans/task-09-template-foundation-brief.md`다.
 
 ### 단계 B — 일정·기록·서비스 연결
+
+실행은 B1(선택 승인·서비스 인증·일정/이벤트/projection)과 B2(기록 값·snapshot·legacy 이행)로 나눈다. B1의 정확한 기존 context-path 대응과 검증 인계는 `docs/plans/task-09-template-binding-brief.md`를 따른다. B1만으로 단계 B 완료를 판정하지 않는다.
 
 내부 선택 승인 계약·서비스 인증·binding·planner 생성 command, Task/series 저장 및 응답, 이벤트 v2와 projection, Activity 생성/수정 검증·snapshot·관계형 자유 값, legacy 이행·일관된 조회·시간 집계를 연결한다. 원본 계약부터 작업하되 배포 순서와 v1 소비 호환을 확인한다. 실제 DB·HTTP·이벤트 왕복 및 장애·경쟁 행렬을 통과해야 한다. 이 단계는 새 서비스 연동과 상태 전이를 포함하므로 기반 관리와 별도 설계 검토·구현 gate로 수행한다.
 

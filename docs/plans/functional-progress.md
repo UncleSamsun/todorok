@@ -54,6 +54,17 @@
 - 08 DB라운드1 `dd544ea`:focused2/2실제PG·XML2/0/0/0부모확인. 잘못된UTC집계720초와정상서울300초구별,owner전체reference/orphan상태변경탐지보강. scoped재리뷰착수했으며결과전전체08완료보류.
 - 08 최종완료:서버correction/snapshot/Kafka검증과UI `e88b885` 중요재리뷰통과,DB `dd544ea` 두검증재리뷰통과를합쳐판정. 실제과거저장/수정/void·월요약·완료상세·등록갱신·모바일검증증거는각보고서에있다. PWA배포전환은14필수항목으로유지. 09는승인된템플릿요구의계약/버전/일정연결세부설계부터착수한다. 10–16미완료.
 - 09 설계 `d2422ba`: PRD12.3·상세설계·09A 기반 인계를 확정했다. 정의 관리→서비스 연결→UI 세 gate로 분리하고 09A 구현을 착수했다. 전체09는 미완료다.
+- 09A 첫 RED: 원본 관리 계약·생성 타입과 실제 HTTP 테스트를 추가했다. POST templates의 기대 201 대비 실제 404로 미구현을 확인한 뒤 migration/service/controller 구현 중이다. 기존 테스트 entity 검증 간섭은 별도 fixture 설정에서 분리했으며 성공 증거로 계산하지 않는다.
+- 09A 첫 GREEN: 실제 PostgreSQL migration·JWT HTTP 생성/조회 1/1 통과, 부모 XML1/0/0/0 확인. 다섯 형식·TIME 기본초·version1/revision0·Task/outbox 미생성·동일 GET 범위만 증명했다. strict body·rollback·owner/pagination/archive/경쟁·DB 불변성·최종 gate는 남아 있다.
+- 09A 중간검증:73582 실제PG/JWT HTTP7시나리오 통과, 부모XML7/0/0/0확인. strict본문/rollback/owner·목록·보관·경쟁·불변성 포함. 대량필드/동시command재전달·최종activity suite·생성drift/build 및프록시413증거를남은gate로확인한다.
+- 09A 추가검증:67085 보강3/3·부모XML3/0/0/0확인(512필드·동일command경합·record/history/command불변). 프록시exact1MiB는502간접증거대신실제stub의200/수신1048576bytes로검증하도록보강중이며초과chunked413도유지한다.
+- 09A 프록시:83445 static+실제Nginx4/4통과보고. exact1MiB=200/수신1048576bytes,chunked+1=공통413JSON확인. TS왕복optional unit의undefined기대값조정후계약/drift·activity전체suite·package build를최종gate로진행중이다.
+- 09A 최종gate중간:95960 activity전체28/28(템플릿8포함),부모7개XML합계28/0/0/0확인. 계약56075 6/6·drift22185일치·client5/build통과보고. 마지막TIME단위null DB제약강화후해당focused회귀와assemble/report/commit이남아있다.
+- 09A 구현 `314d0d8`: 마지막TIME제약focused2/2(부모XML확인)·assemble통과후담당실행이사용량제한으로중단됐다. 부모가stage범위/공백검사를확인하고trailingwhitespace1곳정리후코드61파일을커밋해보존했다. 중요리뷰는생성소스포함분할diff로요청했으며완료판정은보류한다.
+- 09A 리뷰:Important1건(fields필수누락이generated빈배열기본값으로처리돼새정의를비움)을확인했다. `task-09-template-foundation-review.md` 기준으로누락/null거부·명시[]허용·HTTP실패후상태불변을수정라운드1로전달했다. 다른중요결함은없으며전체09A완료는보류한다.
+- 09A 리뷰반증:제품무수정실제HTTP13/13(부모XML확인)에서누락/null/비배열은이미거절됐다. 실제누락응답은VALIDATION_FAILED/fields NOT_NULL,주입mapper결과도fields=null로확인했다. 초기[]소스만으로판단한Important는오탐이므로제품수정없이정확한회귀assert와증거로재판정한다.
+- 09A 반증회귀 `9fe9fe6`:최종15/15(부모XML15/0/0/0)·assemble통과. 제품변경없는test/report2파일을커밋하고scoped재판정요청했다. 기존Important는누락필드400의정확한오류/mapper/DB불변증거로평가하며최종판정전완료보류.
+- 09A 완료:독립재리뷰가fields지적을오탐으로철회하고요구·품질승인. 원래28/28·proxy4/계약6/drift/client검증과최종15회귀/assemble증거를합쳐기반관리만완료판정한다. 전체09는B1선택/일정연결→B2기록/legacy→C UI가남는다. B1은실제context경로·서비스인증/외부차단을명시한별도brief로진행한다.
 - 09 Ruling: Task/series identity는 유지하고 새 기록 최초 저장 시 현재 정의 버전을 고정한다 — PRD의 이후 기록 적용과 과거 수정 보존을 함께 지키기 위함 — 다르게 요구되면 버전 선택 UI와 계약 재작업이 필요하다.
 - 09 Ruling: 보관은 신규 선택만 막고 기존 승인된 일정·반복은 계속 사용한다 — 일정 자체의 보관과 템플릿 보관을 분리하기 위함 — 잘못 해석했다면 반복 중단 정책과 사용자 안내를 수정해야 한다.
 - 09 Ruling: 서비스 선택 승인의 잔존은 허용하되 대상·소유자·command에 고정한다 — 분산 원자성을 가장하지 않고 실패 재시도를 보존하기 위함 — 향후 안전한 정리 정책을 따로 마련해야 한다.

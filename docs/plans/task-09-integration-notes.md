@@ -26,3 +26,9 @@
 카테고리 생성·필드 정렬 → 일정 추가 → 실제 입력만 기록 → 템플릿 새 버전 → 과거 기록의 원래 이름·형식·단위 유지 → 원본 version에 따른 기록 수정 → archive 후 신규 선택 차단.
 
 서버 계약/저장 경계를 먼저 검증하고, 그 인터페이스가 확정되면 세 도메인 UI와 위 실제 브라우저 흐름을 연결한다. 작업08의 열린 검증이 끝나기 전 작업09 구현을 병렬 착수하지 않는다.
+
+## 09B 실행 경로 확인
+
+현재 `services/activity-service/src/main/resources/application.yml`의 servlet context-path는 `/api/activity/v1`이며 기존 controller는 상대 경로를 구현한다. 상세설계의 내부 경로 `/internal/activity/v1/template-selections`를 그대로 controller에 붙이면 예상한 URL이 되지 않는다.
+
+09B에서는 공개 API 경로를 바꾸지 않고 내부 경로를 같은 context의 `/internal/template-selections`로 두는 안을 우선 검토한다. 실제 URL은 `/api/activity/v1/internal/template-selections`다. Nginx의 일반 Activity proxy보다 먼저 이 내부 경로를 외부에서 차단하고, 앱에서도 별도 서비스 인증 chain으로 검증해야 한다. 사용자 JWT와 서비스 JWT의 decoder·audience·scope·principal 처리를 혼용하지 않는다. 최종 계약·설계 문구와 실제 HTTP/Nginx 경로 검증을 함께 갱신한 뒤 구현한다.
