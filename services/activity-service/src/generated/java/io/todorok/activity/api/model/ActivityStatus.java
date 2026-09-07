@@ -53,4 +53,3 @@ public enum ActivityStatus {
     throw new IllegalArgumentException("Unexpected value '" + value + "'");
   }
 }
-

@@ -63,7 +63,7 @@
 - `pnpm test:packages`: 네 패키지 TypeScript 검사와 api-client runtime5 tests 통과.
 - `pnpm contracts:check`: 생성 계약과 원본 일치.
 - `pnpm build:web`: production/PWA 빌드 통과. 초기 JS gzip94.31KB, 나머지 네 도메인은 lazy chunk다.
-- stage 전 `git diff --check`는 기존 추적 파일에 대해 통과했다. stage 뒤 검사에서는 새로 추가된 생성 파일 16개에서 `new blank line at EOF` 경고가 나왔다. 이는 생성기의 현재 canonical 출력이며 `contracts:check`는 통과한다. 생성 파일을 수작업 수정하거나 whitespace 검사 설정을 완화하지 않았다. 기능 검증과 별개인 남은 정리 사항으로 기록한다.
+- 최초 stage 전 `git diff --check`는 기존 추적 파일에 대해 통과했다. stage 뒤 검사에서는 새 생성 파일 16개에서 `new blank line at EOF` 경고가 나왔다. 아래 생성기 정규화 후속 수정으로 해결했다.
 
 ## 실제 브라우저
 
@@ -84,6 +84,14 @@
 Nginx 로그에서 series POST201·GET200·PATCH200·archive200, skip200, rollover200을 확인했다. `.local/task05/390-light.png`, `390-dark.png`, `1440-light.png`, `1440-dark.png`가 화면 증거다. 390-light와 1440-dark 파일을 직접 열어 모바일 세로 배치·데스크톱 두 열·완료/미완료 표시와 잘림 여부를 확인했다.
 
 브라우저 시계는 바꾸지 않았다. 서버의 서울 자정 경계는 별도의 실제 HTTP 고정 Clock 테스트로 검증했다. 검증 전용 Compose 컨테이너·network·volume은 harness finally에서 제거했고 임시 RSA PEM 두 파일도 삭제했다. 테스트 이미지·harness·PNG는 로컬 `.local/task05`에 남기며 Git에는 넣지 않았다.
+
+## 생성기 EOF 정규화 후속 수정
+
+- root `build.gradle.kts`의 공통 GenerateTask 후처리가 기존 행 끝 수평 공백 제거 뒤 마지막 CR/LF를 단일 LF로 정규화한다. 네 현재 생성 text tree에 공통으로 적용하며 생성 파일을 직접 편집하지 않았다. 본문 코드나 계약 의미는 바꾸지 않는다.
+- 회귀 테스트는 임시 출력 루트에 실제 네 생성기를 실행한 뒤 모든 파일의 마지막 LF와 중복 CR/LF 부재를 검사한다. 기존 stale 파일 제거와 네 출력 루트 검사도 유지한다.
+- RED: `node --test scripts/contracts-generation.test.mjs` — 1개 실패. 생성 `.openapi-generator/FILES`의 마지막 CRLF가 단일 LF 조건을 위반했다.
+- GREEN: `gradlew.bat generateContracts` 직접 실행 성공 → `node --test scripts/contracts-generation.test.mjs` 1/1 통과 → `pnpm contracts:check` 일치. 스크립트가 동일 Gradle task를 호출한 결과와 직접 생성 결과가 같음을 확인했다.
+- stage 후 `git diff --cached --check`로 EOF 경고 해소를 확인했다. 반복 구현과 백엔드 동작은 바꾸지 않아 해당 테스트·브라우저를 반복하지 않았다.
 
 ## 범위
 

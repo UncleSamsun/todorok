@@ -80,4 +80,3 @@ export function DayDetailResponseToJSONTyped(value?: DayDetailResponse | null, i
         'tasks': ((value['tasks'] as Array<any>).map(TaskResponseToJSON)),
     };
 }
-

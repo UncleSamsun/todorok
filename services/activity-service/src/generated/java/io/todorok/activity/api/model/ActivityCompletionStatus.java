@@ -51,4 +51,3 @@ public enum ActivityCompletionStatus {
     throw new IllegalArgumentException("Unexpected value '" + value + "'");
   }
 }
-

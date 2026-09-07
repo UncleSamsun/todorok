@@ -72,4 +72,3 @@ export function LoginRequestToJSONTyped(value?: LoginRequest | null, ignoreDiscr
         'password': value['password'],
     };
 }
-

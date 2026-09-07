@@ -81,4 +81,3 @@ export function UpdateTaskRequestToJSONTyped(value?: UpdateTaskRequest | null, i
         'version': value['version'],
     };
 }
-

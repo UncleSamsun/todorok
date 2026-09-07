@@ -39,6 +39,8 @@ test('네 계약 생성기가 결정된 출력 루트를 만든다', async () =>
     for (const file of await filesUnder(path.join(outputRoot, generatedRoot))) {
       const content = await readFile(file, 'utf8')
       assert.doesNotMatch(content, /[ \t]+$/m, `${file}에 행 끝 공백이 있습니다.`)
+      assert.ok(content.endsWith('\n'), `${file}의 마지막 줄은 LF로 끝나야 합니다.`)
+      assert.doesNotMatch(content, /[\r\n]\n$/, `${file}의 EOF에는 LF 한 개만 있어야 합니다.`)
     }
   }
 })

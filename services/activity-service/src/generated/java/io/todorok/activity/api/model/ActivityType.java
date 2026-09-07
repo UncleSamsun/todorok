@@ -53,4 +53,3 @@ public enum ActivityType {
     throw new IllegalArgumentException("Unexpected value '" + value + "'");
   }
 }
-

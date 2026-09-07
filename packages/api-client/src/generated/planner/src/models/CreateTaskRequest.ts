@@ -91,4 +91,3 @@ export function CreateTaskRequestToJSONTyped(value?: CreateTaskRequest | null, i
         'scheduledDate': value['scheduledDate'],
     };
 }
-

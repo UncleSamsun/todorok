@@ -326,4 +326,3 @@ public class SeriesResponse {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
-

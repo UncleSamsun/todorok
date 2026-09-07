@@ -91,4 +91,3 @@ export function CategoryProgressToJSONTyped(value?: CategoryProgress | null, ign
         'completedCount': value['completedCount'],
     };
 }
-

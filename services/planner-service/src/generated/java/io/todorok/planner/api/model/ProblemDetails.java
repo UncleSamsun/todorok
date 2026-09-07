@@ -307,4 +307,3 @@ public class ProblemDetails {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
-

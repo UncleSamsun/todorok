@@ -140,4 +140,3 @@ export function ProblemDetailsToJSONTyped(value?: ProblemDetails | null, ignoreD
         'fieldErrors': value['fieldErrors'] == null ? undefined : ((value['fieldErrors'] as Array<any>).map(ProblemDetailsFieldErrorsInnerToJSON)),
     };
 }
-

@@ -152,4 +152,3 @@ example().catch(console.error);
 | **404** | 대상을 찾을 수 없음 |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-

@@ -102,4 +102,3 @@ export function RecurrenceRuleToJSONTyped(value?: RecurrenceRule | null, ignoreD
         'monthDay': value['monthDay'],
     };
 }
-

@@ -81,4 +81,3 @@ export function ProblemDetailsFieldErrorsInnerToJSONTyped(value?: ProblemDetails
         'message': value['message'],
     };
 }
-

@@ -81,4 +81,3 @@ export function SessionResponseToJSONTyped(value?: SessionResponse | null, ignor
         'userId': value['userId'],
     };
 }
-

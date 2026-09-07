@@ -152,4 +152,3 @@ export function ActivityResponseToJSONTyped(value?: ActivityResponse | null, ign
         'version': value['version'],
     };
 }
-

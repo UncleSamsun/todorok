@@ -63,4 +63,3 @@ export function VersionCommandToJSONTyped(value?: VersionCommand | null, ignoreD
         'version': value['version'],
     };
 }
-

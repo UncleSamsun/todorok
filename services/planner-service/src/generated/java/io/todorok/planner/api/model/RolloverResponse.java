@@ -116,4 +116,3 @@ public class RolloverResponse {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
-

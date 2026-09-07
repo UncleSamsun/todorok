@@ -128,4 +128,3 @@ public class ActivityPageResponse {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
-

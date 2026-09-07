@@ -30,6 +30,7 @@ fun registerContractTask(
                 val content = file.readText(Charsets.UTF_8)
                 val normalized = Regex("[ \\t]+(?=\\r?$)", RegexOption.MULTILINE)
                     .replace(content, "")
+                    .trimEnd('\r', '\n') + "\n"
                 if (normalized != content) {
                     file.writeText(normalized, Charsets.UTF_8)
                 }

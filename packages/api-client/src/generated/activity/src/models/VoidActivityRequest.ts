@@ -72,4 +72,3 @@ export function VoidActivityRequestToJSONTyped(value?: VoidActivityRequest | nul
         'version': value['version'],
     };
 }
-

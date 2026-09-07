@@ -52,4 +52,3 @@ export function TaskTypeToJSON(value?: TaskType | null): any {
 export function TaskTypeToJSONTyped(value: any, ignoreDiscriminator: boolean): TaskType {
     return value as TaskType;
 }
-

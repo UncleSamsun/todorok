@@ -89,4 +89,3 @@ export function CalendarSummaryResponseToJSONTyped(value?: CalendarSummaryRespon
         'days': ((value['days'] as Array<any>).map(CalendarDaySummaryToJSON)),
     };
 }
-

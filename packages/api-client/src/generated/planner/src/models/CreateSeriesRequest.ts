@@ -123,4 +123,3 @@ export function CreateSeriesRequestToJSONTyped(value?: CreateSeriesRequest | nul
         'rule': RecurrenceRuleToJSON(value['rule']),
     };
 }
-

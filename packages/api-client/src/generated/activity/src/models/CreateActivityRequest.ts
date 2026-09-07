@@ -125,4 +125,3 @@ export function CreateActivityRequestToJSONTyped(value?: CreateActivityRequest |
         'detail': value['detail'],
     };
 }
-

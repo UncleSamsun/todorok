@@ -79,4 +79,3 @@ export function ActivityPageResponseToJSONTyped(value?: ActivityPageResponse | n
         'nextCursor': value['nextCursor'],
     };
 }
-

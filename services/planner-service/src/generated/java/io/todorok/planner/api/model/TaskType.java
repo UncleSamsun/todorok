@@ -55,4 +55,3 @@ public enum TaskType {
     throw new IllegalArgumentException("Unexpected value '" + value + "'");
   }
 }
-

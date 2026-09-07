@@ -50,4 +50,3 @@ export function ActivityCompletionStatusToJSON(value?: ActivityCompletionStatus 
 export function ActivityCompletionStatusToJSONTyped(value: any, ignoreDiscriminator: boolean): ActivityCompletionStatus {
     return value as ActivityCompletionStatus;
 }
-

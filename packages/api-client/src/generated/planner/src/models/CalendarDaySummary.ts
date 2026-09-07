@@ -98,4 +98,3 @@ export function CalendarDaySummaryToJSONTyped(value?: CalendarDaySummary | null,
         'categoryProgress': ((value['categoryProgress'] as Array<any>).map(CategoryProgressToJSON)),
     };
 }
-

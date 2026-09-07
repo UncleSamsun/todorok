@@ -72,4 +72,3 @@ export function RolloverResponseToJSONTyped(value?: RolloverResponse | null, ign
         'movedCount': value['movedCount'],
     };
 }
-

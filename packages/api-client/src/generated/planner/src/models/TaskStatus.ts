@@ -52,4 +52,3 @@ export function TaskStatusToJSON(value?: TaskStatus | null): any {
 export function TaskStatusToJSONTyped(value: any, ignoreDiscriminator: boolean): TaskStatus {
     return value as TaskStatus;
 }
-

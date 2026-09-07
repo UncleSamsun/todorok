@@ -158,4 +158,3 @@ export function TaskResponseToJSONTyped(value?: TaskResponse | null, ignoreDiscr
         'version': value['version'],
     };
 }
-

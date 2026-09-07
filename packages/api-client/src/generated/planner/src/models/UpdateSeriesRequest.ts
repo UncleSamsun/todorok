@@ -105,4 +105,3 @@ export function UpdateSeriesRequestToJSONTyped(value?: UpdateSeriesRequest | nul
         'version': value['version'],
     };
 }
-

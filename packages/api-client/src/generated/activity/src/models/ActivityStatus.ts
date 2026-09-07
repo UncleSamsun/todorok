@@ -51,4 +51,3 @@ export function ActivityStatusToJSON(value?: ActivityStatus | null): any {
 export function ActivityStatusToJSONTyped(value: any, ignoreDiscriminator: boolean): ActivityStatus {
     return value as ActivityStatus;
 }
-

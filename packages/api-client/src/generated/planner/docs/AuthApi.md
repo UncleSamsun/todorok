@@ -206,4 +206,3 @@ No authorization required
 | **429** | 인증 요청 제한 초과 |  * Retry-After - 재시도 전에 기다릴 초 <br>  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-

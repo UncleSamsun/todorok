@@ -159,4 +159,3 @@ export function SeriesResponseToJSONTyped(value?: SeriesResponse | null, ignoreD
         'version': value['version'],
     };
 }
-

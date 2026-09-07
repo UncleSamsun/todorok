@@ -142,4 +142,3 @@ public class CreateTaskRequest {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
-
