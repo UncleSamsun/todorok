@@ -45,6 +45,24 @@ export interface TaskResponse {
      * @type {string}
      * @memberof TaskResponse
      */
+    seriesId?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof TaskResponse
+     */
+    occurrenceDate?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof TaskResponse
+     */
+    note?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof TaskResponse
+     */
     userId: string;
     /**
      *
@@ -105,6 +123,9 @@ export function TaskResponseFromJSONTyped(json: any, ignoreDiscriminator: boolea
     return {
 
         'taskId': json['taskId'],
+        'seriesId': json['seriesId'] == null ? undefined : json['seriesId'],
+        'occurrenceDate': json['occurrenceDate'] == null ? undefined : json['occurrenceDate'],
+        'note': json['note'] == null ? undefined : json['note'],
         'userId': json['userId'],
         'title': json['title'],
         'taskType': TaskTypeFromJSON(json['taskType']),
@@ -126,6 +147,9 @@ export function TaskResponseToJSONTyped(value?: TaskResponse | null, ignoreDiscr
     return {
 
         'taskId': value['taskId'],
+        'seriesId': value['seriesId'],
+        'occurrenceDate': value['occurrenceDate'],
+        'note': value['note'],
         'userId': value['userId'],
         'title': value['title'],
         'taskType': TaskTypeToJSON(value['taskType']),

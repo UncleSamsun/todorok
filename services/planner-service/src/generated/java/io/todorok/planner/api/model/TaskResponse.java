@@ -2,9 +2,12 @@ package io.todorok.planner.api.model;
 
 import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.Nulls;
 import io.todorok.planner.api.model.TaskStatus;
 import io.todorok.planner.api.model.TaskType;
 import java.time.LocalDate;
@@ -27,6 +30,16 @@ import jakarta.annotation.Generated;
 public class TaskResponse {
 
   private UUID taskId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable UUID seriesId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+  private @Nullable LocalDate occurrenceDate;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String note;
 
   private UUID userId;
 
@@ -76,6 +89,69 @@ public class TaskResponse {
   @JsonProperty("taskId")
   public void setTaskId(UUID taskId) {
     this.taskId = taskId;
+  }
+
+  public TaskResponse seriesId(@Nullable UUID seriesId) {
+    this.seriesId = seriesId;
+    return this;
+  }
+
+  /**
+   * Get seriesId
+   * @return seriesId
+   */
+  @Valid
+  @JsonProperty("seriesId")
+  public @Nullable UUID getSeriesId() {
+    return seriesId;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("seriesId")
+  public void setSeriesId(@Nullable UUID seriesId) {
+    this.seriesId = seriesId;
+  }
+
+  public TaskResponse occurrenceDate(@Nullable LocalDate occurrenceDate) {
+    this.occurrenceDate = occurrenceDate;
+    return this;
+  }
+
+  /**
+   * Get occurrenceDate
+   * @return occurrenceDate
+   */
+  @Valid
+  @JsonProperty("occurrenceDate")
+  public @Nullable LocalDate getOccurrenceDate() {
+    return occurrenceDate;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("occurrenceDate")
+  public void setOccurrenceDate(@Nullable LocalDate occurrenceDate) {
+    this.occurrenceDate = occurrenceDate;
+  }
+
+  public TaskResponse note(@Nullable String note) {
+    this.note = note;
+    return this;
+  }
+
+  /**
+   * Get note
+   * @return note
+   */
+
+  @JsonProperty("note")
+  public @Nullable String getNote() {
+    return note;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("note")
+  public void setNote(@Nullable String note) {
+    this.note = note;
   }
 
   public TaskResponse userId(UUID userId) {
@@ -209,6 +285,9 @@ public class TaskResponse {
     }
     TaskResponse taskResponse = (TaskResponse) o;
     return Objects.equals(this.taskId, taskResponse.taskId) &&
+        Objects.equals(this.seriesId, taskResponse.seriesId) &&
+        Objects.equals(this.occurrenceDate, taskResponse.occurrenceDate) &&
+        Objects.equals(this.note, taskResponse.note) &&
         Objects.equals(this.userId, taskResponse.userId) &&
         Objects.equals(this.title, taskResponse.title) &&
         Objects.equals(this.taskType, taskResponse.taskType) &&
@@ -219,7 +298,7 @@ public class TaskResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(taskId, userId, title, taskType, scheduledDate, status, version);
+    return Objects.hash(taskId, seriesId, occurrenceDate, note, userId, title, taskType, scheduledDate, status, version);
   }
 
   @Override
@@ -227,6 +306,9 @@ public class TaskResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class TaskResponse {\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
+    sb.append("    seriesId: ").append(toIndentedString(seriesId)).append("\n");
+    sb.append("    occurrenceDate: ").append(toIndentedString(occurrenceDate)).append("\n");
+    sb.append("    note: ").append(toIndentedString(note)).append("\n");
     sb.append("    userId: ").append(toIndentedString(userId)).append("\n");
     sb.append("    title: ").append(toIndentedString(title)).append("\n");
     sb.append("    taskType: ").append(toIndentedString(taskType)).append("\n");

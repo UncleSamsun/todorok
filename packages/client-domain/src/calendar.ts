@@ -25,6 +25,9 @@ export function weekDays(value: string) {
   const start = addDays(value, -date(value).getUTCDay())
   return Array.from({ length: 7 }, (_, i) => addDays(start, i))
 }
+export function isoWeekday(value: string) {
+  return date(value).getUTCDay() || 7
+}
 export function monthDays(value: string) {
   const first = `${value.slice(0, 7)}-01`,
     start = weekDays(first)[0]!

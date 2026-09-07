@@ -2,4 +2,5 @@
 /* eslint-disable */
 export * from './AuthApi';
 export * from './CalendarApi';
+export * from './SeriesApi';
 export * from './TaskApi';

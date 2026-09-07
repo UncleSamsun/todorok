@@ -24,6 +24,11 @@ import {
     ProblemDetailsToJSON,
 } from '../models/ProblemDetails';
 import {
+    type RolloverResponse,
+    RolloverResponseFromJSON,
+    RolloverResponseToJSON,
+} from '../models/RolloverResponse';
+import {
     type TaskResponse,
     TaskResponseFromJSON,
     TaskResponseToJSON,
@@ -58,6 +63,11 @@ export interface GetTaskRequest {
 }
 
 export interface ReopenTaskRequest {
+    taskId: string;
+    versionCommand: VersionCommand;
+}
+
+export interface SkipTaskRequest {
     taskId: string;
     versionCommand: VersionCommand;
 }
@@ -184,6 +194,48 @@ export interface TaskApiInterface {
     /**
      */
     reopenTask(requestParameters: ReopenTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TaskResponse>;
+
+    /**
+     * Creates request options for rolloverTasks without sending the request
+     * @throws {RequiredError}
+     * @memberof TaskApiInterface
+     */
+    rolloverTasksRequestOpts(): Promise<runtime.RequestOpts>;
+
+    /**
+     *
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TaskApiInterface
+     */
+    rolloverTasksRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<RolloverResponse>>;
+
+    /**
+     */
+    rolloverTasks(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<RolloverResponse>;
+
+    /**
+     * Creates request options for skipTask without sending the request
+     * @param {string} taskId
+     * @param {VersionCommand} versionCommand
+     * @throws {RequiredError}
+     * @memberof TaskApiInterface
+     */
+    skipTaskRequestOpts(requestParameters: SkipTaskRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     *
+     * @param {string} taskId
+     * @param {VersionCommand} versionCommand
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TaskApiInterface
+     */
+    skipTaskRaw(requestParameters: SkipTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TaskResponse>>;
+
+    /**
+     */
+    skipTask(requestParameters: SkipTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TaskResponse>;
 
     /**
      * Creates request options for updateTask without sending the request
@@ -499,6 +551,110 @@ export class TaskApi extends runtime.BaseAPI implements TaskApiInterface {
      */
     async reopenTask(requestParameters: ReopenTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TaskResponse> {
         const response = await this.reopenTaskRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for rolloverTasks without sending the request
+     */
+    async rolloverTasksRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/tasks/rollover`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async rolloverTasksRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<RolloverResponse>> {
+        const requestOptions = await this.rolloverTasksRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => RolloverResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async rolloverTasks(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<RolloverResponse> {
+        const response = await this.rolloverTasksRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for skipTask without sending the request
+     */
+    async skipTaskRequestOpts(requestParameters: SkipTaskRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['taskId'] == null) {
+            throw new runtime.RequiredError(
+                'taskId',
+                'Required parameter "taskId" was null or undefined when calling skipTask().'
+            );
+        }
+
+        if (requestParameters['versionCommand'] == null) {
+            throw new runtime.RequiredError(
+                'versionCommand',
+                'Required parameter "versionCommand" was null or undefined when calling skipTask().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/tasks/{taskId}/skip`;
+        urlPath = urlPath.replace('{taskId}', encodeURIComponent(String(requestParameters['taskId'])));
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: VersionCommandToJSON(requestParameters['versionCommand']),
+        };
+    }
+
+    /**
+     */
+    async skipTaskRaw(requestParameters: SkipTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TaskResponse>> {
+        const requestOptions = await this.skipTaskRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => TaskResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async skipTask(requestParameters: SkipTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TaskResponse> {
+        const response = await this.skipTaskRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

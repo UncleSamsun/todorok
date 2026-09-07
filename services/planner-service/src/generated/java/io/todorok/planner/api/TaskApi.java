@@ -7,6 +7,7 @@ package io.todorok.planner.api;
 
 import io.todorok.planner.api.model.CreateTaskRequest;
 import io.todorok.planner.api.model.ProblemDetails;
+import io.todorok.planner.api.model.RolloverResponse;
 import io.todorok.planner.api.model.TaskResponse;
 import java.util.UUID;
 import io.todorok.planner.api.model.UpdateTaskRequest;
@@ -124,6 +125,48 @@ public interface TaskApi {
         consumes = { "application/json" }
     )
     ResponseEntity<TaskResponse> reopenTask(
+         @PathVariable("taskId") UUID taskId,
+         @Valid @RequestBody VersionCommand versionCommand
+    );
+
+
+    String PATH_ROLLOVER_TASKS = "/tasks/rollover";
+    /**
+     * POST /tasks/rollover
+     *
+     * @return 반복 일정 처리 성공 (status code 200)
+     *         or 잘못된 요청 (status code 400)
+     *         or 대상을 찾을 수 없음 (status code 404)
+     *         or 버전 충돌 (status code 409)
+     */
+    @RequestMapping(
+        method = RequestMethod.POST,
+        value = TaskApi.PATH_ROLLOVER_TASKS,
+        produces = { "application/json", "application/problem+json" }
+    )
+    ResponseEntity<RolloverResponse> rolloverTasks(
+
+    );
+
+
+    String PATH_SKIP_TASK = "/tasks/{taskId}/skip";
+    /**
+     * POST /tasks/{taskId}/skip
+     *
+     * @param taskId  (required)
+     * @param versionCommand  (required)
+     * @return 반복 일정 처리 성공 (status code 200)
+     *         or 잘못된 요청 (status code 400)
+     *         or 대상을 찾을 수 없음 (status code 404)
+     *         or 버전 충돌 (status code 409)
+     */
+    @RequestMapping(
+        method = RequestMethod.POST,
+        value = TaskApi.PATH_SKIP_TASK,
+        produces = { "application/json", "application/problem+json" },
+        consumes = { "application/json" }
+    )
+    ResponseEntity<TaskResponse> skipTask(
          @PathVariable("taskId") UUID taskId,
          @Valid @RequestBody VersionCommand versionCommand
     );

@@ -2,6 +2,7 @@ package io.todorok.contracts;
 
 public enum EventType {
     TASK_SCHEDULED,
+    SERIES_CHANGED,
     TASK_CHANGED,
     TASK_ROLLED_OVER,
     ACTIVITY_COMPLETED,

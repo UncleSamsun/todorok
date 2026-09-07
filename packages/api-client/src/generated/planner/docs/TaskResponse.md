@@ -7,6 +7,9 @@
 Name | Type
 ------------ | -------------
 `taskId` | string
+`seriesId` | string
+`occurrenceDate` | string
+`note` | string
 `userId` | string
 `title` | string
 `taskType` | [TaskType](TaskType.md)
@@ -22,6 +25,9 @@ import type { TaskResponse } from '@todorok/api-client'
 // TODO: Update the object below with actual values
 const example = {
   "taskId": null,
+  "seriesId": null,
+  "occurrenceDate": null,
+  "note": null,
   "userId": null,
   "title": null,
   "taskType": null,

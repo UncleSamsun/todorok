@@ -77,6 +77,12 @@ class EventSchemaContractTest {
                 Arguments.of("task-scheduled", envelope(
                         EventType.TASK_SCHEDULED,
                         new TaskScheduled(taskId, "WORKOUT", LocalDate.parse("2026-09-02"), "PLANNED"))),
+                Arguments.of("task-changed", envelope(EventType.TASK_CHANGED,
+                        new TaskChanged(taskId,"WORKOUT",LocalDate.parse("2026-09-02"),"SKIPPED","SKIPPED"))),
+                Arguments.of("task-rolled-over", envelope(EventType.TASK_ROLLED_OVER,
+                        new TaskChanged(taskId,"WORKOUT",LocalDate.parse("2026-09-09"),"PLANNED","ROLLED_OVER"))),
+                Arguments.of("series-changed", envelope(EventType.SERIES_CHANGED,
+                        Map.of("seriesId",taskId,"command","ARCHIVED"))),
                 Arguments.of("task-changed", envelope(
                         EventType.TASK_CHANGED,
                         new TaskChanged(

@@ -32,6 +32,440 @@ import tools.jackson.databind.json.JsonMapper;
 )
 class TaskHttpIntegrationTest {
 
+    @org.springframework.boot.test.context.TestConfiguration
+    static class FixedTime {
+
+        @org.springframework.context.annotation.Bean
+        @org.springframework.context.annotation.Primary
+        java.time.Clock fixedClock() {
+            return java.time.Clock.fixed(
+                Instant.parse("2026-09-08T15:00:00Z"),
+                java.time.ZoneOffset.UTC
+            );
+        }
+    }
+
+    @Autowired
+    io.todorok.planner.series.SeriesService seriesService;
+
+    String series(UUID owner, String type, String start, String end, String rule) throws Exception {
+        var response = call(
+            owner,
+            "POST",
+            "/series",
+            "{\"title\":\"반복\",\"note\":\"유지할 메모\",\"taskType\":\"" +
+                type +
+                "\",\"startDate\":\"" +
+                start +
+                "\"," +
+                (end == null ? "" : "\"endDate\":\"" + end + "\",") +
+                "\"rule\":" +
+                rule +
+                "}"
+        );
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(201);
+        return body(response).get("seriesId").asText();
+    }
+
+    static final String DAILY =
+        "{\"frequency\":\"DAILY\",\"interval\":2,\"weekdays\":[],\"monthDay\":1}";
+    static final String MONDAY =
+        "{\"frequency\":\"WEEKLY\",\"interval\":1,\"weekdays\":[1],\"monthDay\":1}";
+
+    String active(String id) {
+        return jdbc.queryForObject(
+            "select id::text from planner.task where series_id=?::uuid and status='PLANNED'",
+            String.class,
+            id
+        );
+    }
+
+    int activeCount(String id) {
+        return jdbc.queryForObject(
+            "select count(*) from planner.task where series_id=?::uuid and status='PLANNED'",
+            Integer.class,
+            id
+        );
+    }
+
+    int events(UUID owner) {
+        return jdbc.queryForObject(
+            "select count(*) from planner.outbox_event where payload->>'userId'=?",
+            Integer.class,
+            owner.toString()
+        );
+    }
+
+    @Test
+    void mondayAnchorSurvivesRolloverSkipAndConflictingReopen() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String s = series(owner, "GENERAL", "2026-09-07", null, MONDAY),
+            first = active(s);
+        var initial = body(call(owner, "GET", "/tasks/" + first, null));
+        assertThat(initial.get("scheduledDate").asText()).isEqualTo("2026-09-09");
+        assertThat(initial.get("occurrenceDate").asText()).isEqualTo("2026-09-07");
+        assertThat(initial.get("note").asText()).isEqualTo("유지할 메모");
+        assertThat(
+            call(owner, "POST", "/tasks/" + first + "/complete", "{\"version\":0}").statusCode()
+        ).isEqualTo(200);
+        String second = active(s);
+        assertThat(
+            body(call(owner, "GET", "/tasks/" + second, null))
+                .get("scheduledDate")
+                .asText()
+        ).isEqualTo("2026-09-14");
+        int count = events(owner);
+        assertThat(
+            call(owner, "POST", "/tasks/" + first + "/reopen", "{\"version\":1}").statusCode()
+        ).isEqualTo(409);
+        assertThat(events(owner)).isEqualTo(count);
+        seriesService.advance(
+            owner,
+            UUID.fromString(s),
+            java.time.LocalDate.parse("2026-09-07"),
+            "COMPLETED"
+        );
+        assertThat(active(s)).isEqualTo(second);
+        assertThat(
+            call(owner, "POST", "/tasks/" + second + "/skip", "{\"version\":0}").statusCode()
+        ).isEqualTo(200);
+        assertThat(
+            body(call(owner, "GET", "/tasks/" + active(s), null))
+                .get("scheduledDate")
+                .asText()
+        ).isEqualTo("2026-09-21");
+        assertThat(
+            body(call(owner, "GET", "/tasks/" + second, null))
+                .get("status")
+                .asText()
+        ).isEqualTo("SKIPPED");
+        assertThat(activeCount(s)).isOne();
+    }
+
+    @Test
+    void rolloverIsOwnerScopedAndConcurrentIdempotentAndGetNeverMoves() throws Exception {
+        UUID owner = UUID.randomUUID(),
+            other = UUID.randomUUID();
+        List<String> ids = new ArrayList<>();
+        for (String status : List.of("PLANNED", "COMPLETED", "SKIPPED", "DELETED")) {
+            String id = UUID.randomUUID().toString();
+            ids.add(id);
+            jdbc.update(
+                "insert into planner.task(id,user_id,title,task_type,scheduled_date,status,version) values (?::uuid,?,'과거','GENERAL','2026-09-07',?,0)",
+                id,
+                owner,
+                status
+            );
+        }
+        assertThat(
+            body(call(owner, "GET", "/calendar/2026-09-07", null))
+                .get("tasks")
+                .size()
+        ).isEqualTo(3);
+        assertThat(call(other, "POST", "/tasks/rollover", null).statusCode()).isEqualTo(200);
+        assertThat(
+            body(call(owner, "GET", "/tasks/" + ids.get(0), null))
+                .get("scheduledDate")
+                .asText()
+        ).isEqualTo("2026-09-07");
+        try (var pool = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            var a = pool.submit(() -> call(owner, "POST", "/tasks/rollover", null));
+            var b = pool.submit(() -> call(owner, "POST", "/tasks/rollover", null));
+            var ra = a.get();
+            var rb = b.get();
+            assertThat(ra.statusCode()).as(ra.body()).isEqualTo(200);
+            assertThat(rb.statusCode()).as(rb.body()).isEqualTo(200);
+            assertThat(
+                body(ra).get("movedCount").asInt() + body(rb).get("movedCount").asInt()
+            ).isOne();
+        }
+        var moved = body(call(owner, "GET", "/tasks/" + ids.get(0), null));
+        assertThat(moved.get("taskId").asText()).isEqualTo(ids.get(0));
+        assertThat(moved.get("scheduledDate").asText()).isEqualTo("2026-09-09");
+        assertThat(
+            body(call(owner, "POST", "/tasks/rollover", null))
+                .get("movedCount")
+                .asInt()
+        ).isZero();
+        assertThat(
+            body(call(owner, "GET", "/calendar/2026-09-07", null))
+                .get("tasks")
+                .size()
+        ).isEqualTo(2);
+        assertThat(events(owner)).isOne();
+        assertThat(
+            jdbc.queryForObject(
+                "select payload->>'occurredAt' from planner.outbox_event where aggregateid=?",
+                String.class,
+                ids.get(0)
+            )
+        ).startsWith("2026-09-08T15:00:00");
+    }
+
+    @Test
+    void concurrentCompleteSkipAndReopenKeepOneActiveAndRollbackLoser() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String s = series(owner, "GENERAL", "2026-09-09", null, DAILY),
+            id = active(s);
+        try (var pool = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            var a = pool.submit(() ->
+                call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":0}")
+            );
+            var b = pool.submit(() ->
+                call(owner, "POST", "/tasks/" + id + "/skip", "{\"version\":0}")
+            );
+            assertThat(
+                List.of(a.get().statusCode(), b.get().statusCode())
+            ).containsExactlyInAnyOrder(200, 409);
+        }
+        assertThat(activeCount(s)).isOne();
+        assertThat(events(owner)).isEqualTo(4);
+        String next = active(s);
+        assertThat(
+            call(owner, "DELETE", "/tasks/" + next + "?version=0", null).statusCode()
+        ).isEqualTo(204);
+        try (var pool = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            var a = pool.submit(() ->
+                call(owner, "POST", "/tasks/" + id + "/reopen", "{\"version\":1}")
+            );
+            var b = pool.submit(() ->
+                call(owner, "POST", "/tasks/" + id + "/reopen", "{\"version\":1}")
+            );
+            assertThat(
+                List.of(a.get().statusCode(), b.get().statusCode())
+            ).containsExactlyInAnyOrder(200, 409);
+        }
+        assertThat(active(s)).isEqualTo(id);
+        assertThat(events(owner)).isEqualTo(6);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+            jdbc.update(
+                "insert into planner.task(id,user_id,title,task_type,scheduled_date,status,version,series_id,occurrence_date) values(gen_random_uuid(),?,'충돌','GENERAL','2026-09-09','PLANNED',0,?::uuid,'2026-09-09')",
+                owner,
+                s
+            )
+        ).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(activeCount(s)).isOne();
+    }
+
+    @Test
+    void archivedEndedPartialAndOneOffNeverCreateExtraOccurrences() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String s = series(owner, "WORKOUT", "2026-09-09", null, DAILY),
+            id = active(s);
+        assertThat(
+            call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":0}").statusCode()
+        ).isEqualTo(409);
+        assertThat(
+            call(owner, "POST", "/series/" + s + "/archive", "{\"version\":0}").statusCode()
+        ).isEqualTo(200);
+        assertThat(active(s)).isEqualTo(id);
+        assertThat(
+            call(owner, "POST", "/tasks/" + id + "/skip", "{\"version\":0}").statusCode()
+        ).isEqualTo(200);
+        assertThat(activeCount(s)).isZero();
+        assertThat(
+            call(owner, "POST", "/tasks/" + id + "/reopen", "{\"version\":1}").statusCode()
+        ).isEqualTo(200);
+        assertThat(active(s)).isEqualTo(id);
+        String ended = series(owner, "GENERAL", "2026-09-09", "2026-09-09", DAILY),
+            eid = active(ended);
+        assertThat(
+            call(owner, "POST", "/tasks/" + eid + "/complete", "{\"version\":0}").statusCode()
+        ).isEqualTo(200);
+        assertThat(activeCount(ended)).isZero();
+        seriesService.advance(
+            owner,
+            UUID.fromString(ended),
+            java.time.LocalDate.parse("2026-09-07"),
+            "PARTIAL"
+        );
+        assertThat(activeCount(ended)).isZero();
+        String one = body(
+            call(
+                owner,
+                "POST",
+                "/tasks",
+                "{\"title\":\"한 번\",\"taskType\":\"STUDY\",\"scheduledDate\":\"2026-09-07\"}"
+            )
+        )
+            .get("taskId")
+            .asText();
+        assertThat(
+            call(owner, "POST", "/tasks/" + one + "/skip", "{\"version\":0}").statusCode()
+        ).isEqualTo(200);
+        assertThat(
+            call(owner, "POST", "/tasks/" + one + "/reopen", "{\"version\":1}").statusCode()
+        ).isEqualTo(200);
+        assertThat(
+            body(call(owner, "GET", "/tasks/" + one, null))
+                .get("scheduledDate")
+                .asText()
+        ).isEqualTo("2026-09-09");
+    }
+
+    @Test
+    void failureWritingNextOccurrenceEventRollsBackEverything() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String s = series(owner, "GENERAL", "2026-09-09", null, DAILY),
+            id = active(s);
+        jdbc.execute(
+            "alter table planner.outbox_event add constraint reject_next_event check (not (payload->>'userId'='" +
+                owner +
+                "' and payload->>'type'='TASK_SCHEDULED')) not valid"
+        );
+        try {
+            assertThat(
+                call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":0}").statusCode()
+            ).isEqualTo(500);
+            assertThat(active(s)).isEqualTo(id);
+            assertThat(events(owner)).isEqualTo(2);
+            assertThat(
+                jdbc.queryForObject(
+                    "select count(*) from planner.task where series_id=?::uuid",
+                    Integer.class,
+                    s
+                )
+            ).isOne();
+            assertThat(
+                body(call(owner, "GET", "/tasks/" + id, null))
+                    .get("version")
+                    .asLong()
+            ).isZero();
+        } finally {
+            jdbc.execute("alter table planner.outbox_event drop constraint reject_next_event");
+        }
+    }
+
+    @Test
+    void seriesEditKeepsAnchorAndExistingTaskButChangesNextAndEnforcesOwnerVersion()
+        throws Exception {
+        UUID owner = UUID.randomUUID(),
+            other = UUID.randomUUID();
+        String s = series(owner, "GENERAL", "2026-09-07", null, MONDAY),
+            id = active(s);
+        String update =
+            "{\"title\":\"새 반복\",\"note\":\"새 메모\",\"rule\":" + DAILY + ",\"version\":0}";
+        assertThat(call(other, "GET", "/series/" + s, null).statusCode()).isEqualTo(404);
+        assertThat(call(other, "PATCH", "/series/" + s, update).statusCode()).isEqualTo(404);
+        assertThat(
+            call(other, "POST", "/series/" + s + "/archive", "{\"version\":0}").statusCode()
+        ).isEqualTo(404);
+        assertThat(call(owner, "PATCH", "/series/" + s, update).statusCode()).isEqualTo(200);
+        assertThat(call(owner, "PATCH", "/series/" + s, update).statusCode()).isEqualTo(409);
+        assertThat(
+            call(owner, "POST", "/series/" + s + "/archive", "{\"version\":0}").statusCode()
+        ).isEqualTo(409);
+        var original = body(call(owner, "GET", "/tasks/" + id, null));
+        assertThat(original.get("title").asText()).isEqualTo("반복");
+        assertThat(original.get("occurrenceDate").asText()).isEqualTo("2026-09-07");
+        assertThat(
+            call(
+                owner,
+                "PATCH",
+                "/tasks/" + id,
+                "{\"title\":\"반복\",\"scheduledDate\":\"2026-09-07\",\"version\":0}"
+            ).statusCode()
+        ).isEqualTo(200);
+        assertThat(
+            body(call(owner, "POST", "/tasks/rollover", null))
+                .get("movedCount")
+                .asInt()
+        ).isOne();
+        var rolled = body(call(owner, "GET", "/tasks/" + id, null));
+        assertThat(rolled.get("taskId").asText()).isEqualTo(id);
+        assertThat(rolled.get("occurrenceDate").asText()).isEqualTo("2026-09-07");
+        assertThat(rolled.get("scheduledDate").asText()).isEqualTo("2026-09-09");
+        assertThat(
+            call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":2}").statusCode()
+        ).isEqualTo(200);
+        var next = body(call(owner, "GET", "/tasks/" + active(s), null));
+        assertThat(next.get("title").asText()).isEqualTo("새 반복");
+        assertThat(next.get("note").asText()).isEqualTo("새 메모");
+        assertThat(next.get("occurrenceDate").asText()).isEqualTo("2026-09-09");
+        int n = events(owner);
+        assertThat(
+            call(
+                owner,
+                "PATCH",
+                "/series/" + s,
+                update.replace("\"version\":0", "\"version\":1")
+            ).statusCode()
+        ).isEqualTo(200);
+        assertThat(events(owner)).isEqualTo(n);
+    }
+
+    @Test
+    void invalidSeriesRulesDoNotWriteAnything() throws Exception {
+        UUID owner = UUID.randomUUID();
+        for (String rule : List.of(
+            DAILY.replace("\"interval\":2", "\"interval\":0"),
+            DAILY.replace("\"interval\":2", "\"interval\":366"),
+            MONDAY.replace("[1]", "[]"),
+            MONDAY.replace("[1]", "[8]"),
+            DAILY.replace("\"monthDay\":1", "\"monthDay\":32")
+        )) {
+            assertThat(
+                call(
+                    owner,
+                    "POST",
+                    "/series",
+                    "{\"title\":\"반복\",\"taskType\":\"GENERAL\",\"startDate\":\"2026-09-09\",\"rule\":" +
+                        rule +
+                        "}"
+                ).statusCode()
+            ).isEqualTo(400);
+        }
+        assertThat(
+            call(
+                owner,
+                "POST",
+                "/series",
+                "{\"title\":\"반복\",\"taskType\":\"GENERAL\",\"startDate\":\"2026-09-09\",\"endDate\":\"2026-09-08\",\"rule\":" +
+                    DAILY +
+                    "}"
+            ).statusCode()
+        ).isEqualTo(400);
+        assertThat(events(owner)).isZero();
+    }
+
+    @Test
+    void databaseUniqueCollisionReturns409AndRollsBackCompletedTaskAndEvents() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String s = series(owner, "GENERAL", "2026-09-09", null, DAILY),
+            id = active(s);
+        jdbc.execute(
+            """
+            create function planner.inject_active_test() returns trigger language plpgsql as $$
+            begin
+              if pg_trigger_depth()=1 and new.series_id='%s'::uuid then
+                insert into planner.task(id,user_id,title,task_type,scheduled_date,status,version,series_id,occurrence_date)
+                  values(gen_random_uuid(),new.user_id,'충돌',new.task_type,new.scheduled_date,'PLANNED',0,new.series_id,new.occurrence_date);
+              end if;
+              return new;
+            end $$
+            """.formatted(s)
+        );
+        jdbc.execute(
+            "create trigger inject_active_test before insert on planner.task for each row execute function planner.inject_active_test()"
+        );
+        try {
+            var response = call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":0}");
+            assertThat(response.statusCode()).as(response.body()).isEqualTo(409);
+            assertThat(active(s)).isEqualTo(id);
+            assertThat(events(owner)).isEqualTo(2);
+            assertThat(
+                jdbc.queryForObject(
+                    "select count(*) from planner.task where series_id=?::uuid",
+                    Integer.class,
+                    s
+                )
+            ).isOne();
+        } finally {
+            jdbc.execute("drop trigger inject_active_test on planner.task");
+            jdbc.execute("drop function planner.inject_active_test()");
+        }
+    }
+
     static final java.security.KeyPair KEYS = keys();
 
     static java.security.KeyPair keys() {
@@ -113,6 +547,21 @@ class TaskHttpIntegrationTest {
     }
 
     @Test
+    void recurringSeriesCreatesOnlyOneActiveOccurrence() throws Exception {
+        UUID owner = UUID.randomUUID();
+        var created = call(
+            owner,
+            "POST",
+            "/series",
+            """
+            {"title":"반복","taskType":"GENERAL","startDate":"2099-01-01",
+            "rule":{"frequency":"DAILY","interval":2,"weekdays":[],"monthDay":1}}
+            """
+        );
+        assertThat(created.statusCode()).as(created.body()).isEqualTo(201);
+    }
+
+    @Test
     void taskLifecycleEnforcesOwnerVersionAndAtomicOutbox() throws Exception {
         UUID owner = UUID.randomUUID(),
             other = UUID.randomUUID();
@@ -126,14 +575,29 @@ class TaskHttpIntegrationTest {
         String id = body(create).get("taskId").asText();
         assertThat(body(create).get("userId").asText()).isEqualTo(owner.toString());
         assertThat(call(other, "GET", "/tasks/" + id, null).statusCode()).isEqualTo(404);
-        assertThat(call(owner, "POST", "/tasks/" + id + "/reopen", "{\"version\":0}").statusCode()).isEqualTo(409);
-        assertThat(call(other, "POST", "/tasks/" + id + "/complete", "{\"version\":0}").statusCode()).isEqualTo(404);
-        assertThat(call(other, "DELETE", "/tasks/" + id + "?version=0", null).statusCode()).isEqualTo(404);
-        assertThat(call(other, "PATCH", "/tasks/" + id, "{\"title\":\"침범\",\"scheduledDate\":\"2026-12-31\",\"version\":0}").statusCode()).isEqualTo(404);
+        assertThat(
+            call(owner, "POST", "/tasks/" + id + "/reopen", "{\"version\":0}").statusCode()
+        ).isEqualTo(409);
+        assertThat(
+            call(other, "POST", "/tasks/" + id + "/complete", "{\"version\":0}").statusCode()
+        ).isEqualTo(404);
+        assertThat(
+            call(other, "DELETE", "/tasks/" + id + "?version=0", null).statusCode()
+        ).isEqualTo(404);
+        assertThat(
+            call(
+                other,
+                "PATCH",
+                "/tasks/" + id,
+                "{\"title\":\"침범\",\"scheduledDate\":\"2026-12-31\",\"version\":0}"
+            ).statusCode()
+        ).isEqualTo(404);
         assertThat(
             call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":0}").statusCode()
         ).isEqualTo(200);
-        assertThat(call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":1}").statusCode()).isEqualTo(409);
+        assertThat(
+            call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":1}").statusCode()
+        ).isEqualTo(409);
         assertThat(
             call(
                 owner,
@@ -157,8 +621,18 @@ class TaskHttpIntegrationTest {
             call(owner, "DELETE", "/tasks/" + id + "?version=3", null).statusCode()
         ).isEqualTo(204);
         assertThat(call(owner, "GET", "/tasks/" + id, null).statusCode()).isEqualTo(404);
-        assertThat(body(call(owner, "GET", "/calendar/2027-01-01", null)).get("tasks").size()).isZero();
-        assertThat(body(call(owner, "GET", "/calendar?from=2027-01-01&to=2027-01-01", null)).get("days").get(0).get("totalCount").asInt()).isZero();
+        assertThat(
+            body(call(owner, "GET", "/calendar/2027-01-01", null))
+                .get("tasks")
+                .size()
+        ).isZero();
+        assertThat(
+            body(call(owner, "GET", "/calendar?from=2027-01-01&to=2027-01-01", null))
+                .get("days")
+                .get(0)
+                .get("totalCount")
+                .asInt()
+        ).isZero();
         assertThat(
             jdbc.queryForObject(
                 "select count(*) from planner.outbox_event where aggregateid=?",
@@ -212,8 +686,17 @@ class TaskHttpIntegrationTest {
             call(owner, "GET", "/calendar?from=2026-09-01&to=2026-10-13", null).statusCode()
         ).isEqualTo(400);
         assertThat(call(owner, "GET", "/calendar/2026-02-30", null).statusCode()).isEqualTo(400);
-        assertThat(call(owner,"POST","/tasks","{\"title\":\"날짜 오류\",\"taskType\":\"GENERAL\",\"scheduledDate\":\"2026-02-30\"}").statusCode()).isEqualTo(400);
-        assertThat(call(owner,"GET","/calendar?from=2026-09-08&to=2026-09-07",null).statusCode()).isEqualTo(400);
+        assertThat(
+            call(
+                owner,
+                "POST",
+                "/tasks",
+                "{\"title\":\"날짜 오류\",\"taskType\":\"GENERAL\",\"scheduledDate\":\"2026-02-30\"}"
+            ).statusCode()
+        ).isEqualTo(400);
+        assertThat(
+            call(owner, "GET", "/calendar?from=2026-09-08&to=2026-09-07", null).statusCode()
+        ).isEqualTo(400);
         var days = body(call(owner, "GET", "/calendar?from=2026-09-07&to=2026-09-08", null)).get(
             "days"
         );

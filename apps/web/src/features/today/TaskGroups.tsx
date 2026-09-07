@@ -36,12 +36,16 @@ export function TaskGroups({
               <div className="task-row" key={task.taskId}>
                 <button
                   className="task-check"
-                  aria-label={`${task.title} ${task.taskType === 'GENERAL' ? (task.status === 'COMPLETED' ? '완료 취소' : '완료') : '기록'}`}
+                  aria-label={`${task.title} ${task.status === 'SKIPPED' ? '건너뜀 취소' : task.taskType === 'GENERAL' ? (task.status === 'COMPLETED' ? '완료 취소' : '완료') : '기록'}`}
                   aria-pressed={task.status === 'COMPLETED'}
                   disabled={busy}
                   onClick={() => check(task)}
                 >
-                  {task.status === 'COMPLETED' ? '✓' : '○'}
+                  {task.status === 'COMPLETED'
+                    ? '✓'
+                    : task.status === 'SKIPPED'
+                      ? '↷'
+                      : '○'}
                 </button>
                 <button
                   className={`task-title ${task.status === 'COMPLETED' ? 'done' : ''}`}
@@ -49,6 +53,8 @@ export function TaskGroups({
                   aria-label={`${task.title} 수정`}
                 >
                   {task.title}
+                  {task.seriesId && <small> · 반복</small>}
+                  {task.status === 'SKIPPED' && <small> · 건너뜀</small>}
                 </button>
               </div>
             ))}

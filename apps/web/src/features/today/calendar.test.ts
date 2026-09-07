@@ -6,10 +6,13 @@ import {
   weekDays,
   weekOfMonth,
   seoulToday,
+  isoWeekday,
 } from '@todorok/client-domain'
 describe('calendar civil dates', () => {
   it('crosses leap years and year boundaries without local timezone shifts', () => {
     expect(addDays('2024-02-28', 1)).toBe('2024-02-29')
+    expect(isoWeekday('2026-09-06')).toBe(7)
+    expect(isoWeekday('2026-09-07')).toBe(1)
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01')
     expect(addMonths('2024-01-31', 1)).toBe('2024-02-29')
     expect(addMonths('2026-12-31', 1)).toBe('2027-01-31')

@@ -20,9 +20,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskController implements TaskApi, CalendarApi {
 
     private final TaskService tasks;
+    private final RolloverService rollover;
 
-    public TaskController(TaskService tasks) {
+    public TaskController(TaskService tasks, RolloverService rollover) {
         this.tasks = tasks;
+        this.rollover = rollover;
+    }
+
+    @Override
+    public ResponseEntity<TaskResponse> skipTask(UUID id, VersionCommand body) {
+        return ResponseEntity.ok(tasks.state(owner(), id, body.getVersion(), "SKIPPED"));
+    }
+
+    @Override
+    public ResponseEntity<io.todorok.planner.api.model.RolloverResponse> rolloverTasks() {
+        return ResponseEntity.ok(rollover.rollover(owner()));
     }
 
     private UUID owner() {

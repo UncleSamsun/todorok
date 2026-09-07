@@ -189,11 +189,121 @@ paths:
               schema: { $ref: '#/components/schemas/TaskResponse' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+  /series:
+    post:
+      tags: [Series]
+      operationId: createSeries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSeriesRequest' }
+      responses:
+        '201':
+          description: 반복 일정 처리 성공
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SeriesResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /series/{seriesId}:
+    get:
+      tags: [Series]
+      operationId: getSeries
+      parameters:
+        - { $ref: '#/components/parameters/SeriesIdPath' }
+      responses:
+        '200':
+          description: 반복 일정 처리 성공
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SeriesResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    patch:
+      tags: [Series]
+      operationId: updateSeries
+      parameters:
+        - { $ref: '#/components/parameters/SeriesIdPath' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateSeriesRequest' }
+      responses:
+        '200':
+          description: 반복 일정 처리 성공
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SeriesResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /series/{seriesId}/archive:
+    post:
+      tags: [Series]
+      operationId: archiveSeries
+      parameters:
+        - { $ref: '#/components/parameters/SeriesIdPath' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VersionCommand' }
+      responses:
+        '200':
+          description: 반복 일정 처리 성공
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SeriesResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /tasks/rollover:
+    post:
+      tags: [Task]
+      operationId: rolloverTasks
+      responses:
+        '200':
+          description: 반복 일정 처리 성공
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RolloverResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /tasks/{taskId}/skip:
+    post:
+      tags: [Task]
+      operationId: skipTask
+      parameters:
+        - { $ref: '#/components/parameters/TaskIdPath' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VersionCommand' }
+      responses:
+        '200':
+          description: 반복 일정 처리 성공
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaskResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
 components:
   securitySchemes:
     BearerAuth:
       $ref: './common-v1.yaml#/components/securitySchemes/BearerAuth'
   parameters:
+    SeriesIdPath:
+      name: seriesId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     FromDate:
       name: from
       in: query
@@ -267,6 +377,62 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/ProblemDetails' }
   schemas:
+    RecurrenceRule:
+      type: object
+      additionalProperties: false
+      required: [frequency, interval, weekdays, monthDay]
+      properties:
+        frequency: { type: string, enum: [DAILY, WEEKLY, MONTHLY] }
+        interval: { type: integer, minimum: 1, maximum: 365 }
+        weekdays:
+          type: array
+          uniqueItems: true
+          maxItems: 7
+          items: { type: integer, minimum: 1, maximum: 7 }
+        monthDay: { type: integer, minimum: 1, maximum: 31 }
+    CreateSeriesRequest:
+      type: object
+      additionalProperties: false
+      required: [title, taskType, startDate, rule]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        taskType: { $ref: '#/components/schemas/TaskType' }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        note: { type: string, maxLength: 20000 }
+        rule: { $ref: '#/components/schemas/RecurrenceRule' }
+    UpdateSeriesRequest:
+      type: object
+      additionalProperties: false
+      required: [title, rule, version]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        endDate: { type: string, format: date }
+        note: { type: string, maxLength: 20000 }
+        rule: { $ref: '#/components/schemas/RecurrenceRule' }
+        version: { type: integer, format: int64, minimum: 0 }
+    SeriesResponse:
+      type: object
+      additionalProperties: false
+      required: [seriesId, userId, title, taskType, startDate, rule, archived, version]
+      properties:
+        seriesId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        title: { type: string }
+        taskType: { $ref: '#/components/schemas/TaskType' }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        note: { type: string }
+        rule: { $ref: '#/components/schemas/RecurrenceRule' }
+        archived: { type: boolean }
+        version: { type: integer, format: int64, minimum: 0 }
+    RolloverResponse:
+      type: object
+      additionalProperties: false
+      required: [today, movedCount]
+      properties:
+        today: { type: string, format: date }
+        movedCount: { type: integer, minimum: 0 }
     ProblemDetails:
       $ref: './common-v1.yaml#/components/schemas/ProblemDetails'
     LoginRequest:
@@ -296,6 +462,9 @@ components:
       required: [taskId, userId, title, taskType, scheduledDate, status, version]
       properties:
         taskId: { type: string, format: uuid }
+        seriesId: { type: string, format: uuid }
+        occurrenceDate: { type: string, format: date }
+        note: { type: string }
         userId: { type: string, format: uuid }
         title: { type: string }
         taskType: { $ref: '#/components/schemas/TaskType' }

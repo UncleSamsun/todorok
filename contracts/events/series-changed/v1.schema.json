@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://todorok.app/schemas/events/series-changed/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "type",
+    "version",
+    "aggregateVersion",
+    "occurredAt",
+    "userId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "const": "SERIES_CHANGED"
+    },
+    "version": {
+      "const": 1
+    },
+    "aggregateVersion": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seriesId",
+        "command"
+      ],
+      "properties": {
+        "seriesId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "command": {
+          "enum": [
+            "CREATED",
+            "UPDATED",
+            "ARCHIVED"
+          ]
+        }
+      }
+    }
+  }
+}

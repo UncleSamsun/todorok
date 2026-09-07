@@ -1,10 +1,5 @@
 package io.todorok.planner.task;
 
-import io.todorok.contracts.EventEnvelope;
-import io.todorok.contracts.EventType;
-import io.todorok.contracts.events.TaskChanged;
-import io.todorok.contracts.events.TaskScheduled;
-import io.todorok.messaging.OutboxEventWriter;
 import io.todorok.planner.api.model.CalendarDaySummary;
 import io.todorok.planner.api.model.CalendarSummaryResponse;
 import io.todorok.planner.api.model.CategoryProgress;
@@ -15,7 +10,6 @@ import io.todorok.planner.api.model.TaskStatus;
 import io.todorok.planner.api.model.TaskType;
 import io.todorok.planner.api.model.UpdateTaskRequest;
 import io.todorok.web.ApiFailure;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -29,19 +23,37 @@ import org.springframework.transaction.annotation.Transactional;
 public class TaskService {
 
     private final TaskRepository tasks;
-    private final OutboxEventWriter outbox;
+    private final TaskEvents events;
+    private final io.todorok.planner.series.SeriesRepository series;
+    private final io.todorok.planner.series.SeriesService recurrence;
+    private final java.time.Clock clock;
+    private final TaskTransitionPolicy transitions;
 
-    public TaskService(TaskRepository tasks, OutboxEventWriter outbox) {
+    public TaskService(
+        TaskRepository tasks,
+        TaskEvents events,
+        io.todorok.planner.series.SeriesRepository series,
+        io.todorok.planner.series.SeriesService recurrence,
+        java.time.Clock clock,
+        TaskTransitionPolicy transitions
+    ) {
         this.tasks = tasks;
-        this.outbox = outbox;
+        this.events = events;
+        this.series = series;
+        this.recurrence = recurrence;
+        this.clock = clock;
+        this.transitions = transitions;
     }
 
     public TaskResponse detail(UUID owner, UUID id) {
-        return tasks.detail(owner, id).orElseThrow(TaskService::missing);
+        return tasks.detail(owner, id).orElseThrow(TaskService::missing).response();
     }
 
     public DayDetailResponse day(UUID owner, LocalDate date) {
-        return new DayDetailResponse(date, tasks.day(owner, date));
+        return new DayDetailResponse(
+            date,
+            tasks.day(owner, date).stream().map(TaskView::response).toList()
+        );
     }
 
     public CalendarSummaryResponse range(UUID owner, LocalDate from, LocalDate to) {
@@ -107,30 +119,32 @@ public class TaskService {
     @Transactional
     public TaskResponse state(UUID owner, UUID id, long version, String command) {
         Task task = owned(owner, id, version);
-        if (!command.equals("DELETED") && task.taskType != TaskType.GENERAL) throw conflict(
-            "ACTIVITY_REQUIRED",
-            "Change this task through its activity record."
+        task.status = transitions.next(
+            task.taskType,
+            task.status,
+            command,
+            task.seriesId != null && tasks.hasActive(task.seriesId)
         );
-        if (command.equals("COMPLETED")) {
-            if (task.status != TaskStatus.PLANNED) throw conflict(
-                "INVALID_STATE",
-                "Only planned tasks can be completed."
-            );
-            task.status = TaskStatus.COMPLETED;
-        } else if (command.equals("REOPENED")) {
-            if (
-                task.status != TaskStatus.COMPLETED && task.status != TaskStatus.SKIPPED
-            ) throw conflict("INVALID_STATE", "Only completed or skipped tasks can be reopened.");
-            task.status = TaskStatus.PLANNED;
-        } else if (command.equals("DELETED")) task.status = TaskStatus.DELETED;
-        else throw new IllegalArgumentException("Unknown task command: " + command);
+        if (command.equals("REOPENED")) {
+            LocalDate today = LocalDate.now(clock.withZone(java.time.ZoneId.of("Asia/Seoul")));
+            if (task.scheduledDate.isBefore(today)) task.scheduledDate = today;
+        }
         tasks.flush();
         publish(task, command);
+        if (task.seriesId != null) recurrence.advance(
+            owner,
+            task.seriesId,
+            task.occurrenceDate,
+            command
+        );
         return task.response();
     }
 
     private Task owned(UUID owner, UUID id, long version) {
-        var task = tasks.owned(owner, id).orElseThrow(TaskService::missing);
+        tasks
+            .seriesId(owner, id)
+            .ifPresent(seriesId -> series.lock(owner, seriesId).orElseThrow(TaskService::missing));
+        var task = tasks.lock(owner, id).orElseThrow(TaskService::missing);
         if (task.version != version) throw conflict(
             "VERSION_CONFLICT",
             "Reload the task before changing it."
@@ -165,33 +179,6 @@ public class TaskService {
     }
 
     private void publish(Task task, String command) {
-        boolean created = command.equals("CREATED");
-        Object payload = created
-            ? new TaskScheduled(
-                  task.id,
-                  task.taskType.name(),
-                  task.scheduledDate,
-                  task.status.name()
-              )
-            : new TaskChanged(
-                  task.id,
-                  task.taskType.name(),
-                  task.scheduledDate,
-                  task.status.name(),
-                  command
-              );
-        outbox.append(
-            "task",
-            task.id.toString(),
-            new EventEnvelope<>(
-                UUID.randomUUID(),
-                created ? EventType.TASK_SCHEDULED : EventType.TASK_CHANGED,
-                1,
-                task.version,
-                Instant.now(),
-                task.userId,
-                payload
-            )
-        );
+        events.publish(task, command);
     }
 }

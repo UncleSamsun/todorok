@@ -6,6 +6,8 @@ export function TaskEditor({
   error,
   save,
   remove,
+  skip,
+  reopen,
   cancel,
 }: {
   task: Task
@@ -13,6 +15,8 @@ export function TaskEditor({
   error: string
   save: (title: string, date: string) => void
   remove: () => void
+  skip: () => void
+  reopen: () => void
   cancel: () => void
 }) {
   const [title, setTitle] = useState(task.title),
@@ -48,6 +52,17 @@ export function TaskEditor({
         <button type="button" disabled={busy} onClick={remove}>
           삭제
         </button>
+        {task.status === 'PLANNED' && (
+          <button type="button" disabled={busy} onClick={skip}>
+            건너뜀
+          </button>
+        )}
+        {(task.status === 'SKIPPED' ||
+          (task.status === 'COMPLETED' && task.taskType === 'GENERAL')) && (
+          <button type="button" disabled={busy} onClick={reopen}>
+            다시 할 일로
+          </button>
+        )}
         <button type="button" disabled={busy} onClick={cancel}>
           닫기
         </button>

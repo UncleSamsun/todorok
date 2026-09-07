@@ -23,6 +23,14 @@ public class Task {
     @Column(name = "user_id", nullable = false)
     UUID userId;
 
+    @Column(name = "series_id")
+    UUID seriesId;
+
+    @Column(name = "occurrence_date")
+    LocalDate occurrenceDate;
+
+    String note;
+
     @Column(nullable = false, length = 120)
     String title;
 
@@ -53,6 +61,25 @@ public class Task {
     }
 
     TaskResponse response() {
-        return new TaskResponse(id, userId, title, taskType, scheduledDate, status, version);
+        return new TaskResponse(id, userId, title, taskType, scheduledDate, status, version)
+            .seriesId(seriesId)
+            .occurrenceDate(occurrenceDate)
+            .note(note);
+    }
+
+    public static Task occurrence(
+        UUID owner,
+        UUID series,
+        String title,
+        TaskType type,
+        String note,
+        LocalDate occurrence,
+        LocalDate scheduled
+    ) {
+        var task = new Task(owner, title, type, scheduled);
+        task.seriesId = series;
+        task.occurrenceDate = occurrence;
+        task.note = note;
+        return task;
     }
 }

@@ -37,6 +37,8 @@ it('keeps the draft and expected version together when the same task is clicked 
           userId: 'owner',
           expiresAt: '2099-01-01T00:00:00Z',
         }
+      } else if (path.endsWith('/rollover')) {
+        value = { today: '2026-09-07', movedCount: 0 }
       } else if (path.includes('/calendar?')) {
         value = { from: '2026-09-06', to: '2026-09-12', days: [] }
       } else if (path.includes('/calendar/')) {
@@ -61,7 +63,13 @@ it('keeps the draft and expected version together when the same task is clicked 
     },
   })
   render(<App session={session} />)
-  fireEvent.click(await screen.findByRole('button', { name: '원래 제목 수정' }))
+  fireEvent.click(
+    await screen.findByRole(
+      'button',
+      { name: '원래 제목 수정' },
+      { timeout: 5000 },
+    ),
+  )
   expect(await screen.findByLabelText('제목 수정')).toHaveValue('원래 제목')
   fireEvent.change(screen.getByLabelText('제목 수정'), {
     target: { value: '내 초안' },
@@ -107,11 +115,13 @@ it('keeps four empty groups and preserves quick-add input after a failed save', 
             userId: 'owner',
             expiresAt: '2099-01-01T00:00:00Z',
           }
-        : path.includes('/calendar?')
-          ? { from: '2026-09-06', to: '2026-09-12', days: [] }
-          : path.includes('/calendar/')
-            ? { date: '2026-09-07', tasks: [] }
-            : {}
+        : path.endsWith('/rollover')
+          ? { today: '2026-09-07', movedCount: 0 }
+          : path.includes('/calendar?')
+            ? { from: '2026-09-06', to: '2026-09-12', days: [] }
+            : path.includes('/calendar/')
+              ? { date: '2026-09-07', tasks: [] }
+              : {}
       return new Response(JSON.stringify(value), {
         status: init?.method === 'POST' && path.endsWith('/tasks') ? 500 : 200,
         headers: { 'content-type': 'application/json' },

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://todorok.app/schemas/events/task-rolled-over/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "type",
+    "version",
+    "aggregateVersion",
+    "occurredAt",
+    "userId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "const": "TASK_ROLLED_OVER"
+    },
+    "version": {
+      "const": 1
+    },
+    "aggregateVersion": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskId",
+        "taskType",
+        "scheduledDate",
+        "status",
+        "changeType"
+      ],
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "taskType": {
+          "enum": [
+            "GENERAL",
+            "WORKOUT",
+            "STUDY",
+            "CLIMBING"
+          ]
+        },
+        "scheduledDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "const": "PLANNED"
+        },
+        "changeType": {
+          "const": "ROLLED_OVER"
+        }
+      }
+    }
+  }
+}

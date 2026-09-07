@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
 import { planner } from '@todorok/api-client'
@@ -15,6 +15,7 @@ import { MonthCalendar } from './MonthCalendar'
 import { QuickAdd } from './QuickAdd'
 import { TaskGroups } from './TaskGroups'
 import { TaskEditor } from './TaskEditor'
+import { SeriesEditor } from './SeriesEditor'
 import type { Task } from './model'
 const apiDate = (value: string) => value
 export function TodayPage() {
@@ -29,6 +30,7 @@ export function TodayPage() {
     return {
       tasks: new planner.TaskApi(config),
       calendar: new planner.CalendarApi(config),
+      series: new planner.SeriesApi(config),
     }
   }, [session])
   const [selected, setSelected] = useState(seoulToday),
@@ -43,13 +45,52 @@ export function TodayPage() {
     })
   const [adding, setAdding] = useState<planner.TaskType | null>(null),
     [editing, setEditing] = useState<Readonly<Task> | null>(null),
+    [editingSeries, setEditingSeries] =
+      useState<Readonly<planner.SeriesResponse> | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('')
+  const [today, setToday] = useState(seoulToday)
+  const [rolloverEpoch, setRolloverEpoch] = useState(0)
+  const [rolloverState, setRolloverState] = useState<
+    'pending' | 'ready' | 'error'
+  >('pending')
+  useEffect(() => {
+    let cancelled = false
+    void api.tasks
+      .rolloverTasks()
+      .then(async (result) => {
+        if (!result.today) throw new Error('Missing server date')
+        if (cancelled) return
+        setToday(result.today)
+        setSelected(result.today)
+        await queries.invalidateQueries({ queryKey: ['calendar'] })
+        await queries.invalidateQueries({ queryKey: ['task'] })
+        if (!cancelled) setRolloverState('ready')
+      })
+      .catch(() => {
+        if (!cancelled) setRolloverState('error')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [api, queries, rolloverEpoch])
+  const ready =
+    rolloverState === 'ready' ||
+    (rolloverState === 'error' && selected !== today)
+  function enterToday() {
+    setSelected(today)
+    setAdding(null)
+    setEditing(null)
+    setError('')
+    setRolloverState('pending')
+    setRolloverEpoch((n) => n + 1)
+  }
   const days = view === 'week' ? weekDays(selected) : monthDays(selected),
     from = days[0]!,
     to = days[days.length - 1]!
   const range = useQuery({
     queryKey: ['calendar', 'range', from, to],
+    enabled: ready,
     queryFn: ({ signal }) =>
       api.calendar.getCalendarSummary(
         { from: apiDate(from), to: apiDate(to) },
@@ -58,11 +99,17 @@ export function TodayPage() {
   })
   const detail = useQuery({
     queryKey: ['calendar', 'day', selected],
+    enabled: ready,
     queryFn: ({ signal }) =>
       api.calendar.getDayDetail({ date: apiDate(selected) }, { signal }),
   })
   const summaries = new Map(range.data?.days?.map((d) => [d.date, d]))
   function select(date: string) {
+    if (rolloverState === 'pending') return
+    if (date === today) {
+      enterToday()
+      return
+    }
     setSelected(date)
     setAdding(null)
     setEditing(null)
@@ -95,12 +142,12 @@ export function TodayPage() {
     }
   }
   function check(task: Task) {
-    if (task.taskType !== 'GENERAL') {
+    if (task.taskType !== 'GENERAL' && task.status !== 'SKIPPED') {
       void navigate(`/${task.taskType.toLowerCase()}?taskId=${task.taskId}`)
       return
     }
     void mutate(() =>
-      task.status === 'COMPLETED'
+      task.status === 'COMPLETED' || task.status === 'SKIPPED'
         ? api.tasks.reopenTask({
             taskId: task.taskId,
             versionCommand: { version: task.version },
@@ -123,7 +170,11 @@ export function TodayPage() {
         queryFn: () => api.tasks.getTask({ taskId: task.taskId }),
         staleTime: 0,
       })
+      const currentSeries = current.seriesId
+        ? await api.series.getSeries({ seriesId: current.seriesId })
+        : null
       setEditing(Object.freeze({ ...current }))
+      setEditingSeries(currentSeries ? Object.freeze(currentSeries) : null)
       setAdding(null)
     } catch {
       setError('할 일을 불러오지 못했습니다. 다시 시도해 주세요.')
@@ -163,8 +214,8 @@ export function TodayPage() {
             ›
           </button>
           <button
-            disabled={busy || selected === seoulToday()}
-            onClick={() => select(seoulToday())}
+            disabled={busy || rolloverState === 'pending'}
+            onClick={enterToday}
           >
             오늘
           </button>
@@ -211,6 +262,15 @@ export function TodayPage() {
         <h2>
           <time dateTime={selected}>{selected}</time>
         </h2>
+        {rolloverState === 'pending' && (
+          <p role="status">지난 할 일을 이월하는 중…</p>
+        )}
+        {rolloverState === 'error' && (
+          <div role="alert">
+            <p>지난 할 일을 이월하지 못했습니다.</p>
+            <button onClick={enterToday}>이월 다시 시도</button>
+          </div>
+        )}
         {detail.isPending && <p role="status">할 일을 불러오는 중…</p>}
         {detail.isError && (
           <p role="alert">
@@ -220,9 +280,9 @@ export function TodayPage() {
         )}
         <TaskGroups
           tasks={detail.data?.tasks ?? []}
-          busy={busy}
+          busy={busy || !ready}
           add={(type) => {
-            if (!busy) {
+            if (!busy && ready) {
               setAdding(type)
               setEditing(null)
               setError('')
@@ -239,15 +299,24 @@ export function TodayPage() {
             busy={busy}
             error={error}
             cancel={() => setAdding(null)}
-            save={(title, date) =>
+            save={(title, date, repeat) =>
               void mutate(() =>
-                api.tasks.createTask({
-                  createTaskRequest: {
-                    title,
-                    taskType: adding,
-                    scheduledDate: apiDate(date),
-                  },
-                }),
+                repeat
+                  ? api.series.createSeries({
+                      createSeriesRequest: {
+                        title,
+                        taskType: adding,
+                        startDate: date,
+                        ...repeat,
+                      },
+                    })
+                  : api.tasks.createTask({
+                      createTaskRequest: {
+                        title,
+                        taskType: adding,
+                        scheduledDate: apiDate(date),
+                      },
+                    }),
               )
             }
           />
@@ -276,6 +345,45 @@ export function TodayPage() {
                 api.tasks.deleteTask({
                   taskId: editing.taskId,
                   version: editing.version,
+                }),
+              )
+            }
+            skip={() =>
+              void mutate(() =>
+                api.tasks.skipTask({
+                  taskId: editing.taskId,
+                  versionCommand: { version: editing.version },
+                }),
+              )
+            }
+            reopen={() =>
+              void mutate(() =>
+                api.tasks.reopenTask({
+                  taskId: editing.taskId,
+                  versionCommand: { version: editing.version },
+                }),
+              )
+            }
+          />
+        )}
+        {editing && editingSeries && (
+          <SeriesEditor
+            key={`${editing.taskId}-${editingSeries.version}`}
+            series={editingSeries}
+            busy={busy}
+            save={(request) =>
+              void mutate(() =>
+                api.series.updateSeries({
+                  seriesId: editingSeries.seriesId,
+                  updateSeriesRequest: request,
+                }),
+              )
+            }
+            archive={() =>
+              void mutate(() =>
+                api.series.archiveSeries({
+                  seriesId: editingSeries.seriesId,
+                  versionCommand: { version: editingSeries.version },
                 }),
               )
             }

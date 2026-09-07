@@ -28,11 +28,13 @@ const json = (body: unknown, status = 200) =>
     headers: { 'content-type': 'application/json' },
   })
 const calendarResponse = (url: unknown) =>
-  String(url).includes('/calendar?')
-    ? json({ from: seoulToday(), to: seoulToday(), days: [] })
-    : String(url).includes('/calendar/')
-      ? json({ date: seoulToday(), tasks: [] })
-      : null
+  String(url).endsWith('/rollover')
+    ? json({ today: seoulToday(), movedCount: 0 })
+    : String(url).includes('/calendar?')
+      ? json({ from: seoulToday(), to: seoulToday(), days: [] })
+      : String(url).includes('/calendar/')
+        ? json({ date: seoulToday(), tasks: [] })
+        : null
 
 describe('App', () => {
   it('starts on the Seoul date across the UTC midnight boundary', () => {

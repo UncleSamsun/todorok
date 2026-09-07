@@ -11,6 +11,11 @@ import tools.jackson.databind.ObjectMapper;
 public class PlannerMessagingConfiguration {
 
     @Bean
+    java.time.Clock plannerClock() {
+        return java.time.Clock.systemUTC();
+    }
+
+    @Bean
     OutboxEventWriter outboxEventWriter(JdbcTemplate jdbc, ObjectMapper mapper) {
         return new JdbcOutboxEventWriter(jdbc, mapper);
     }

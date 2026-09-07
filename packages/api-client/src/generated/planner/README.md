@@ -55,11 +55,17 @@ All URIs are relative to */api/planner/v1*
 *AuthApi* | [**refreshSession**](docs/AuthApi.md#refreshsession) | **POST** /auth/refresh |
 *CalendarApi* | [**getCalendarSummary**](docs/CalendarApi.md#getcalendarsummary) | **GET** /calendar |
 *CalendarApi* | [**getDayDetail**](docs/CalendarApi.md#getdaydetail) | **GET** /calendar/{date} |
+*SeriesApi* | [**archiveSeries**](docs/SeriesApi.md#archiveseries) | **POST** /series/{seriesId}/archive |
+*SeriesApi* | [**createSeries**](docs/SeriesApi.md#createseriesoperation) | **POST** /series |
+*SeriesApi* | [**getSeries**](docs/SeriesApi.md#getseries) | **GET** /series/{seriesId} |
+*SeriesApi* | [**updateSeries**](docs/SeriesApi.md#updateseriesoperation) | **PATCH** /series/{seriesId} |
 *TaskApi* | [**completeTask**](docs/TaskApi.md#completetask) | **POST** /tasks/{taskId}/complete |
 *TaskApi* | [**createTask**](docs/TaskApi.md#createtaskoperation) | **POST** /tasks |
 *TaskApi* | [**deleteTask**](docs/TaskApi.md#deletetask) | **DELETE** /tasks/{taskId} |
 *TaskApi* | [**getTask**](docs/TaskApi.md#gettask) | **GET** /tasks/{taskId} |
 *TaskApi* | [**reopenTask**](docs/TaskApi.md#reopentask) | **POST** /tasks/{taskId}/reopen |
+*TaskApi* | [**rolloverTasks**](docs/TaskApi.md#rollovertasks) | **POST** /tasks/rollover |
+*TaskApi* | [**skipTask**](docs/TaskApi.md#skiptask) | **POST** /tasks/{taskId}/skip |
 *TaskApi* | [**updateTask**](docs/TaskApi.md#updatetaskoperation) | **PATCH** /tasks/{taskId} |
 
 
@@ -68,15 +74,20 @@ All URIs are relative to */api/planner/v1*
 - [CalendarDaySummary](docs/CalendarDaySummary.md)
 - [CalendarSummaryResponse](docs/CalendarSummaryResponse.md)
 - [CategoryProgress](docs/CategoryProgress.md)
+- [CreateSeriesRequest](docs/CreateSeriesRequest.md)
 - [CreateTaskRequest](docs/CreateTaskRequest.md)
 - [DayDetailResponse](docs/DayDetailResponse.md)
 - [LoginRequest](docs/LoginRequest.md)
 - [ProblemDetails](docs/ProblemDetails.md)
 - [ProblemDetailsFieldErrorsInner](docs/ProblemDetailsFieldErrorsInner.md)
+- [RecurrenceRule](docs/RecurrenceRule.md)
+- [RolloverResponse](docs/RolloverResponse.md)
+- [SeriesResponse](docs/SeriesResponse.md)
 - [SessionResponse](docs/SessionResponse.md)
 - [TaskResponse](docs/TaskResponse.md)
 - [TaskStatus](docs/TaskStatus.md)
 - [TaskType](docs/TaskType.md)
+- [UpdateSeriesRequest](docs/UpdateSeriesRequest.md)
 - [UpdateTaskRequest](docs/UpdateTaskRequest.md)
 - [VersionCommand](docs/VersionCommand.md)
 
