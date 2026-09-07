@@ -33,6 +33,37 @@ import tools.jackson.databind.json.JsonMapper;
 class TaskHttpIntegrationTest {
 
     @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.MethodSource("duplicateSelectionCases")
+    void duplicateSelectionCannotHideCoercedVersion(String resource, String invalid) throws Exception {
+        UUID owner=UUID.randomUUID();
+        String dates=resource.equals("tasks") ? "\"scheduledDate\":\"2026-09-09\"" :
+            "\"startDate\":\"2026-09-09\",\"rule\":{\"frequency\":\"DAILY\",\"interval\":1,\"weekdays\":[],\"monthDay\":1}";
+        String base="\"title\":\"중복 선택 검증\",\"taskType\":\"STUDY\","+dates;
+        String selection="\"templateSelection\":{\"templateId\":\""+UUID.randomUUID()+"\",\"expectedTemplateVersion\":";
+        String request="{\"commandId\":\""+UUID.randomUUID()+"\","+base+","+selection+invalid+"},\"templateSelection\":null}";
+        var response=call(owner,"POST","/"+resource,request);
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
+        assertThat(body(response).path("code").asText()).isEqualTo("MALFORMED_JSON");
+        assertThat(jdbc.queryForObject("select count(*) from planner.planner_creation_command where owner_id=?",Integer.class,owner)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from planner.task where user_id=?",Integer.class,owner)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from planner.task_series where user_id=?",Integer.class,owner)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from planner.outbox_event where payload->>'userId'=?",Integer.class,owner.toString())).isZero();
+        var valid=call(owner,"POST","/"+resource,"{\"commandId\":\""+UUID.randomUUID()+"\","+base+","+selection+"1}}");
+        assertThat(valid.statusCode()).as(valid.body()).isEqualTo(503);
+        assertThat(body(valid).path("code").asText()).isEqualTo("TEMPLATE_SERVICE_UNAVAILABLE");
+        assertThat(jdbc.queryForObject("select count(*) from planner.planner_creation_command where owner_id=?",Integer.class,owner)).isOne();
+        assertThat(call(owner,"POST","/"+resource,"{"+base+"}").statusCode()).isEqualTo(201);
+    }
+
+    private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> duplicateSelectionCases() {
+        return java.util.stream.Stream.of(
+            org.junit.jupiter.params.provider.Arguments.of("tasks","1.5"),
+            org.junit.jupiter.params.provider.Arguments.of("tasks","\"1\""),
+            org.junit.jupiter.params.provider.Arguments.of("series","1.5"),
+            org.junit.jupiter.params.provider.Arguments.of("series","\"1\""));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(strings={"tasks","series"})
     void templateVersionMustBeAnIntegerBeforeRegisteringAnyCommand(String resource) throws Exception {
         UUID owner=UUID.randomUUID();

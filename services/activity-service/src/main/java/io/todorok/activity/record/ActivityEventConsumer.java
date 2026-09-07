@@ -98,7 +98,8 @@ public class ActivityEventConsumer {
             var old=existing.getFirst();
             if (!e.userId().equals(old.get("user_id")) || !type.equals(old.get("task_type"))
                 || (binding!=null && old.get("template_binding_id")!=null && !binding.equals(old.get("template_binding_id")))
-                || (e.version()==2 && old.get("series_id")!=null && !java.util.Objects.equals(series,old.get("series_id"))))
+                || (e.version()==2 && (old.get("template_binding_id")!=null || old.get("series_id")!=null)
+                    && !java.util.Objects.equals(series,old.get("series_id"))))
                 throw new IllegalArgumentException("Task reference identity changed");
         }
         jdbc.update(

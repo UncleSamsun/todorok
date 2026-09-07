@@ -194,9 +194,81 @@ class TemplateFoundationHttpTest {
         assertThatThrownBy(() -> consumer.receive(event(owner, payload, 2, 4))).isInstanceOf(IllegalArgumentException.class);
     }
 
+    @ParameterizedTest
+    @ValueSource(longs={0,1,2})
+    void nullLinkCannotChangeBoundTaskSeriesIdentity(long revision) throws Exception {
+        UUID owner=UUID.randomUUID(),task=UUID.randomUUID();
+        String template=mapper.readTree(send("POST","/templates",templateBody(UUID.randomUUID(),"연결 보존","STUDY","STUDY_CATEGORY",List.of()),owner).body()).get("templateId").asText();
+        var approval=select(Map.of("requestId",UUID.randomUUID(),"ownerId",owner,"targetType","TASK","targetId",task,
+            "taskType","STUDY","templateId",template,"expectedTemplateVersion",1),"todorok-activity-internal","template:select",60,null);
+        assertThat(approval.statusCode()).as(approval.body()).isEqualTo(201);
+        var payload=new LinkedHashMap<String,Object>(Map.of("taskId",task,"taskType","STUDY","status","PLANNED","scheduledDate","2026-09-09",
+            "templateLink",Map.of("bindingId",mapper.readTree(approval.body()).path("bindingId").asText(),"templateId",template,"selectedTemplateVersion",1)));
+        payload.put("seriesId",null);
+        consumer.receive(event(owner,payload,2,1));
+        var before=jdbc.queryForMap("select * from task_reference where task_id=?",task);
+        var original=send("GET","/tasks/"+task+"/record-template",null,owner);
+        assertThat(original.statusCode()).isEqualTo(200);
+        var forged=new LinkedHashMap<>(payload);
+        forged.put("templateLink",null); forged.put("seriesId",UUID.randomUUID());
+        forged.put("status","SKIPPED"); forged.put("scheduledDate","2026-09-20");
+        String json=event(owner,forged,2,revision);
+        UUID eventId=UUID.fromString(mapper.readTree(json).path("eventId").asText());
+        assertThatThrownBy(()->consumer.receive(json)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(jdbc.queryForMap("select * from task_reference where task_id=?",task)).isEqualTo(before);
+        assertThat(jdbc.queryForObject("select count(*) from processed_event where event_id=?",Integer.class,eventId)).isZero();
+        assertThat(send("GET","/tasks/"+task+"/record-template",null,owner).body()).isEqualTo(original.body());
+        payload.put("scheduledDate","2026-09-10");
+        consumer.receive(event(owner,payload,2,3));
+        assertThat(jdbc.queryForObject("select version from task_reference where task_id=?",Long.class,task)).isEqualTo(3);
+        assertThat(send("GET","/tasks/"+task+"/record-template",null,owner).body()).isEqualTo(original.body());
+    }
+
     private String event(UUID owner, Map<String,Object> payload, int schema, long revision) {
         return mapper.writeValueAsString(Map.of("eventId", UUID.randomUUID(), "type", "TASK_SCHEDULED", "version", schema,
             "aggregateVersion", revision, "occurredAt", Instant.now().toString(), "userId", owner, "payload", payload));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"TASK","SERIES"})
+    void verifiedBindingCanEnrichNewerV1ReferenceWithoutChangingItsState(String targetType) throws Exception {
+        UUID owner=UUID.randomUUID(),task=UUID.randomUUID(),series=targetType.equals("SERIES")?UUID.randomUUID():null;
+        String template=mapper.readTree(send("POST","/templates",templateBody(UUID.randomUUID(),"복구 정의","STUDY","STUDY_CATEGORY",List.of()),owner).body()).get("templateId").asText();
+        var approval=select(Map.of("requestId",UUID.randomUUID(),"ownerId",owner,"targetType",targetType,"targetId",series==null?task:series,
+            "taskType","STUDY","templateId",template,"expectedTemplateVersion",1),"todorok-activity-internal","template:select",60,null);
+        assertThat(approval.statusCode()).isEqualTo(201);
+        var payload=new LinkedHashMap<String,Object>(Map.of("taskId",task,"taskType","STUDY","status","PLANNED","scheduledDate","2026-09-10"));
+        consumer.receive(event(owner,payload,1,4));
+        assertThat(mapper.readTree(send("GET","/tasks/"+task+"/record-template",null,owner).body()).path("linked").asBoolean()).isFalse();
+        var legacy=new LinkedHashMap<>(payload);
+        payload.put("seriesId",series);
+        payload.put("templateLink",Map.of("bindingId",mapper.readTree(approval.body()).path("bindingId").asText(),"templateId",template,"selectedTemplateVersion",1));
+        payload.put("scheduledDate","2026-09-09");
+        consumer.receive(event(owner,payload,2,1));
+        var restored=jdbc.queryForMap("select * from task_reference where task_id=?",task);
+        assertThat(restored.get("series_id")).isEqualTo(series);
+        assertThat(restored.get("version")).isEqualTo(4L);
+        assertThat(restored.get("scheduled_date").toString()).isEqualTo("2026-09-10");
+        var read=send("GET","/tasks/"+task+"/record-template",null,owner);
+        assertThat(read.statusCode()).isEqualTo(200);
+        assertThat(mapper.readTree(read.body()).path("linked").asBoolean()).isTrue();
+        consumer.receive(event(owner,legacy,1,5));
+        consumer.receive(event(owner,payload,2,6));
+        assertThat(send("GET","/tasks/"+task+"/record-template",null,owner).body()).isEqualTo(read.body());
+    }
+
+    @Test
+    void unboundV1ReferenceCanReceiveV2SeriesMetadata() {
+        UUID owner=UUID.randomUUID(),task=UUID.randomUUID(),series=UUID.randomUUID();
+        var payload=new LinkedHashMap<String,Object>(Map.of("taskId",task,"taskType","GENERAL","status","PLANNED","scheduledDate","2026-09-10"));
+        consumer.receive(event(owner,payload,1,4));
+        payload.put("seriesId",series); payload.put("templateLink",null); payload.put("scheduledDate","2026-09-09");
+        consumer.receive(event(owner,payload,2,1));
+        var restored=jdbc.queryForMap("select * from task_reference where task_id=?",task);
+        assertThat(restored.get("series_id")).isEqualTo(series);
+        assertThat(restored.get("template_binding_id")).isNull();
+        assertThat(restored.get("version")).isEqualTo(4L);
+        assertThat(restored.get("scheduled_date").toString()).isEqualTo("2026-09-10");
     }
 
     @Test

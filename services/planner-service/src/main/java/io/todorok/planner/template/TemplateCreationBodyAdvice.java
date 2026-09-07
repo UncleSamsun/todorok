@@ -17,13 +17,14 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Validate the selection's JSON number before the existing mapper can coerce a string or fraction into Long. */
 @ControllerAdvice(assignableTypes = {TaskController.class, SeriesController.class})
 public final class TemplateCreationBodyAdvice extends RequestBodyAdviceAdapter {
-    private final ObjectMapper mapper;
-    public TemplateCreationBodyAdvice(ObjectMapper mapper) { this.mapper=mapper; }
+    private final JsonMapper mapper=JsonMapper.builder()
+        .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build();
 
     @Override public boolean supports(MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converter) {
         return targetType==CreateTaskRequest.class || targetType==CreateSeriesRequest.class;

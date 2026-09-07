@@ -2,6 +2,8 @@
 
 상태: 09B1 구현·검증 완료. 09B2 값·snapshot·legacy와 09C 화면은 범위 밖이며 단계B 전체 또는 작업09 전체 완료를 뜻하지 않는다.
 
+중요 리뷰 라운드1의 두 지적은 아래 추가 회귀와 최소 수정으로 보완했다. 수정 diff의 부모 재검토는 별도다.
+
 ## 인터페이스와 상태 경계
 
 - 내부 원본: `contracts/openapi/template-internal-v1.yaml`, 실제 POST `/api/activity/v1/internal/template-selections`. 생성 인터페이스/DTO: `libs/web-support/src/generated/java/io/todorok/internal/api`.
@@ -94,3 +96,33 @@ node .local/task09b-runtime/runtime.mjs down
 09B1의 구현·검증 gate는 완료했다. 기록 쓰기의 명시적 준비 상태 경계는 아래09B2에서 교체한다.
 
 09B2: 자유 값 다섯 타입·관계형 운동/클라이밍 값·snapshot·최초 저장 시 현재 버전 비교·correction 기존 snapshot 보존·legacy 보존/새 무검증 입력 거절·시간 집계 회귀. 09C: 관리·선택·기록 화면과 전체 사용자 E2E.
+
+## 중요 리뷰 라운드1 — 2026-09-08
+
+제품 기준은 `8ed2d4a`다. 작업 중 부모가 보존한 문서 commit `22e3d50`은 제품 기준을 바꾸지 않았다. 대상은 `task-09-template-binding-review.md`의 Important2건이며 위 최초 B1 검증 수와 이번 검증 수를 구분한다.
+
+첫 결함은 중복 `templateSelection`의 앞 객체와 뒤쪽 null을 tree와 generated DTO가 다르게 처리하는 것이었다. 소수1.5 또는 문자열"1"을 앞 객체에 넣으면 tree 검사가 건너뛰어지고 DTO는 정수1로 변환한 앞 객체를 유지했다. 공개 Task/series 실제HTTP에서 네 조합 모두400 기대에503을 반환해 서비스 승인 처리에 진입하는 것을 RED로 확인했다. 테스트 서비스 키가 미설정된 경계의503이며, 올바른 입력으로 허용돼 command 등록 이후로 진행했다는 증거다.
+
+수정은 두 생성 요청에만 적용되는 TemplateCreationBodyAdvice의 전용 JsonMapper에 STRICT_DUPLICATE_DETECTION을 켠 것이다. 생성 모델의 null 처리나 전역 mapper는 바꾸지 않았다. 네 공격 요청은 MALFORMED_JSON400이며 owner의 command/Task/series/outbox가 모두0이다. 중복 없는 정수1은 정상 승인 경계까지 진행하고, 기존 무연결 Task/series 생성은201을 반환한다.
+
+두 번째 결함은 이미 TASK binding이 있고 series_id가null인 reference에 `templateLink:null`과 임의seriesId를 담은 v2를 보낼 때 identity가 변경되는 것이었다. 현재 aggregateVersion1에 대해0·1·2를 각각 보내는 실제DB 회귀3개 모두 예외 없이 허용되는 것을 RED로 확인했다. 기존 binding이 있으면null도 series identity에 포함해 비교하도록 조건만 보완했다. 수정 뒤 세 이벤트 모두 거절되며 전체 reference 행과 inbox가 불변이고 정상 후속 이벤트·record-template GET이 계속 성공한다.
+
+정상 대조에는 더 높은 version의 v1 reference에 낮은 version의 검증된 TASK/SERIES binding을 복구하는 두 경우, binding 없는 v1 reference에 정상 v2 series metadata를 추가하는 경우, 기존 늦은v1/정상v2 연결 보존을 포함한다. 이 복구는 state/version을 낮추지 않으며 새 identity 검사 때문에 차단되지 않는다.
+
+RED 명령:
+
+```powershell
+.\gradlew.bat :services:planner-service:test --tests '*TaskHttpIntegrationTest.duplicateSelectionCannot*' :services:activity-service:test --tests '*TemplateFoundationHttpTest.nullLinkCannot*' --max-workers=2 --console=plain
+```
+
+실제HTTP4개 실패 + 실제DB3개 실패, exit1을 확인한 뒤 제품 두 파일만 최소 수정했다.
+
+GREEN 및 빌드 명령:
+
+```powershell
+.\gradlew.bat :services:planner-service:test --tests '*TaskHttpIntegrationTest' :services:activity-service:test --tests '*TemplateFoundationHttpTest.nullLinkCannot*' --tests '*TemplateFoundationHttpTest.verifiedBindingCanEnrich*' --tests '*TemplateFoundationHttpTest.unboundV1Reference*' --tests '*TemplateFoundationHttpTest.v2Projection*' :services:planner-service:assemble :services:activity-service:assemble --max-workers=2 --console=plain
+```
+
+결과는 exit0이다. XML에서 planner HTTP26개(기존22+신규4), activity DB7개(악성3+검증된 binding 복구2+unbound 복구1+기존v1/v2회귀1), failure/error/skipped 모두0을 확인했다. 두 서비스 main/migration 및 planner bootstrap JAR 빌드가 통과했다.
+
+이번 라운드는 소비자의 실제 PostgreSQL 트랜잭션·inbox 롤백을 직접 검증했다. Kafka 전송·재시도/격리 구성과 원본·생성 계약은 수정하지 않아 이전 전체 Kafka16개나 생성 drift를 반복 실행하지 않았다. 이전 실증 결과는 위 해당 코드 시점의 기록으로 유지한다. 부모 ledger/vault·B2 문서·임시 runtime은 수정하지 않았다.
