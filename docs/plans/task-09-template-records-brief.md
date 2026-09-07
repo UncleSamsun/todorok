@@ -1,6 +1,8 @@
 # 작업09B2 템플릿 기록 값·스냅샷·기존 데이터 보존
 
-이 문서는 B1 중요 리뷰가 끝난 뒤 실행할 후속 요구사항이다. B1의 열린 중요 지적을 남겨둔 채 구현하지 않는다. 현재 기준 `8ed2d4a`이며 실제 착수 시 최종 B1 보완 커밋을 확인한다. 기준 설계는 `docs/superpowers/specs/2026-09-07-record-templates-design.md` §3–6,9–13, PRD §12다.
+현재 B1 보완 `241f9d9`와 수정 범위 재리뷰가 완료됐다. 기준 설계는 `docs/superpowers/specs/2026-09-07-record-templates-design.md` §3–6,9–13, PRD §12다.
+
+실행 순서는 사용자 흐름을 따른다. 먼저 공부의 관리→일정 선택→값 기록→정의 변경 후 과거 기록 유지 흐름을 백엔드와 UI까지 연결한다. 이후 자유 운동·클라이밍에 같은 규칙을 적용한다. 아래 전체 데이터·검증 요구는 유지하되 이번 공부 흐름에서 사용하지 않는 도메인 구현을 선행 확대하지 않는다. 백엔드 준비만으로 사용자 기능 완료를 선언하지 않는다. 단계별 상태·검증은 `functional-progress.md` 한 곳에 기록한다.
 
 ## 목표
 
@@ -44,4 +46,4 @@ legacy correction은 기존 검증 가능한 항목만 수정하고 저장돼 �
 6. B1의 연결 기록409 fixture를 실제 template 값 저장→Kafka APPLIED→반복 다음 회차 연결 유지로 교체한다. crafted 이벤트만으로 사용자 기록 성공을 대신하지 않는다.
 7. 원본 생성·Java/TS 왕복·drift·영향 서비스/패키지/웹 build. 새 API 준비만으로 전체09 완료를 주장하지 않는다.
 
-보고서 `docs/plans/task-09-template-records-report.md`에 정확한 인터페이스·잠금 순서·마이그레이션/기존자료 증거·실제 명령과 결과·C UI 남은 범위를 기록한다. 유일한 구현 worker로 PowerShell/apply_patch를 사용하며 본인 파일만 한글 scoped commit한다. 부모 ledger/vault 편집, 하위 agent, push/merge는 금지한다. 계약·서버 연결에 새로운 판단이 필요하면 근거와 함께 부모에게 알린다.
+별도 완료 보고서는 만들지 않는다. `docs/plans/functional-progress.md`의 공부 기록 흐름 구역에 인터페이스·잠금 순서·마이그레이션/기존자료 증거·실제 명령과 결과·남은 UI 연결을 한 번에 기록한다. 이 구역의 작성 중에는 부모가 같은 문서를 동시에 수정하지 않는다. 유일한 구현 worker로 PowerShell/apply_patch를 사용하며 본인 파일만 한글 scoped commit한다. vault 편집, 하위 agent, push/merge는 금지한다. 계약·서버 연결에 새로운 판단이 필요하면 근거와 함께 부모에게 알린다.
