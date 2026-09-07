@@ -30,3 +30,23 @@
 
 - 401/403 security entry point와 access denied handler 연결은 인증 작업 범위다.
 - 다른 인프라 client가 Spring Data 예외 계층을 사용하지 않으면 해당 adapter에서 안전한 `ApiFailure`로 변환해야 한다.
+
+## 리뷰 수정 1차
+
+- 비동기·오류 dispatch에서도 최초 요청에 생성한 trace ID를 request attribute에서 복원하도록 filter를 보완했다. 각 dispatch 종료 시 기존 MDC 값을 원상 복구한다.
+- 실제 `Callable` 실패를 `asyncDispatch`하는 HTTP 테스트와 기존 MDC 복원 테스트를 추가했다.
+- API client 검증을 `common-v1.yaml`과 맞춰 추가 속성 금지, 오류 코드 패턴, 문자열 최소 길이, 정수 status, 중첩 field error, URI-reference 형식을 검사하도록 강화했다. 빈 title과 상대 URI-reference처럼 계약이 허용하는 경계는 유지했다.
+
+### RED
+
+- `.\gradlew.bat :libs:web-support:test --tests '*asyncFailureUsesTheOriginalTraceIdInHeaderAndBody' --no-daemon --no-configuration-cache`
+  - 결과: 1개 실패. async handler 본문의 trace ID가 `unavailable`로 직렬화되어 최초 응답 헤더와 달랐다.
+- `pnpm --filter @todorok/api-client test`
+  - 결과: schema near-miss 테스트 1개 실패. 추가 속성이 있는 객체가 정상 Problem Details로 분류됐다.
+
+### GREEN
+
+- `.\gradlew.bat :libs:web-support:test --rerun-tasks --no-daemon --no-configuration-cache`
+  - 결과: 성공. 비동기 dispatch와 MDC 복원을 포함한 전체 공통 HTTP 테스트가 통과했다.
+- `pnpm --filter @todorok/api-client test`
+  - 결과: 성공. 런타임 5개 테스트와 TypeScript 타입 검사가 통과했다.

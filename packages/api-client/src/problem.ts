@@ -41,10 +41,13 @@ export async function requestJson(
 
 function isApiProblem(value: unknown): value is ApiProblem {
   if (!isRecord(value)) return false
-  return typeof value.type === 'string'
+  if (!hasOnlyKeys(value, ['type', 'title', 'status', 'detail', 'instance', 'code', 'traceId', 'retryable', 'fieldErrors'])) return false
+  return typeof value.type === 'string' && isUriReference(value.type)
     && typeof value.title === 'string'
     && Number.isInteger(value.status) && Number(value.status) >= 400 && Number(value.status) <= 599
-    && typeof value.code === 'string'
+    && (value.detail === undefined || typeof value.detail === 'string')
+    && (value.instance === undefined || (typeof value.instance === 'string' && isUriReference(value.instance)))
+    && typeof value.code === 'string' && /^[A-Z][A-Z0-9_]+$/.test(value.code)
     && typeof value.traceId === 'string' && value.traceId.length > 0
     && typeof value.retryable === 'boolean'
     && (value.fieldErrors === undefined || (Array.isArray(value.fieldErrors) && value.fieldErrors.every(isFieldProblem)))
@@ -52,11 +55,27 @@ function isApiProblem(value: unknown): value is ApiProblem {
 
 function isFieldProblem(value: unknown): value is FieldProblem {
   return isRecord(value)
-    && typeof value.field === 'string'
-    && typeof value.code === 'string'
-    && typeof value.message === 'string'
+    && hasOnlyKeys(value, ['field', 'code', 'message'])
+    && typeof value.field === 'string' && value.field.length > 0
+    && typeof value.code === 'string' && /^[A-Z][A-Z0-9_]+$/.test(value.code)
+    && typeof value.message === 'string' && value.message.length > 0
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
+  const allowedKeys = new Set(allowed)
+  return Object.keys(value).every((key) => allowedKeys.has(key))
+}
+
+function isUriReference(value: string): boolean {
+  if (/[\u0000-\u0020\u007f]/.test(value) || /%(?![0-9a-fA-F]{2})/.test(value)) return false
+  try {
+    new URL(value, 'https://uri-reference.invalid/')
+    return true
+  } catch {
+    return false
+  }
 }

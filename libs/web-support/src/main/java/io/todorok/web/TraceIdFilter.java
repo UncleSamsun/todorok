@@ -15,17 +15,35 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public final class TraceIdFilter extends OncePerRequestFilter {
     public static final String HEADER_NAME = "X-Trace-Id";
     public static final String MDC_KEY = "traceId";
+    private static final String REQUEST_ATTRIBUTE = TraceIdFilter.class.getName() + ".traceId";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        String traceId = UUID.randomUUID().toString();
+        Object existingTraceId = request.getAttribute(REQUEST_ATTRIBUTE);
+        String traceId = existingTraceId instanceof String value ? value : UUID.randomUUID().toString();
+        request.setAttribute(REQUEST_ATTRIBUTE, traceId);
+        String previousTraceId = MDC.get(MDC_KEY);
         MDC.put(MDC_KEY, traceId);
         response.setHeader(HEADER_NAME, traceId);
         try {
             chain.doFilter(request, response);
         } finally {
-            MDC.remove(MDC_KEY);
+            if (previousTraceId == null) {
+                MDC.remove(MDC_KEY);
+            } else {
+                MDC.put(MDC_KEY, previousTraceId);
+            }
         }
+    }
+
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
+
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        return false;
     }
 }

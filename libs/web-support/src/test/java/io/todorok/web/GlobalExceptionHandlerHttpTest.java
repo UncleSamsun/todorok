@@ -2,15 +2,18 @@ package io.todorok.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -113,6 +116,33 @@ class GlobalExceptionHandlerHttpTest {
     }
 
     @Test
+    void asyncFailureUsesTheOriginalTraceIdInHeaderAndBody() throws Exception {
+        var initial = mvc.perform(get("/test/async-failure"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        var traceId = initial.getResponse().getHeader(TraceIdFilter.HEADER_NAME);
+
+        mvc.perform(asyncDispatch(initial))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(header().string(TraceIdFilter.HEADER_NAME, traceId))
+                .andExpect(jsonPath("$.traceId").value(traceId));
+        assertThat(traceId).isNotEqualTo("unavailable");
+        assertThat(MDC.get(TraceIdFilter.MDC_KEY)).isNull();
+    }
+
+    @Test
+    void filterRestoresTheMdcValueThatWasPresentBeforeDispatch() throws Exception {
+        MDC.put(TraceIdFilter.MDC_KEY, "outer-trace");
+        try {
+            var result = mvc.perform(get("/test/business")).andReturn();
+            assertThat(result.getResponse().getHeader(TraceIdFilter.HEADER_NAME)).isNotEqualTo("outer-trace");
+            assertThat(MDC.get(TraceIdFilter.MDC_KEY)).isEqualTo("outer-trace");
+        } finally {
+            MDC.remove(TraceIdFilter.MDC_KEY);
+        }
+    }
+
+    @Test
     void factorySerializesUnauthorizedAndForbiddenContracts() {
         var factory = new ProblemResponseFactory();
         assertThat(factory.create(401, "UNAUTHORIZED", "Unauthorized", "Authentication is required.", false, List.of(), "trace-1")
@@ -168,6 +198,12 @@ class GlobalExceptionHandlerHttpTest {
 
             @GetMapping("/test/unexpected")
             void unexpected() { throw new IllegalStateException("secret SQL token"); }
+
+            @GetMapping("/test/async-failure")
+            Callable<Void> asyncFailure() {
+                return () -> { throw new ApiFailure(422, "ASYNC_RULE_REJECTED", "Rule rejected",
+                        "The asynchronous request violates a business rule.", false); };
+            }
         }
 
         record Input(@NotBlank String name) {}
