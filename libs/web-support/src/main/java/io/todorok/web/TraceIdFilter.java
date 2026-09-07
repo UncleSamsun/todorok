@@ -15,7 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public final class TraceIdFilter extends OncePerRequestFilter {
     public static final String HEADER_NAME = "X-Trace-Id";
     public static final String MDC_KEY = "traceId";
-    private static final String REQUEST_ATTRIBUTE = TraceIdFilter.class.getName() + ".traceId";
+    static final String REQUEST_ATTRIBUTE = TraceIdFilter.class.getName() + ".traceId";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)

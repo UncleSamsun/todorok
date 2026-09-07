@@ -71,7 +71,7 @@ function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[])
 }
 
 function isUriReference(value: string): boolean {
-  if (/[\u0000-\u0020\u007f]/.test(value) || /%(?![0-9a-fA-F]{2})/.test(value)) return false
+  if (/[\u0000-\u0020\u007f<>"\\^`{|}]/.test(value) || /%(?![0-9a-fA-F]{2})/.test(value)) return false
   try {
     new URL(value, 'https://uri-reference.invalid/')
     return true

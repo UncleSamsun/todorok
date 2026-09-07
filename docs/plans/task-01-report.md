@@ -50,3 +50,24 @@
   - 결과: 성공. 비동기 dispatch와 MDC 복원을 포함한 전체 공통 HTTP 테스트가 통과했다.
 - `pnpm --filter @todorok/api-client test`
   - 결과: 성공. 런타임 5개 테스트와 TypeScript 타입 검사가 통과했다.
+
+## 리뷰 수정 2차
+
+- MVC async support에 `CallableProcessingInterceptor`를 등록해 `Callable` 실행 worker에 최초 trace ID를 복원하고 처리 직후 기존 MDC를 원상 복구한다.
+- 단일 worker executor를 사용하는 실제 async HTTP 테스트에서 `Callable` 내부 MDC, async 오류 응답의 header/body 일치, 같은 worker의 후속 작업에서 MDC가 제거됐는지 검증한다.
+- URI-reference 검사에서 RFC 3986이 허용하지 않는 raw backslash, caret, pipe, brace와 기타 금지 문자를 URL 정규화 전에 거부하고 near-miss를 추가했다.
+- `DeferredResult` 값을 만드는 임의의 외부 producer thread는 Spring MVC `Callable` 실행 경계 밖이므로 자동 MDC 전파를 보장하지 않는다. 해당 코드는 명시적인 context 전파 wrapper를 사용해야 한다.
+
+### RED
+
+- `.\gradlew.bat :libs:web-support:test --tests '*asyncFailureUsesTheOriginalTraceIdInHeaderAndBody' --no-daemon --no-configuration-cache`
+  - 결과: 1개 실패. `Callable` worker 내부 MDC가 비어 있었다.
+- `pnpm --filter @todorok/api-client test`
+  - 결과: URI-reference near-miss가 정상 Problem Details로 분류되어 1개 실패했다.
+
+### GREEN
+
+- `.\gradlew.bat :libs:web-support:test --tests '*asyncFailureUsesTheOriginalTraceIdInHeaderAndBody' --rerun-tasks --no-daemon --no-configuration-cache`
+  - 결과: 성공. worker 내부 trace와 처리 후 cleanup, async 응답 trace 일치를 검증했다.
+- `pnpm --filter @todorok/api-client test`
+  - 결과: 성공. 런타임 5개 테스트와 TypeScript 타입 검사가 통과했다.

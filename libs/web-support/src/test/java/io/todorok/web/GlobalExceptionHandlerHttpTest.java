@@ -14,17 +14,24 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,12 +42,14 @@ import org.springframework.web.bind.annotation.RestController;
 @SpringBootTest(classes = GlobalExceptionHandlerHttpTest.TestApplication.class)
 class GlobalExceptionHandlerHttpTest {
     private final MockMvc mvc;
+    private final AsyncTaskExecutor asyncExecutor;
 
     @Autowired
     GlobalExceptionHandlerHttpTest(WebApplicationContext context) {
         this.mvc = MockMvcBuilders.webAppContextSetup(context)
                 .addFilters(context.getBean(TraceIdFilter.class))
                 .build();
+        this.asyncExecutor = context.getBean("testMvcExecutor", AsyncTaskExecutor.class);
     }
 
     @Test
@@ -127,6 +136,8 @@ class GlobalExceptionHandlerHttpTest {
                 .andExpect(header().string(TraceIdFilter.HEADER_NAME, traceId))
                 .andExpect(jsonPath("$.traceId").value(traceId));
         assertThat(traceId).isNotEqualTo("unavailable");
+        assertThat(TestApplication.TestController.workerTrace.get()).isEqualTo(traceId);
+        assertThat(asyncExecutor.submit(() -> MDC.get(TraceIdFilter.MDC_KEY)).get(5, TimeUnit.SECONDS)).isNull();
         assertThat(MDC.get(TraceIdFilter.MDC_KEY)).isNull();
     }
 
@@ -170,8 +181,28 @@ class GlobalExceptionHandlerHttpTest {
 
     @SpringBootApplication
     static class TestApplication {
+        @Bean("testMvcExecutor")
+        ThreadPoolTaskExecutor testMvcExecutor() {
+            var executor = new ThreadPoolTaskExecutor();
+            executor.setCorePoolSize(1);
+            executor.setMaxPoolSize(1);
+            executor.setThreadNamePrefix("mvc-test-");
+            return executor;
+        }
+
+        @Bean
+        WebMvcConfigurer testAsyncConfigurer(ThreadPoolTaskExecutor testMvcExecutor) {
+            return new WebMvcConfigurer() {
+                @Override
+                public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+                    configurer.setTaskExecutor(testMvcExecutor);
+                }
+            };
+        }
+
         @RestController
         static class TestController {
+            static final AtomicReference<String> workerTrace = new AtomicReference<>();
             @PostMapping("/test/validate")
             void validate(@Valid @RequestBody Input input) {}
 
@@ -201,8 +232,11 @@ class GlobalExceptionHandlerHttpTest {
 
             @GetMapping("/test/async-failure")
             Callable<Void> asyncFailure() {
-                return () -> { throw new ApiFailure(422, "ASYNC_RULE_REJECTED", "Rule rejected",
-                        "The asynchronous request violates a business rule.", false); };
+                return () -> {
+                    workerTrace.set(MDC.get(TraceIdFilter.MDC_KEY));
+                    throw new ApiFailure(422, "ASYNC_RULE_REJECTED", "Rule rejected",
+                            "The asynchronous request violates a business rule.", false);
+                };
             }
         }
 
