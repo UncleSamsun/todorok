@@ -63,7 +63,7 @@
 - `pnpm test:packages`: 네 패키지 TypeScript 검사와 api-client runtime5 tests 통과.
 - `pnpm contracts:check`: 생성 계약과 원본 일치.
 - `pnpm build:web`: production/PWA 빌드 통과. 초기 JS gzip94.31KB, 나머지 네 도메인은 lazy chunk다.
-- `git diff --check`: 통과.
+- stage 전 `git diff --check`는 기존 추적 파일에 대해 통과했다. stage 뒤 검사에서는 새로 추가된 생성 파일 16개에서 `new blank line at EOF` 경고가 나왔다. 이는 생성기의 현재 canonical 출력이며 `contracts:check`는 통과한다. 생성 파일을 수작업 수정하거나 whitespace 검사 설정을 완화하지 않았다. 기능 검증과 별개인 남은 정리 사항으로 기록한다.
 
 ## 실제 브라우저
 
