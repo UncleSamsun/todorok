@@ -143,6 +143,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/TaskResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /tasks/{taskId}:
     get:
       tags: [Task]
@@ -241,6 +244,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /series/{seriesId}:
     get:
       tags: [Series]
@@ -365,6 +369,11 @@ components:
       required: true
       schema: { type: integer, format: int64, minimum: 0 }
   responses:
+    ServiceUnavailable:
+      description: TEMPLATE_SERVICE_UNAVAILABLE; retryable=true, reuse the original commandId and payload
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
     SessionSuccess:
       description: 세션 발급 성공
       headers:
@@ -411,6 +420,10 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/ProblemDetails' }
   schemas:
+    TemplateSelection:
+      $ref: './common-v1.yaml#/components/schemas/TemplateSelection'
+    TemplateLink:
+      $ref: './common-v1.yaml#/components/schemas/TemplateLink'
     RecurrenceRule:
       type: object
       additionalProperties: false
@@ -429,6 +442,8 @@ components:
       additionalProperties: false
       required: [title, taskType, startDate, rule]
       properties:
+        commandId: { type: string, format: uuid }
+        templateSelection: { $ref: '#/components/schemas/TemplateSelection' }
         title: { type: string, minLength: 1, maxLength: 120 }
         taskType: { $ref: '#/components/schemas/TaskType' }
         startDate: { type: string, format: date }
@@ -450,6 +465,7 @@ components:
       additionalProperties: false
       required: [seriesId, userId, title, taskType, startDate, rule, archived, version]
       properties:
+        templateLink: { $ref: '#/components/schemas/TemplateLink' }
         seriesId: { type: string, format: uuid }
         userId: { type: string, format: uuid }
         title: { type: string }
@@ -495,6 +511,7 @@ components:
       additionalProperties: false
       required: [taskId, userId, title, taskType, scheduledDate, status, version]
       properties:
+        templateLink: { $ref: '#/components/schemas/TemplateLink' }
         taskId: { type: string, format: uuid }
         activityId: { type: string, format: uuid }
         performedAt: { type: string, format: date-time }
@@ -515,6 +532,8 @@ components:
       additionalProperties: false
       required: [title, taskType, scheduledDate]
       properties:
+        commandId: { type: string, format: uuid }
+        templateSelection: { $ref: '#/components/schemas/TemplateSelection' }
         note: { type: string, maxLength: 20000 }
         title: { type: string, minLength: 1, maxLength: 120 }
         taskType: { $ref: '#/components/schemas/TaskType' }

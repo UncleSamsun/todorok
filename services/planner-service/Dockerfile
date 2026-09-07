@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1.7
+FROM node:24-bookworm-slim AS contract-node
 FROM eclipse-temurin:25-jdk-noble AS builder
+COPY --from=contract-node /usr/local/bin/node /usr/local/bin/node
 WORKDIR /workspace
 COPY . .
 RUN --mount=type=cache,target=/root/.gradle,sharing=locked \

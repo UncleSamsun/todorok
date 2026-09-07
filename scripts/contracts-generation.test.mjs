@@ -5,7 +5,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
-test('네 계약 생성기가 결정된 출력 루트를 만든다', async () => {
+test('계약 생성기가 결정된 출력 루트를 만든다', async () => {
   const outputRoot = await mkdtemp(path.join(os.tmpdir(), 'todorok-contracts-'))
   const staleFile = path.join(
     outputRoot,
@@ -31,6 +31,8 @@ test('네 계약 생성기가 결정된 출력 루트를 만든다', async () =>
   )
 
   for (const generatedRoot of [
+    'libs/web-support/src/generated',
+    'libs/event-contracts/src/generated',
     'services/planner-service/src/generated',
     'services/activity-service/src/generated',
     'packages/api-client/src/generated/planner',

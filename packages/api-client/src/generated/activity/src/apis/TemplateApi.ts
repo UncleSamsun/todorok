@@ -34,6 +34,11 @@ import {
     ProblemDetailsToJSON,
 } from '../models/ProblemDetails';
 import {
+    type TaskRecordTemplateResponse,
+    TaskRecordTemplateResponseFromJSON,
+    TaskRecordTemplateResponseToJSON,
+} from '../models/TaskRecordTemplateResponse';
+import {
     type TemplateDomain,
     TemplateDomainFromJSON,
     TemplateDomainToJSON,
@@ -71,6 +76,10 @@ export interface CreateTemplateOperationRequest {
 export interface CreateTemplateVersionOperationRequest {
     templateId: string;
     createTemplateVersionRequest: CreateTemplateVersionRequest;
+}
+
+export interface GetTaskRecordTemplateRequest {
+    taskId: string;
 }
 
 export interface GetTemplateRequest {
@@ -163,6 +172,27 @@ export interface TemplateApiInterface {
     /**
      */
     createTemplateVersion(requestParameters: CreateTemplateVersionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TemplateResponse>;
+
+    /**
+     * Creates request options for getTaskRecordTemplate without sending the request
+     * @param {string} taskId
+     * @throws {RequiredError}
+     * @memberof TemplateApiInterface
+     */
+    getTaskRecordTemplateRequestOpts(requestParameters: GetTaskRecordTemplateRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     *
+     * @param {string} taskId
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TemplateApiInterface
+     */
+    getTaskRecordTemplateRaw(requestParameters: GetTaskRecordTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TaskRecordTemplateResponse>>;
+
+    /**
+     */
+    getTaskRecordTemplate(requestParameters: GetTaskRecordTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TaskRecordTemplateResponse>;
 
     /**
      * Creates request options for getTemplate without sending the request
@@ -416,6 +446,57 @@ export class TemplateApi extends runtime.BaseAPI implements TemplateApiInterface
      */
     async createTemplateVersion(requestParameters: CreateTemplateVersionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TemplateResponse> {
         const response = await this.createTemplateVersionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getTaskRecordTemplate without sending the request
+     */
+    async getTaskRecordTemplateRequestOpts(requestParameters: GetTaskRecordTemplateRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['taskId'] == null) {
+            throw new runtime.RequiredError(
+                'taskId',
+                'Required parameter "taskId" was null or undefined when calling getTaskRecordTemplate().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/tasks/{taskId}/record-template`;
+        urlPath = urlPath.replace('{taskId}', encodeURIComponent(String(requestParameters['taskId'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async getTaskRecordTemplateRaw(requestParameters: GetTaskRecordTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TaskRecordTemplateResponse>> {
+        const requestOptions = await this.getTaskRecordTemplateRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => TaskRecordTemplateResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getTaskRecordTemplate(requestParameters: GetTaskRecordTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TaskRecordTemplateResponse> {
+        const response = await this.getTaskRecordTemplateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

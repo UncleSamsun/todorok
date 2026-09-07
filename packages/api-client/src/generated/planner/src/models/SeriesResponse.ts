@@ -27,6 +27,13 @@ import {
     TaskTypeToJSON,
     TaskTypeToJSONTyped,
 } from './TaskType';
+import type { TemplateLink } from './TemplateLink';
+import {
+    TemplateLinkFromJSON,
+    TemplateLinkFromJSONTyped,
+    TemplateLinkToJSON,
+    TemplateLinkToJSONTyped,
+} from './TemplateLink';
 
 /**
  *
@@ -34,6 +41,12 @@ import {
  * @interface SeriesResponse
  */
 export interface SeriesResponse {
+    /**
+     *
+     * @type {TemplateLink}
+     * @memberof SeriesResponse
+     */
+    templateLink?: TemplateLink;
     /**
      *
      * @type {string}
@@ -123,6 +136,7 @@ export function SeriesResponseFromJSONTyped(json: any, ignoreDiscriminator: bool
     }
     return {
 
+        'templateLink': json['templateLink'] == null ? undefined : TemplateLinkFromJSON(json['templateLink']),
         'seriesId': json['seriesId'],
         'userId': json['userId'],
         'title': json['title'],
@@ -147,6 +161,7 @@ export function SeriesResponseToJSONTyped(value?: SeriesResponse | null, ignoreD
 
     return {
 
+        'templateLink': TemplateLinkToJSON(value['templateLink']),
         'seriesId': value['seriesId'],
         'userId': value['userId'],
         'title': value['title'],

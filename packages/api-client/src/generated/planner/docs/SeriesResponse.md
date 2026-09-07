@@ -6,6 +6,7 @@
 
 Name | Type
 ------------ | -------------
+`templateLink` | [TemplateLink](TemplateLink.md)
 `seriesId` | string
 `userId` | string
 `title` | string
@@ -24,6 +25,7 @@ import type { SeriesResponse } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "templateLink": null,
   "seriesId": null,
   "userId": null,
   "title": null,

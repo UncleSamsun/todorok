@@ -1,0 +1,21 @@
+{
+  "eventId": "00000000-0000-0000-0000-000000000001",
+  "type": "TASK_ROLLED_OVER",
+  "version": 2,
+  "aggregateVersion": 1,
+  "occurredAt": "2026-09-07T01:00:00Z",
+  "userId": "00000000-0000-0000-0000-000000000002",
+  "payload": {
+    "taskId": "00000000-0000-0000-0000-000000000003",
+    "taskType": "STUDY",
+    "scheduledDate": "2026-09-07",
+    "status": "PLANNED",
+    "command": "ROLLED_OVER",
+    "seriesId": null,
+    "templateLink": {
+      "bindingId": "00000000-0000-0000-0000-000000000005",
+      "templateId": "00000000-0000-0000-0000-000000000006",
+      "selectedTemplateVersion": 0
+    }
+  }
+}

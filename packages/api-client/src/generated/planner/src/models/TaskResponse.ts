@@ -27,6 +27,13 @@ import {
     TaskStatusToJSON,
     TaskStatusToJSONTyped,
 } from './TaskStatus';
+import type { TemplateLink } from './TemplateLink';
+import {
+    TemplateLinkFromJSON,
+    TemplateLinkFromJSONTyped,
+    TemplateLinkToJSON,
+    TemplateLinkToJSONTyped,
+} from './TemplateLink';
 
 /**
  *
@@ -34,6 +41,12 @@ import {
  * @interface TaskResponse
  */
 export interface TaskResponse {
+    /**
+     *
+     * @type {TemplateLink}
+     * @memberof TaskResponse
+     */
+    templateLink?: TemplateLink;
     /**
      *
      * @type {string}
@@ -152,6 +165,7 @@ export function TaskResponseFromJSONTyped(json: any, ignoreDiscriminator: boolea
     }
     return {
 
+        'templateLink': json['templateLink'] == null ? undefined : TemplateLinkFromJSON(json['templateLink']),
         'taskId': json['taskId'],
         'activityId': json['activityId'] == null ? undefined : json['activityId'],
         'performedAt': json['performedAt'] == null ? undefined : (new Date(json['performedAt'])),
@@ -181,6 +195,7 @@ export function TaskResponseToJSONTyped(value?: TaskResponse | null, ignoreDiscr
 
     return {
 
+        'templateLink': TemplateLinkToJSON(value['templateLink']),
         'taskId': value['taskId'],
         'activityId': value['activityId'],
         'performedAt': value['performedAt'] == null ? value['performedAt'] : value['performedAt'].toISOString(),

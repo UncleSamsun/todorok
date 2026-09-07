@@ -10,6 +10,23 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    TemplateSelection:
+      type: object
+      additionalProperties: false
+      required: [templateId, expectedTemplateVersion]
+      properties:
+        templateId: { type: string, format: uuid }
+        expectedTemplateVersion: { type: integer, format: int64, minimum: 1 }
+    TemplateLink:
+      type: object
+      additionalProperties: false
+      required: [bindingId, templateId, selectedTemplateVersion, name, fieldSummary]
+      properties:
+        bindingId: { type: string, format: uuid }
+        templateId: { type: string, format: uuid }
+        selectedTemplateVersion: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        fieldSummary: { type: string, maxLength: 240 }
     FieldError:
       type: object
       additionalProperties: false

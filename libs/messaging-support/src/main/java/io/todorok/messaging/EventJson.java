@@ -17,7 +17,9 @@ public final class EventJson {
         JsonNode n = mapper.readTree(json);
         if (
             !n.path("version").isIntegralNumber() ||
-            n.path("version").asInt() != 1 ||
+            (n.path("version").asInt() != 1 && !(n.path("version").asInt() == 2
+                && java.util.Set.of("TASK_SCHEDULED", "TASK_CHANGED", "TASK_ROLLED_OVER", "SERIES_CHANGED")
+                    .contains(n.path("type").asText()))) ||
             !n.path("aggregateVersion").isIntegralNumber() ||
             !n.path("aggregateVersion").canConvertToLong() ||
             !n.path("payload").isObject()
@@ -25,7 +27,7 @@ public final class EventJson {
         return new EventEnvelope<>(
             uuid(n, "eventId"),
             EventType.valueOf(text(n, "type")),
-            1,
+            n.get("version").asInt(),
             n.get("aggregateVersion").longValue(),
             Instant.parse(text(n, "occurredAt")),
             uuid(n, "userId"),

@@ -50,6 +50,9 @@ public class TaskSeries {
 
     protected TaskSeries() {}
 
+    @Embedded
+    io.todorok.planner.template.TemplateLinkColumns templateLink;
+
     TaskSeries(UUID owner, String title, TaskType type, LocalDate start) {
         id = UUID.randomUUID();
         userId = owner;
@@ -95,6 +98,7 @@ public class TaskSeries {
             version
         )
             .endDate(endDate)
-            .note(note);
+            .note(note)
+            .templateLink(templateLink == null ? null : templateLink.response());
     }
 }

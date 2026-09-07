@@ -6,6 +6,8 @@
 
 Name | Type
 ------------ | -------------
+`commandId` | string
+`templateSelection` | [TemplateSelection](TemplateSelection.md)
 `note` | string
 `title` | string
 `taskType` | [TaskType](TaskType.md)
@@ -18,6 +20,8 @@ import type { CreateTaskRequest } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "commandId": null,
+  "templateSelection": null,
   "note": null,
   "title": null,
   "taskType": null,

@@ -71,12 +71,29 @@ registerContractTask(
     "packages/api-client/src/generated/activity",
 )
 
+registerContractTask(
+    "generateTemplateInternalSpring",
+    "spring",
+    "contracts/openapi/template-internal-v1.yaml",
+    "contracts/generator/template-internal-spring.yaml",
+    "libs/web-support/src/generated",
+)
+
+tasks.register<Exec>("generateEventV2Java") {
+    inputs.dir("contracts/events")
+    inputs.file("scripts/generate-event-v2.mjs")
+    outputs.dir(contractsOutputRoot.map { File(it, "libs/event-contracts/src/generated") })
+    commandLine("node", "scripts/generate-event-v2.mjs", contractsOutputRoot.get())
+}
+
 tasks.register("generateContracts") {
     dependsOn(
         "generatePlannerSpring",
         "generateActivitySpring",
         "generatePlannerTypeScript",
         "generateActivityTypeScript",
+        "generateTemplateInternalSpring",
+        "generateEventV2Java",
     )
 }
 

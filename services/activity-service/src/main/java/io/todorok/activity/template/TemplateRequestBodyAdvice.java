@@ -14,7 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAd
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.databind.json.JsonMapper;
 
-@ControllerAdvice(assignableTypes = TemplateController.class)
+@ControllerAdvice(assignableTypes = {TemplateController.class, TemplateSelectionController.class})
 final class TemplateRequestBodyAdvice extends RequestBodyAdviceAdapter {
     static final int MAX_BODY_BYTES = 1_048_576;
 
@@ -28,7 +28,8 @@ final class TemplateRequestBodyAdvice extends RequestBodyAdviceAdapter {
         Type targetType,
         Class<? extends HttpMessageConverter<?>> converterType
     ) {
-        return TemplateController.class.isAssignableFrom(methodParameter.getContainingClass());
+        return TemplateController.class.isAssignableFrom(methodParameter.getContainingClass())
+            || TemplateSelectionController.class.isAssignableFrom(methodParameter.getContainingClass());
     }
 
     @Override
@@ -68,6 +69,14 @@ final class TemplateRequestBodyAdvice extends RequestBodyAdviceAdapter {
                 "The template management request body is not valid JSON or contains a duplicate key.",
                 false
             );
+        }
+        if (TemplateSelectionController.class.isAssignableFrom(parameter.getContainingClass())) {
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (!(auth.getPrincipal() instanceof org.springframework.security.oauth2.jwt.Jwt jwt)
+                || !io.todorok.web.security.TemplateServiceTokens.hash(new String(body, java.nio.charset.StandardCharsets.UTF_8))
+                    .equals(jwt.getClaimAsString("fingerprint"))) {
+                throw new ApiFailure(403, "FORBIDDEN", "Forbidden", "Request claims do not match.", false);
+            }
         }
         HttpHeaders headers = new HttpHeaders();
         headers.putAll(inputMessage.getHeaders());

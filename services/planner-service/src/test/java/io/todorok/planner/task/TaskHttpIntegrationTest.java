@@ -32,6 +32,41 @@ import tools.jackson.databind.json.JsonMapper;
 )
 class TaskHttpIntegrationTest {
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"tasks","series"})
+    void templateVersionMustBeAnIntegerBeforeRegisteringAnyCommand(String resource) throws Exception {
+        UUID owner=UUID.randomUUID();
+        String dates=resource.equals("tasks") ? "\"scheduledDate\":\"2026-09-09\"" :
+            "\"startDate\":\"2026-09-09\",\"rule\":{\"frequency\":\"DAILY\",\"interval\":1,\"weekdays\":[],\"monthDay\":1}";
+        String suffix=",\"title\":\"정수 선택\",\"taskType\":\"STUDY\","+dates+",\"templateSelection\":{\"templateId\":\""+UUID.randomUUID()+"\",\"expectedTemplateVersion\":";
+        for(String invalid:List.of("1.5","\"1\"")) {
+            var response=call(owner,"POST","/"+resource,"{\"commandId\":\""+UUID.randomUUID()+"\""+suffix+invalid+"}}");
+            assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
+        }
+        assertThat(jdbc.queryForObject("select count(*) from planner.planner_creation_command where owner_id=?",Integer.class,owner)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from planner.task where user_id=?",Integer.class,owner)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from planner.task_series where user_id=?",Integer.class,owner)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from planner.outbox_event where payload->>'userId'=?",Integer.class,owner.toString())).isZero();
+        var valid=call(owner,"POST","/"+resource,"{\"commandId\":\""+UUID.randomUUID()+"\""+suffix+"1}}");
+        assertThat(valid.statusCode()).as(valid.body()).isEqualTo(503);
+        assertThat(body(valid).path("code").asText()).isEqualTo("TEMPLATE_SERVICE_UNAVAILABLE");
+        assertThat(jdbc.queryForObject("select count(*) from planner.planner_creation_command where owner_id=?",Integer.class,owner)).isOne();
+    }
+
+    @Test
+    void templateSelectionRequiresCommandAndUnavailableServiceLeavesNoTask() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String selection = "\"templateSelection\":{\"templateId\":\"" + UUID.randomUUID() + "\",\"expectedTemplateVersion\":1}";
+        String base = "\"title\":\"연결\",\"taskType\":\"STUDY\",\"scheduledDate\":\"2026-09-09\",";
+        assertThat(call(owner, "POST", "/tasks", "{" + base + selection + "}").statusCode()).isEqualTo(400);
+        String request = "{" + base + selection + ",\"commandId\":\"" + UUID.randomUUID() + "\"}";
+        var result = call(owner, "POST", "/tasks", request);
+        assertThat(result.statusCode()).as(result.body()).isEqualTo(503);
+        assertThat(body(result).get("code").asText()).isEqualTo("TEMPLATE_SERVICE_UNAVAILABLE");
+        assertThat(call(owner, "POST", "/tasks", request.replace(selection + ",", "")).statusCode()).isEqualTo(409);
+        assertThat(body(call(owner, "GET", "/calendar/2026-09-09", null)).get("tasks").size()).isZero();
+    }
+
     @Test
     void dailyNotesAreVersionedIsolatedAndValidateLimits() throws Exception {
         UUID owner = UUID.randomUUID(),

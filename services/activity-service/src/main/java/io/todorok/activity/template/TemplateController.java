@@ -19,9 +19,32 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnWebApplication
 public class TemplateController implements TemplateApi {
     private final TemplateService templates;
+    private final TemplateBindingService bindings;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
-    public TemplateController(TemplateService templates) {
+    public TemplateController(TemplateService templates, TemplateBindingService bindings, org.springframework.jdbc.core.JdbcTemplate jdbc) {
         this.templates = templates;
+        this.bindings = bindings;
+        this.jdbc = jdbc;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+    public ResponseEntity<io.todorok.activity.api.model.TaskRecordTemplateResponse> getTaskRecordTemplate(UUID taskId) {
+        var rows = jdbc.queryForList("select * from task_reference where task_id=?", taskId);
+        if (rows.isEmpty()) throw new io.todorok.web.ApiFailure(409, "TASK_NOT_READY", "Task not ready", "Retry after task projection arrives.", true);
+        var row = rows.getFirst();
+        if (!owner().equals(row.get("user_id"))) throw new io.todorok.web.ApiFailure(404, "NOT_FOUND", "Not found", "Task was not found.", false);
+        var response = new io.todorok.activity.api.model.TaskRecordTemplateResponse(row.get("template_binding_id") != null);
+        if (response.getLinked()) {
+            var link = bindings.link((UUID) row.get("template_binding_id"));
+            bindings.validate(owner(), taskId, (UUID) row.get("series_id"), (String) row.get("task_type"),
+                link.getBindingId(), link.getTemplateId(), link.getSelectedTemplateVersion());
+            response.templateLink(new io.todorok.activity.api.model.TemplateLink(link.getBindingId(), link.getTemplateId(),
+                link.getSelectedTemplateVersion(), link.getName(), link.getFieldSummary()));
+            response.template(templates.get(owner(), link.getTemplateId()));
+        }
+        return ResponseEntity.ok(response);
     }
 
     @Override

@@ -43,6 +43,9 @@ management:
         enabled: true
 
 todorok:
+  template-service:
+    private-key-location: ${TODOROK_TEMPLATE_SERVICE_PRIVATE_KEY_FILE:}
+    base-url: ${TODOROK_TEMPLATE_SERVICE_BASE_URL:http://activity-service:8082/api/activity/v1}
   messaging:
     enabled: ${MESSAGING_ENABLED:false}
   auth:

@@ -1,0 +1,19 @@
+# Opt-in service credentials keep existing migration/bootstrap and unlinked deployments compatible.
+# Host files must be separate from the user access-token key pair.
+services:
+  planner-service:
+    environment:
+      TODOROK_TEMPLATE_SERVICE_PRIVATE_KEY_FILE: file:/run/secrets/template_service_private_key
+      TODOROK_TEMPLATE_SERVICE_BASE_URL: http://activity-service:8082/api/activity/v1
+    secrets:
+      - template_service_private_key
+  activity-service:
+    environment:
+      TODOROK_TEMPLATE_SERVICE_PUBLIC_KEY_FILE: file:/run/secrets/template_service_public_key
+    secrets:
+      - template_service_public_key
+secrets:
+  template_service_private_key:
+    file: ${TODOROK_TEMPLATE_SERVICE_PRIVATE_KEY_FILE:?Set the planner service PKCS8 key file}
+  template_service_public_key:
+    file: ${TODOROK_TEMPLATE_SERVICE_PUBLIC_KEY_FILE:?Set the activity service X509 public key file}

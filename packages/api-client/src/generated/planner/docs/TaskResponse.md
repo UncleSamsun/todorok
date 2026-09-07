@@ -6,6 +6,7 @@
 
 Name | Type
 ------------ | -------------
+`templateLink` | [TemplateLink](TemplateLink.md)
 `taskId` | string
 `activityId` | string
 `performedAt` | Date
@@ -29,6 +30,7 @@ import type { TaskResponse } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "templateLink": null,
   "taskId": null,
   "activityId": null,
   "performedAt": null,

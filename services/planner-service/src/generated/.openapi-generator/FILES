@@ -21,6 +21,8 @@ java/io/todorok/planner/api/model/SessionResponse.java
 java/io/todorok/planner/api/model/TaskResponse.java
 java/io/todorok/planner/api/model/TaskStatus.java
 java/io/todorok/planner/api/model/TaskType.java
+java/io/todorok/planner/api/model/TemplateLink.java
+java/io/todorok/planner/api/model/TemplateSelection.java
 java/io/todorok/planner/api/model/UpdateDailyNoteRequest.java
 java/io/todorok/planner/api/model/UpdateSeriesRequest.java
 java/io/todorok/planner/api/model/UpdateTaskRequest.java

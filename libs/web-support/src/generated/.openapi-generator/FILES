@@ -1,0 +1,6 @@
+java/io/todorok/internal/api/ApiUtil.java
+java/io/todorok/internal/api/TemplateSelectionApi.java
+java/io/todorok/internal/api/model/ProblemDetails.java
+java/io/todorok/internal/api/model/ProblemDetailsFieldErrorsInner.java
+java/io/todorok/internal/api/model/TemplateLink.java
+java/io/todorok/internal/api/model/TemplateSelectionRequest.java

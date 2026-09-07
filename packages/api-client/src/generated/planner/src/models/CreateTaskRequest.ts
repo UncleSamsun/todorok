@@ -20,6 +20,13 @@ import {
     TaskTypeToJSON,
     TaskTypeToJSONTyped,
 } from './TaskType';
+import type { TemplateSelection } from './TemplateSelection';
+import {
+    TemplateSelectionFromJSON,
+    TemplateSelectionFromJSONTyped,
+    TemplateSelectionToJSON,
+    TemplateSelectionToJSONTyped,
+} from './TemplateSelection';
 
 /**
  *
@@ -27,6 +34,18 @@ import {
  * @interface CreateTaskRequest
  */
 export interface CreateTaskRequest {
+    /**
+     *
+     * @type {string}
+     * @memberof CreateTaskRequest
+     */
+    commandId?: string;
+    /**
+     *
+     * @type {TemplateSelection}
+     * @memberof CreateTaskRequest
+     */
+    templateSelection?: TemplateSelection;
     /**
      *
      * @type {string}
@@ -75,6 +94,8 @@ export function CreateTaskRequestFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
 
+        'commandId': json['commandId'] == null ? undefined : json['commandId'],
+        'templateSelection': json['templateSelection'] == null ? undefined : TemplateSelectionFromJSON(json['templateSelection']),
         'note': json['note'] == null ? undefined : json['note'],
         'title': json['title'],
         'taskType': TaskTypeFromJSON(json['taskType']),
@@ -93,6 +114,8 @@ export function CreateTaskRequestToJSONTyped(value?: CreateTaskRequest | null, i
 
     return {
 
+        'commandId': value['commandId'],
+        'templateSelection': TemplateSelectionToJSON(value['templateSelection']),
         'note': value['note'],
         'title': value['title'],
         'taskType': TaskTypeToJSON(value['taskType']),

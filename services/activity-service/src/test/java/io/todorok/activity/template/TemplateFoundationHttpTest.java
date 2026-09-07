@@ -52,6 +52,7 @@ import tools.jackson.databind.ObjectMapper;
 })
 class TemplateFoundationHttpTest {
     private static final KeyPair KEYS = keys();
+    private static final KeyPair SERVICE_KEYS = keys();
     private static final UUID OWNER = UUID.randomUUID();
 
     @Container
@@ -77,6 +78,8 @@ class TemplateFoundationHttpTest {
         registry.add("spring.datasource.password", () -> "activity-test-password");
         registry.add("todorok.auth.public-key", () -> Base64.getEncoder()
             .encodeToString(KEYS.getPublic().getEncoded()));
+        registry.add("todorok.template-service.public-key", () -> Base64.getEncoder()
+            .encodeToString(SERVICE_KEYS.getPublic().getEncoded()));
     }
 
     private static Path roleScript() {
@@ -88,6 +91,180 @@ class TemplateFoundationHttpTest {
     @Autowired ObjectMapper mapper;
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactions;
+    @Autowired io.todorok.activity.record.ActivityEventConsumer consumer;
+    @Autowired TemplateBindingService bindings;
+    @Autowired TemplateService templateService;
+
+    @Test
+    void rowLockEstablishesBothApprovalBeforeArchiveAndArchiveBeforeApproval() throws Exception {
+        for(boolean archiveFirst:List.of(false,true)) {
+            UUID owner=UUID.randomUUID();
+            UUID template=UUID.fromString(mapper.readTree(send("POST","/templates",templateBody(UUID.randomUUID(),"잠금 선후","STUDY","STUDY_CATEGORY",List.of()),owner).body()).get("templateId").asText());
+            var body=Map.<String,Object>of("requestId",UUID.randomUUID(),"ownerId",owner,"targetType","TASK",
+                "targetId",UUID.randomUUID(),"taskType","STUDY","templateId",template,"expectedTemplateVersion",1);
+            var hold=new CountDownLatch(1); var release=new CountDownLatch(1);
+            try(var pool=Executors.newFixedThreadPool(2)) {
+                var first=pool.submit(()->new TransactionTemplate(transactions).execute(status->{
+                    if(archiveFirst) templateService.archive(owner,template,new io.todorok.activity.api.model.ArchiveTemplateRequest(UUID.randomUUID(),0L));
+                    else bindings.approve(mapper.readValue(mapper.writeValueAsString(body),io.todorok.internal.api.model.TemplateSelectionRequest.class));
+                    hold.countDown();
+                    try { if(!release.await(15,java.util.concurrent.TimeUnit.SECONDS)) throw new AssertionError("release timed out"); }
+                    catch(InterruptedException failure) { Thread.currentThread().interrupt(); throw new IllegalStateException(failure); }
+                    return true;
+                }));
+                assertThat(hold.await(15,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+                var second=pool.submit(()->archiveFirst ? select(body,"todorok-activity-internal","template:select",60,null)
+                    : send("POST","/templates/"+template+"/archive",archiveBody(UUID.randomUUID(),0),owner));
+                try {
+                    org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(10)).until(()->
+                        jdbc.queryForObject("select count(*) from pg_stat_activity where wait_event_type='Lock' and query like '%record_template%'",Integer.class)>0);
+                } finally { release.countDown(); }
+                assertThat(first.get()).isTrue();
+                assertThat(second.get().statusCode()).isEqualTo(archiveFirst?409:200);
+                assertThat(jdbc.queryForObject("select count(*) from template_selection_binding where user_id=?",Integer.class,owner)).isEqualTo(archiveFirst?0:1);
+            } finally { release.countDown(); }
+        }
+    }
+
+    @Test
+    void selectionChecksOwnerDomainVersionTargetAndSerializesConcurrentRequest() throws Exception {
+        UUID owner=UUID.randomUUID();
+        String template=mapper.readTree(send("POST","/templates",templateBody(UUID.randomUUID(),"선택 검증","STUDY","STUDY_CATEGORY",List.of()),owner).body()).get("templateId").asText();
+        var body=new LinkedHashMap<String,Object>(Map.of("requestId",UUID.randomUUID(),"ownerId",owner,"targetType","TASK",
+            "targetId",UUID.randomUUID(),"taskType","STUDY","templateId",template,"expectedTemplateVersion",1));
+        body.put("ownerId",UUID.randomUUID());
+        assertProblem(select(body,"todorok-activity-internal","template:select",60,null),404,"NOT_FOUND");
+        body.put("ownerId",owner); body.put("taskType","WORKOUT");
+        assertProblem(select(body,"todorok-activity-internal","template:select",60,null),400,"VALIDATION_FAILED");
+        body.put("taskType","STUDY"); body.put("expectedTemplateVersion",2);
+        assertProblem(select(body,"todorok-activity-internal","template:select",60,null),409,"TEMPLATE_VERSION_CONFLICT");
+        body.put("expectedTemplateVersion",1);
+        var raced=race(()->select(body,"todorok-activity-internal","template:select",60,null),
+            ()->select(body,"todorok-activity-internal","template:select",60,null));
+        assertThat(raced).allSatisfy(r->assertThat(r.statusCode()).as(r.body()).isEqualTo(201));
+        assertThat(raced.get(0).body()).isEqualTo(raced.get(1).body());
+        assertThat(jdbc.queryForObject("select count(*) from template_selection_binding where user_id=?",Integer.class,owner)).isOne();
+        body.put("requestId",UUID.randomUUID());
+        assertProblem(select(body,"todorok-activity-internal","template:select",60,null),409,"COMMAND_REUSE");
+        assertThatThrownBy(()->jdbc.update("delete from template_selection_binding where user_id=?",owner)).isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    void approvalAndArchiveRaceHasOneLinearOrder() throws Exception {
+        for(int attempt=0;attempt<4;attempt++) {
+            UUID owner=UUID.randomUUID();
+            String template=mapper.readTree(send("POST","/templates",templateBody(UUID.randomUUID(),"보관 경합","STUDY","STUDY_CATEGORY",List.of()),owner).body()).get("templateId").asText();
+            var body=Map.<String,Object>of("requestId",UUID.randomUUID(),"ownerId",owner,"targetType","SERIES",
+                "targetId",UUID.randomUUID(),"taskType","STUDY","templateId",template,"expectedTemplateVersion",1);
+            var raced=race(()->select(body,"todorok-activity-internal","template:select",60,null),
+                ()->send("POST","/templates/"+template+"/archive",archiveBody(UUID.randomUUID(),0),owner));
+            assertThat(raced.get(1).statusCode()).isEqualTo(200);
+            assertThat(raced.get(0).statusCode()).isIn(201,409);
+            int count=jdbc.queryForObject("select count(*) from template_selection_binding where user_id=?",Integer.class,owner);
+            assertThat(count).isEqualTo(raced.get(0).statusCode()==201?1:0);
+            assertThat(select(body,"todorok-activity-internal","template:select",60,null).statusCode()).isEqualTo(raced.get(0).statusCode());
+        }
+    }
+
+    @Test
+    void v2ProjectionValidatesBindingAndKeepsLinkWhenLateV1Arrives() throws Exception {
+        UUID owner = UUID.randomUUID(), task = UUID.randomUUID();
+        String template = mapper.readTree(send("POST", "/templates", templateBody(UUID.randomUUID(), "기록 정의", "STUDY",
+            "STUDY_CATEGORY", List.of()), owner).body()).get("templateId").asText();
+        var selected = select(Map.of("requestId", UUID.randomUUID(), "ownerId", owner, "targetType", "TASK",
+            "targetId", task, "taskType", "STUDY", "templateId", template, "expectedTemplateVersion", 1),
+            "todorok-activity-internal", "template:select", 60, null);
+        assertThat(selected.statusCode()).as(selected.body()).isEqualTo(201);
+        var selectedLink = mapper.readTree(selected.body());
+        var eventLink = Map.of("bindingId",selectedLink.get("bindingId").asText(),"templateId",template,"selectedTemplateVersion",1);
+        var payload = new LinkedHashMap<String,Object>(Map.of("taskId", task, "taskType", "STUDY", "status", "PLANNED",
+            "scheduledDate", "2026-09-09", "templateLink", eventLink));
+        payload.put("seriesId",null);
+        consumer.receive(event(owner, payload, 2, 1));
+        var read = send("GET", "/tasks/" + task + "/record-template", null, owner);
+        assertThat(read.statusCode()).isEqualTo(200);
+        assertThat(mapper.readTree(read.body()).get("linked").asBoolean()).isTrue();
+        assertThat(send("GET", "/tasks/" + task + "/record-template", null, UUID.randomUUID()).statusCode()).isEqualTo(404);
+        assertProblem(send("GET", "/tasks/" + UUID.randomUUID() + "/record-template", null, owner), 409, "TASK_NOT_READY");
+        payload.remove("templateLink");
+        consumer.receive(event(owner, payload, 1, 3));
+        assertThat(send("GET", "/tasks/" + task + "/record-template", null, owner).body()).isEqualTo(read.body());
+        payload.put("templateLink", eventLink);
+        payload.put("taskId", UUID.randomUUID());
+        assertThatThrownBy(() -> consumer.receive(event(owner, payload, 2, 4))).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private String event(UUID owner, Map<String,Object> payload, int schema, long revision) {
+        return mapper.writeValueAsString(Map.of("eventId", UUID.randomUUID(), "type", "TASK_SCHEDULED", "version", schema,
+            "aggregateVersion", revision, "occurredAt", Instant.now().toString(), "userId", owner, "payload", payload));
+    }
+
+    @Test
+    void selectionIsImmutableIdempotentAndSurvivesArchiveButNewSelectionsFail() throws Exception {
+        UUID owner = UUID.randomUUID();
+        var created = send("POST", "/templates", templateBody(UUID.randomUUID(), "선택 이름", "STUDY",
+            "STUDY_CATEGORY", List.of(field("NUMBER", "문제", "개"))), owner);
+        var template = mapper.readTree(created.body()).get("templateId").asText();
+        var body = new LinkedHashMap<String, Object>(Map.of("requestId", UUID.randomUUID(), "ownerId", owner,
+            "targetType", "TASK", "targetId", UUID.randomUUID(), "taskType", "STUDY",
+            "templateId", template, "expectedTemplateVersion", 1));
+        var selected = select(body, "todorok-activity-internal", "template:select", 60, null);
+        assertThat(selected.statusCode()).as(selected.body()).isEqualTo(201);
+        var binding = mapper.readTree(selected.body());
+        assertThat(binding.get("name").asText()).isEqualTo("선택 이름");
+        assertThat(binding.get("fieldSummary").asText()).contains("문제", "개");
+        assertThat(select(body, "todorok-activity-internal", "template:select", 60, null).body()).isEqualTo(selected.body());
+        assertThat(send("POST", "/templates/" + template + "/archive", archiveBody(UUID.randomUUID(), 0), owner).statusCode()).isEqualTo(200);
+        assertThat(select(body, "todorok-activity-internal", "template:select", 60, null).body()).isEqualTo(selected.body());
+        body.put("targetId", UUID.randomUUID());
+        assertProblem(select(body, "todorok-activity-internal", "template:select", 60, null), 409, "COMMAND_REUSE");
+        body.put("requestId", UUID.randomUUID());
+        assertProblem(select(body, "todorok-activity-internal", "template:select", 60, null), 409, "TEMPLATE_ARCHIVED");
+    }
+
+    @Test
+    void internalApprovalRejectsUserTokenAndInvalidServiceClaims() throws Exception {
+        var body = Map.<String,Object>of("requestId", UUID.randomUUID(), "ownerId", OWNER,
+            "targetType", "TASK", "targetId", UUID.randomUUID(), "taskType", "STUDY",
+            "templateId", UUID.randomUUID(), "expectedTemplateVersion", 1);
+        assertThat(send("POST", "/internal/template-selections", mapper.writeValueAsString(body), OWNER).statusCode()).isEqualTo(401);
+        assertThat(select(body, "wrong", "template:select", 60, null).statusCode()).isEqualTo(401);
+        assertThat(select(body, "todorok-activity-internal", "wrong", 60, null).statusCode()).isEqualTo(401);
+        assertThat(select(body, "todorok-activity-internal", "template:select", -1, null).statusCode()).isEqualTo(401);
+        assertThat(select(body, "todorok-activity-internal", "template:select", 61, null).statusCode()).isEqualTo(401);
+        assertThat(select(body, "todorok-activity-internal", "template:select", 60, "tampered").statusCode()).isEqualTo(403);
+        assertThat(selectAt(body,"todorok-activity-internal","template:select",60,null,"GET","/templates").statusCode()).isEqualTo(401);
+        assertThat(selectAt(body,"todorok-activity-internal","template:select",60,null,"POST","/internal/template-selections",
+            Map.of("ownerId",UUID.randomUUID().toString())).statusCode()).isEqualTo(403);
+        assertThat(selectAt(body,"todorok-activity-internal","template:select",60,null,"POST","/internal/template-selections",
+            Map.of("targetType","SERIES")).statusCode()).isEqualTo(403);
+        assertThat(selectAt(body,"todorok-activity-internal","template:select",60,null,"POST","/internal/template-selections",
+            Map.of("path","/api/activity/v1/templates")).statusCode()).isEqualTo(401);
+    }
+
+    private HttpResponse<String> select(Map<String,Object> body, String audience, String scope, int seconds, String hash) throws Exception {
+        return selectAt(body,audience,scope,seconds,hash,"POST","/internal/template-selections");
+    }
+
+    private HttpResponse<String> selectAt(Map<String,Object> body, String audience, String scope, int seconds, String hash, String method, String path) throws Exception {
+        return selectAt(body,audience,scope,seconds,hash,method,path,Map.of());
+    }
+
+    private HttpResponse<String> selectAt(Map<String,Object> body, String audience, String scope, int seconds, String hash, String method, String path, Map<String,Object> overrides) throws Exception {
+        String json = mapper.writeValueAsString(body);
+        var claims = new JWTClaimsSet.Builder().issuer("todorok-planner").subject("todorok-planner")
+            .audience(audience).issueTime(new Date()).expirationTime(Date.from(Instant.now().plusSeconds(seconds)))
+            .claim("scope", scope).claim("method", "POST").claim("path", "/api/activity/v1/internal/template-selections")
+            .claim("fingerprint", hash == null ? java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                .digest(json.getBytes(java.nio.charset.StandardCharsets.UTF_8))) : hash);
+        for (String key : List.of("ownerId", "requestId", "targetType", "targetId")) claims.claim(key, body.get(key).toString());
+        overrides.forEach(claims::claim);
+        var jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claims.build());
+        jwt.sign(new RSASSASigner((java.security.interfaces.RSAPrivateKey) SERVICE_KEYS.getPrivate()));
+        return HttpClient.newHttpClient().send(HttpRequest.newBuilder(URI.create("http://localhost:" + port
+            + "/api/activity/v1" + path)).header("Authorization", "Bearer " + jwt.serialize())
+            .header("Content-Type", "application/json").method(method,HttpRequest.BodyPublishers.ofString(json)).build(), HttpResponse.BodyHandlers.ofString());
+    }
 
     @Test
     void createsAndReadsACompleteFiveTypeDefinitionWithoutCreatingTasksOrEvents() throws Exception {
@@ -113,8 +290,8 @@ class TemplateFoundationHttpTest {
         assertThat(body.get("currentVersion").get("templateVersion").asLong()).isEqualTo(1);
         assertThat(body.get("currentVersion").get("fields").size()).isEqualTo(5);
         assertThat(body.get("currentVersion").get("fields").get(1).get("unit").asText()).isEqualTo("초");
-        assertThat(jdbc.queryForObject("select count(*) from task_reference", Integer.class)).isZero();
-        assertThat(jdbc.queryForObject("select count(*) from outbox_event", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from task_reference where user_id=?", Integer.class, OWNER)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from outbox_event where payload->>'userId'=?", Integer.class, OWNER.toString())).isZero();
 
         var read = send("GET", "/templates/" + body.get("templateId").asText(), null, OWNER);
         assertThat(read.statusCode()).isEqualTo(200);

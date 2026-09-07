@@ -6,6 +6,8 @@
 
 Name | Type
 ------------ | -------------
+`commandId` | string
+`templateSelection` | [TemplateSelection](TemplateSelection.md)
 `title` | string
 `taskType` | [TaskType](TaskType.md)
 `startDate` | string
@@ -20,6 +22,8 @@ import type { CreateSeriesRequest } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "commandId": null,
+  "templateSelection": null,
   "title": null,
   "taskType": null,
   "startDate": null,

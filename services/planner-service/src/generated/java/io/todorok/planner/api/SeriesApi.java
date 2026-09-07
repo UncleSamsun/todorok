@@ -59,6 +59,7 @@ public interface SeriesApi {
      *         or 잘못된 요청 (status code 400)
      *         or 대상을 찾을 수 없음 (status code 404)
      *         or 버전 충돌 (status code 409)
+     *         or TEMPLATE_SERVICE_UNAVAILABLE; retryable&#x3D;true, reuse the original commandId and payload (status code 503)
      */
     @RequestMapping(
         method = RequestMethod.POST,

@@ -155,6 +155,9 @@ example().catch(console.error);
 |-------------|-------------|------------------|
 | **201** | Task 생성 |  -  |
 | **400** | 잘못된 요청 |  -  |
+| **404** | 대상을 찾을 수 없음 |  -  |
+| **409** | 버전 충돌 |  -  |
+| **503** | TEMPLATE_SERVICE_UNAVAILABLE; retryable&#x3D;true, reuse the original commandId and payload |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

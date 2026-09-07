@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.Nulls;
 import io.todorok.planner.api.model.RecurrenceRule;
 import io.todorok.planner.api.model.TaskType;
+import io.todorok.planner.api.model.TemplateLink;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -28,6 +29,9 @@ import jakarta.annotation.Generated;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 public class SeriesResponse {
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable TemplateLink templateLink;
 
   private UUID seriesId;
 
@@ -69,6 +73,28 @@ public class SeriesResponse {
     this.rule = rule;
     this.archived = archived;
     this.version = version;
+  }
+
+  public SeriesResponse templateLink(@Nullable TemplateLink templateLink) {
+    this.templateLink = templateLink;
+    return this;
+  }
+
+  /**
+   * Get templateLink
+   * @return templateLink
+   */
+  @Valid
+
+  @JsonProperty("templateLink")
+  public @Nullable TemplateLink getTemplateLink() {
+    return templateLink;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("templateLink")
+  public void setTemplateLink(@Nullable TemplateLink templateLink) {
+    this.templateLink = templateLink;
   }
 
   public SeriesResponse seriesId(UUID seriesId) {
@@ -293,7 +319,8 @@ public class SeriesResponse {
       return false;
     }
     SeriesResponse seriesResponse = (SeriesResponse) o;
-    return Objects.equals(this.seriesId, seriesResponse.seriesId) &&
+    return Objects.equals(this.templateLink, seriesResponse.templateLink) &&
+        Objects.equals(this.seriesId, seriesResponse.seriesId) &&
         Objects.equals(this.userId, seriesResponse.userId) &&
         Objects.equals(this.title, seriesResponse.title) &&
         Objects.equals(this.taskType, seriesResponse.taskType) &&
@@ -307,13 +334,14 @@ public class SeriesResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(seriesId, userId, title, taskType, startDate, endDate, note, rule, archived, version);
+    return Objects.hash(templateLink, seriesId, userId, title, taskType, startDate, endDate, note, rule, archived, version);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class SeriesResponse {\n");
+    sb.append("    templateLink: ").append(toIndentedString(templateLink)).append("\n");
     sb.append("    seriesId: ").append(toIndentedString(seriesId)).append("\n");
     sb.append("    userId: ").append(toIndentedString(userId)).append("\n");
     sb.append("    title: ").append(toIndentedString(title)).append("\n");

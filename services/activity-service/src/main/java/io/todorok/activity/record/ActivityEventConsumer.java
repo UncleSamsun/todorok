@@ -16,15 +16,18 @@ public class ActivityEventConsumer {
     private final JdbcTemplate jdbc;
     private final InboxEventGuard inbox;
     private final ObjectMapper mapper;
+    private final io.todorok.activity.template.TemplateBindingService bindings;
 
     public ActivityEventConsumer(
         JdbcTemplate jdbc,
         InboxEventGuard inbox,
-        ObjectMapper mapper
+        ObjectMapper mapper,
+        io.todorok.activity.template.TemplateBindingService bindings
     ) {
         this.jdbc = jdbc;
         this.inbox = inbox;
         this.mapper = mapper;
+        this.bindings = bindings;
     }
 
     @KafkaListener(
@@ -73,7 +76,31 @@ public class ActivityEventConsumer {
                 status
             )
         ) throw new IllegalArgumentException("Invalid task reference");
+        if (e.version()==2 && (!p.has("seriesId") || !p.has("templateLink")))
+            throw new IllegalArgumentException("Incomplete v2 task identity");
+        java.util.UUID series = e.version()==2 && p.hasNonNull("seriesId") ? EventJson.uuid(p, "seriesId") : null;
+        java.util.UUID binding = null, template = null;
+        Long selectedVersion = null;
+        if (e.version() == 2 && p.hasNonNull("templateLink")) {
+            var link = p.get("templateLink");
+            if (!link.isObject() || !link.propertyNames().equals(java.util.Set.of("bindingId","templateId","selectedTemplateVersion")))
+                throw new IllegalArgumentException("Malformed template link");
+            binding = EventJson.uuid(link, "bindingId"); template = EventJson.uuid(link, "templateId");
+            if (!link.path("selectedTemplateVersion").isIntegralNumber() || !link.path("selectedTemplateVersion").canConvertToLong()
+                || link.path("selectedTemplateVersion").asLong()<1) throw new IllegalArgumentException("Invalid selected template version");
+            selectedVersion = link.get("selectedTemplateVersion").asLong();
+            bindings.validate(e.userId(), task, series, type, binding, template, selectedVersion);
+        }
         if (!inbox.claim(e.eventId(), e.type().name())) return;
+        jdbc.queryForList("select pg_advisory_xact_lock(hashtextextended(?,0))", "task-reference:" + task);
+        var existing = jdbc.queryForList("select * from task_reference where task_id=? for update", task);
+        if (!existing.isEmpty()) {
+            var old=existing.getFirst();
+            if (!e.userId().equals(old.get("user_id")) || !type.equals(old.get("task_type"))
+                || (binding!=null && old.get("template_binding_id")!=null && !binding.equals(old.get("template_binding_id")))
+                || (e.version()==2 && old.get("series_id")!=null && !java.util.Objects.equals(series,old.get("series_id"))))
+                throw new IllegalArgumentException("Task reference identity changed");
+        }
         jdbc.update(
             """
             insert into task_reference(task_id,user_id,task_type,scheduled_date,status,version) values (?,?,?,?,?,?)
@@ -88,6 +115,12 @@ public class ActivityEventConsumer {
             status,
             e.aggregateVersion()
         );
+        // A verified immutable identity may enrich an older v1 projection even when its state is newer.
+        if (binding != null) jdbc.update("""
+            update task_reference set series_id=?,template_binding_id=?,template_id=?,selected_template_version=?
+            where task_id=? and template_binding_id is null
+            """, series,binding,template,selectedVersion,task);
+        else if (series != null) jdbc.update("update task_reference set series_id=? where task_id=? and series_id is null",series,task);
         var reference = jdbc.queryForMap(
             "select user_id,task_type from task_reference where task_id=?",
             task

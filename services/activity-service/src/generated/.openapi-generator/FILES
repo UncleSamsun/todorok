@@ -21,9 +21,11 @@ java/io/todorok/activity/api/model/MonthlyActivitySummaryResponse.java
 java/io/todorok/activity/api/model/ProblemDetails.java
 java/io/todorok/activity/api/model/ProblemDetailsFieldErrorsInner.java
 java/io/todorok/activity/api/model/StudyDetail.java
+java/io/todorok/activity/api/model/TaskRecordTemplateResponse.java
 java/io/todorok/activity/api/model/TemplateDomain.java
 java/io/todorok/activity/api/model/TemplateFieldType.java
 java/io/todorok/activity/api/model/TemplateKind.java
+java/io/todorok/activity/api/model/TemplateLink.java
 java/io/todorok/activity/api/model/TemplatePageResponse.java
 java/io/todorok/activity/api/model/TemplateResponse.java
 java/io/todorok/activity/api/model/TemplateVersion.java

@@ -2,6 +2,7 @@ package io.todorok.planner.task;
 
 import io.todorok.contracts.*;
 import io.todorok.contracts.events.*;
+import io.todorok.contracts.events.v2.*;
 import io.todorok.messaging.OutboxEventWriter;
 import java.time.Clock;
 import java.util.UUID;
@@ -21,18 +22,20 @@ public class TaskEvents {
     public void publish(Task task, String command) {
         boolean created = command.equals("CREATED");
         Object payload = created
-            ? new TaskScheduled(
+            ? new TaskScheduledV2(
                   task.id,
                   task.taskType.name(),
                   task.scheduledDate,
-                  task.status.name()
+                  task.status.name(), task.seriesId, link(task)
               )
-            : new TaskChanged(
+            : command.equals("ROLLED_OVER")
+              ? new TaskRolledOverV2(task.id, task.taskType.name(), task.scheduledDate, task.status.name(), command, task.seriesId, link(task))
+              : new TaskChangedV2(
                   task.id,
                   task.taskType.name(),
                   task.scheduledDate,
                   task.status.name(),
-                  command
+                  command, task.seriesId, link(task)
               );
         EventType type = created
             ? EventType.TASK_SCHEDULED
@@ -45,12 +48,18 @@ public class TaskEvents {
             new EventEnvelope<>(
                 UUID.randomUUID(),
                 type,
-                1,
+                2,
                 task.version,
                 clock.instant(),
                 task.userId,
                 payload
             )
         );
+    }
+
+    private TemplateBindingLink link(Task task) {
+        if (task.templateLink==null) return null;
+        var link=task.templateLink.response();
+        return new TemplateBindingLink(link.getBindingId(), link.getTemplateId(), link.getSelectedTemplateVersion());
     }
 }

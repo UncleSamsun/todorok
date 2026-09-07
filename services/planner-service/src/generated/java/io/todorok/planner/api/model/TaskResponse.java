@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.Nulls;
 import io.todorok.planner.api.model.TaskStatus;
 import io.todorok.planner.api.model.TaskType;
+import io.todorok.planner.api.model.TemplateLink;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -29,6 +30,9 @@ import jakarta.annotation.Generated;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 public class TaskResponse {
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable TemplateLink templateLink;
 
   private UUID taskId;
 
@@ -88,6 +92,28 @@ public class TaskResponse {
     this.scheduledDate = scheduledDate;
     this.status = status;
     this.version = version;
+  }
+
+  public TaskResponse templateLink(@Nullable TemplateLink templateLink) {
+    this.templateLink = templateLink;
+    return this;
+  }
+
+  /**
+   * Get templateLink
+   * @return templateLink
+   */
+  @Valid
+
+  @JsonProperty("templateLink")
+  public @Nullable TemplateLink getTemplateLink() {
+    return templateLink;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("templateLink")
+  public void setTemplateLink(@Nullable TemplateLink templateLink) {
+    this.templateLink = templateLink;
   }
 
   public TaskResponse taskId(UUID taskId) {
@@ -423,7 +449,8 @@ public class TaskResponse {
       return false;
     }
     TaskResponse taskResponse = (TaskResponse) o;
-    return Objects.equals(this.taskId, taskResponse.taskId) &&
+    return Objects.equals(this.templateLink, taskResponse.templateLink) &&
+        Objects.equals(this.taskId, taskResponse.taskId) &&
         Objects.equals(this.activityId, taskResponse.activityId) &&
         Objects.equals(this.performedAt, taskResponse.performedAt) &&
         Objects.equals(this.completionSummary, taskResponse.completionSummary) &&
@@ -442,13 +469,14 @@ public class TaskResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(taskId, activityId, performedAt, completionSummary, startedAt, endedAt, seriesId, occurrenceDate, note, userId, title, taskType, scheduledDate, status, version);
+    return Objects.hash(templateLink, taskId, activityId, performedAt, completionSummary, startedAt, endedAt, seriesId, occurrenceDate, note, userId, title, taskType, scheduledDate, status, version);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TaskResponse {\n");
+    sb.append("    templateLink: ").append(toIndentedString(templateLink)).append("\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
     sb.append("    activityId: ").append(toIndentedString(activityId)).append("\n");
     sb.append("    performedAt: ").append(toIndentedString(performedAt)).append("\n");

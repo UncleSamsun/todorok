@@ -19,7 +19,8 @@ public record TaskView(
     java.time.OffsetDateTime performedAt,
     String completionSummary,
     java.time.OffsetDateTime startedAt,
-    java.time.OffsetDateTime endedAt
+    java.time.OffsetDateTime endedAt,
+    io.todorok.planner.template.TemplateLinkColumns templateLink
 ) {
     TaskResponse response() {
         return new TaskResponse(
@@ -38,6 +39,7 @@ public record TaskView(
             .performedAt(performedAt)
             .completionSummary(completionSummary)
             .startedAt(startedAt)
-            .endedAt(endedAt);
+            .endedAt(endedAt)
+            .templateLink(templateLink == null ? null : templateLink.response());
     }
 }

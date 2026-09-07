@@ -29,6 +29,15 @@ test('실제 Nginx 템플릿 경로는 1 MiB를 허용하고 chunked 초과를 �
     const address = docker('port', name, '80/tcp')
     const [host, port] = address.split(':')
 
+    for (const suffix of ['/internal', '/internal/', '/internal/template-selections', '/internal/template-selections/child']) {
+      const blocked = await fetch(`http://${address}/api/activity/v1${suffix}`, { method: 'POST', body: '{}' })
+      assert.equal(blocked.status, 404, suffix)
+      await blocked.text()
+    }
+    const publicApi = await fetch(`http://${address}/api/activity/v1/activities`)
+    assert.equal(publicApi.status, 200)
+    assert.deepEqual(await publicApi.json(), { bytes: 0 })
+
     const exact = await post(host, Number(port), Buffer.alloc(MEBIBYTE, 0x20), true)
     assert.equal(exact.status, 200)
     assert.deepEqual(JSON.parse(exact.body), { bytes: MEBIBYTE })

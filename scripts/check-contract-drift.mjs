@@ -63,6 +63,8 @@ async function main() {
   const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
   const generatedRoot = await mkdtemp(path.join(os.tmpdir(), 'todorok-contracts-check-'))
   const targets = [
+    'libs/web-support/src/generated',
+    'libs/event-contracts/src/generated',
     'services/planner-service/src/generated',
     'services/activity-service/src/generated',
     'packages/api-client/src/generated/planner',

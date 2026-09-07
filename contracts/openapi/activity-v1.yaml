@@ -10,6 +10,23 @@ tags:
   - name: Activity
   - name: Template
 paths:
+  /tasks/{taskId}/record-template:
+    get:
+      tags: [Template]
+      operationId: getTaskRecordTemplate
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Current complete definition, or linked=false for a task without a binding. Read-only.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaskRecordTemplateResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /templates:
     post:
       tags: [Template]
@@ -290,6 +307,16 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/ProblemDetails' }
   schemas:
+    TemplateLink:
+      $ref: './common-v1.yaml#/components/schemas/TemplateLink'
+    TaskRecordTemplateResponse:
+      type: object
+      additionalProperties: false
+      required: [linked]
+      properties:
+        linked: { type: boolean }
+        templateLink: { $ref: '#/components/schemas/TemplateLink' }
+        template: { $ref: '#/components/schemas/TemplateResponse' }
     ProblemDetails:
       $ref: './common-v1.yaml#/components/schemas/ProblemDetails'
     TemplateDomain:

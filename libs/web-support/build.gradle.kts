@@ -2,6 +2,9 @@ plugins {
     `java-library`
 }
 
+sourceSets.main { java.srcDir("src/generated/java") }
+tasks.named("compileJava") { dependsOn(rootProject.tasks.named("generateTemplateInternalSpring")) }
+
 dependencies {
     implementation(platform("org.springframework.boot:spring-boot-dependencies:4.1.1"))
     api("org.springframework:spring-webmvc")
@@ -15,6 +18,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api")
     implementation("jakarta.servlet:jakarta.servlet-api")
     implementation("jakarta.validation:jakarta.validation-api")
+    implementation("jakarta.annotation:jakarta.annotation-api")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-web")

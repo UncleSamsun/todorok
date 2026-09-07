@@ -10,7 +10,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.Nulls;
 import io.todorok.planner.api.model.RecurrenceRule;
 import io.todorok.planner.api.model.TaskType;
+import io.todorok.planner.api.model.TemplateSelection;
 import java.time.LocalDate;
+import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.lang.Nullable;
 import java.time.OffsetDateTime;
@@ -27,6 +29,12 @@ import jakarta.annotation.Generated;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 public class CreateSeriesRequest {
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable UUID commandId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable TemplateSelection templateSelection;
 
   private String title;
 
@@ -56,6 +64,50 @@ public class CreateSeriesRequest {
     this.taskType = taskType;
     this.startDate = startDate;
     this.rule = rule;
+  }
+
+  public CreateSeriesRequest commandId(@Nullable UUID commandId) {
+    this.commandId = commandId;
+    return this;
+  }
+
+  /**
+   * Get commandId
+   * @return commandId
+   */
+  @Valid
+
+  @JsonProperty("commandId")
+  public @Nullable UUID getCommandId() {
+    return commandId;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("commandId")
+  public void setCommandId(@Nullable UUID commandId) {
+    this.commandId = commandId;
+  }
+
+  public CreateSeriesRequest templateSelection(@Nullable TemplateSelection templateSelection) {
+    this.templateSelection = templateSelection;
+    return this;
+  }
+
+  /**
+   * Get templateSelection
+   * @return templateSelection
+   */
+  @Valid
+
+  @JsonProperty("templateSelection")
+  public @Nullable TemplateSelection getTemplateSelection() {
+    return templateSelection;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("templateSelection")
+  public void setTemplateSelection(@Nullable TemplateSelection templateSelection) {
+    this.templateSelection = templateSelection;
   }
 
   public CreateSeriesRequest title(String title) {
@@ -195,7 +247,9 @@ public class CreateSeriesRequest {
       return false;
     }
     CreateSeriesRequest createSeriesRequest = (CreateSeriesRequest) o;
-    return Objects.equals(this.title, createSeriesRequest.title) &&
+    return Objects.equals(this.commandId, createSeriesRequest.commandId) &&
+        Objects.equals(this.templateSelection, createSeriesRequest.templateSelection) &&
+        Objects.equals(this.title, createSeriesRequest.title) &&
         Objects.equals(this.taskType, createSeriesRequest.taskType) &&
         Objects.equals(this.startDate, createSeriesRequest.startDate) &&
         Objects.equals(this.endDate, createSeriesRequest.endDate) &&
@@ -205,13 +259,15 @@ public class CreateSeriesRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(title, taskType, startDate, endDate, note, rule);
+    return Objects.hash(commandId, templateSelection, title, taskType, startDate, endDate, note, rule);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class CreateSeriesRequest {\n");
+    sb.append("    commandId: ").append(toIndentedString(commandId)).append("\n");
+    sb.append("    templateSelection: ").append(toIndentedString(templateSelection)).append("\n");
     sb.append("    title: ").append(toIndentedString(title)).append("\n");
     sb.append("    taskType: ").append(toIndentedString(taskType)).append("\n");
     sb.append("    startDate: ").append(toIndentedString(startDate)).append("\n");

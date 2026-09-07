@@ -26,6 +26,152 @@ import tools.jackson.databind.json.JsonMapper;
 /** Actual HTTP -> service DB -> Debezium -> Kafka -> service listener -> ack -> HTTP. */
 class ActivityServiceRoundTripTest {
 
+    @Test
+    void templateServiceOutageAndLostApprovalResponseRecoverWithTheOriginalCommand() throws Exception {
+        UUID owner=UUID.randomUUID(), command=UUID.randomUUID();
+        String templateId=ok(call("activity",owner,"POST","/templates",JSON.writeValueAsString(Map.of("commandId",UUID.randomUUID(),
+            "name","응답 복구","domain","WORKOUT","kind","FREE_WORKOUT","fields",List.of()))),201).path("templateId").asText();
+        String body=JSON.writeValueAsString(Map.of("commandId",command,"title","복구 일정","taskType","WORKOUT","scheduledDate","2026-09-07",
+            "templateSelection",Map.of("templateId",templateId,"expectedTemplateVersion",1)));
+        var proxy=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
+        var forward=new java.util.concurrent.atomic.AtomicBoolean(false);
+        String real="http://localhost:"+activity.getEnvironment().getProperty("local.server.port")+"/api/activity/v1";
+        proxy.createContext("/api/activity/v1/internal/template-selections",exchange->{
+            try {
+                if(forward.get()) HTTP.send(HttpRequest.newBuilder(URI.create(real+"/internal/template-selections"))
+                    .header("Authorization",exchange.getRequestHeaders().getFirst("Authorization")).header("Content-Type","application/json")
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(exchange.getRequestBody().readAllBytes())).build(),HttpResponse.BodyHandlers.discarding());
+                // Deliberately lose every approval response after the backend commits.
+            } catch(Exception failure) { throw new java.io.IOException(failure); }
+            finally { exchange.close(); }
+        });
+        proxy.start();
+        planner.getEnvironment().getPropertySources().addFirst(new org.springframework.core.env.MapPropertySource("binding-fault",
+            Map.of("todorok.template-service.base-url","http://127.0.0.1:"+proxy.getAddress().getPort()+"/api/activity/v1")));
+        try {
+            assertThat(ok(call("planner",owner,"POST","/tasks",body),503).path("retryable").asBoolean()).isTrue();
+            assertThat(infra.database().queryForObject("select count(*) from activity.template_selection_binding where user_id=?",Integer.class,owner)).isZero();
+            forward.set(true);
+            ok(call("planner",owner,"POST","/tasks",body),503);
+            assertThat(infra.database().queryForObject("select count(*) from activity.template_selection_binding where user_id=?",Integer.class,owner)).isOne();
+            assertThat(infra.database().queryForObject("select count(*) from planner.task where user_id=?",Integer.class,owner)).isZero();
+        } finally { planner.getEnvironment().getPropertySources().remove("binding-fault"); proxy.stop(0); }
+        var recovered=ok(call("planner",owner,"POST","/tasks",body),201);
+        assertThat(ok(call("planner",owner,"POST","/tasks",body),201)).isEqualTo(recovered);
+        assertThat(infra.database().queryForObject("select count(*) from planner.task where user_id=?",Integer.class,owner)).isOne();
+        assertThat(infra.database().queryForObject("select count(*) from planner.outbox_event where aggregateid=?",Integer.class,recovered.path("taskId").asText())).isOne();
+    }
+
+    @Test
+    void templateBindingRecoversApprovalAndPlannerFailuresAndPropagatesSeriesThroughKafka() throws Exception {
+        UUID owner=UUID.randomUUID(), command=UUID.randomUUID();
+        var template=ok(call("activity",owner,"POST","/templates",JSON.writeValueAsString(Map.of("commandId",UUID.randomUUID(),
+            "name","선택 공부","domain","STUDY","kind","STUDY_CATEGORY","fields",List.of()))),201);
+        String templateId=template.path("templateId").asText();
+        var request=new LinkedHashMap<String,Object>(Map.of("commandId",command,"title","연결 일정","taskType","STUDY",
+            "scheduledDate","2026-09-07","templateSelection",Map.of("templateId",templateId,"expectedTemplateVersion",1)));
+        String body=JSON.writeValueAsString(request);
+        // Inject final planner transaction failure after real Activity HTTP approval.
+        infra.database().execute("alter table planner.outbox_event add constraint fail_binding_test check(payload->>'userId'<>'"+owner+"') not valid");
+        try { ok(call("planner",owner,"POST","/tasks",body),500); }
+        finally { infra.database().execute("alter table planner.outbox_event drop constraint fail_binding_test"); }
+        assertThat(infra.database().queryForObject("select count(*) from activity.template_selection_binding where user_id=?",Integer.class,owner)).isOne();
+        assertThat(infra.database().queryForObject("select count(*) from planner.task where user_id=?",Integer.class,owner)).isZero();
+        String selected=infra.database().queryForObject("select id::text from activity.template_selection_binding where user_id=?",String.class,owner);
+        try (var pool=Executors.newFixedThreadPool(4)) {
+            var jobs=new ArrayList<Future<JsonNode>>();
+            for(int i=0;i<4;i++) jobs.add(pool.submit(()->ok(call("planner",owner,"POST","/tasks",body),201)));
+            var first=jobs.getFirst().get();
+            for(var job:jobs) assertThat(job.get()).isEqualTo(first);
+            assertThat(first.path("templateLink").path("bindingId").asText()).isEqualTo(selected);
+        }
+        assertThat(infra.database().queryForObject("select count(*) from planner.task where user_id=?",Integer.class,owner)).isOne();
+        String task=infra.database().queryForObject("select id::text from planner.task where user_id=?",String.class,owner);
+        assertThat(infra.database().queryForObject("select count(*) from planner.outbox_event where aggregateid=?",Integer.class,task)).isOne();
+        var queued=JSON.readTree(infra.database().queryForObject("select payload::text from planner.outbox_event where aggregateid=?",String.class,task));
+        assertThat(queued.path("version").asInt()).isEqualTo(2);
+        assertThat(queued.path("payload").path("templateLink").path("bindingId").asText()).isEqualTo(selected);
+        try {
+            var delivered=infra.consume("todorok.task.v1",UUID.fromString(queued.path("eventId").asText()),Duration.ofSeconds(15));
+            assertThat(delivered.value()).as("CDC must preserve the v2 payload, including explicit null identity members").isEqualTo(queued);
+        }
+        catch(AssertionError absent) { infra.awaitConnectorRunning(); throw absent; }
+        await(()->infra.database().queryForObject("select count(*) from activity.task_reference where task_id=? and template_binding_id is not null",Integer.class,UUID.fromString(task))==1);
+        assertThat(ok(call("activity",owner,"GET","/tasks/"+task+"/record-template",null),200).path("linked").asBoolean()).isTrue();
+        var originalEvent=(tools.jackson.databind.node.ObjectNode)JSON.readTree(infra.database().queryForObject(
+            "select payload::text from planner.outbox_event where aggregateid=?",String.class,task));
+        send("todorok.task.v1",task,originalEvent.toString());
+        var legacy=originalEvent.deepCopy().put("eventId",UUID.randomUUID().toString()).put("version",1).put("aggregateVersion",8);
+        ((tools.jackson.databind.node.ObjectNode)legacy.get("payload")).remove("templateLink");
+        ((tools.jackson.databind.node.ObjectNode)legacy.get("payload")).remove("seriesId");
+        send("todorok.task.v1",task,legacy.toString());
+        await(()->infra.database().queryForObject("select count(*) from activity.processed_event where event_id=?",Integer.class,UUID.fromString(legacy.path("eventId").asText()))==1);
+        send("todorok.task.v1",task,originalEvent.deepCopy().put("eventId",UUID.randomUUID().toString()).toString());
+        assertThat(ok(call("activity",owner,"GET","/tasks/"+task+"/record-template",null),200).path("templateLink").path("bindingId").asText()).isEqualTo(selected);
+        UUID invalidTask=UUID.randomUUID(),invalidEvent=UUID.randomUUID();
+        var forged=originalEvent.deepCopy().put("eventId",invalidEvent.toString());
+        ((tools.jackson.databind.node.ObjectNode)forged.get("payload")).put("taskId",invalidTask.toString());
+        send("todorok.task.v1",invalidTask.toString(),forged.toString());
+        infra.consume("todorok.task.v1.dlt",invalidEvent,Duration.ofSeconds(45));
+        assertThat(infra.database().queryForObject("select count(*) from activity.task_reference where task_id=?",Integer.class,invalidTask)).isZero();
+        assertThat(infra.database().queryForObject("select count(*) from activity.processed_event where event_id=?",Integer.class,invalidEvent)).isZero();
+        var updated=ok(call("planner",owner,"PATCH","/tasks/"+task,JSON.writeValueAsString(Map.of("title","이월 연결",
+            "scheduledDate",LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(1).toString(),"version",0))),200);
+        assertThat(updated.path("templateLink").path("bindingId").asText()).isEqualTo(selected);
+        ok(call("planner",owner,"POST","/tasks/rollover","{}"),200);
+        assertThat(ok(call("planner",owner,"GET","/tasks/"+task,null),200).path("templateLink")).isEqualTo(updated.path("templateLink"));
+        assertThat(ok(call("activity",owner,"POST","/activities",request(task,"STUDY","COMPLETED",UUID.randomUUID(),"{}")),409)
+            .path("code").asText()).isEqualTo("TEMPLATE_RECORD_NOT_READY");
+        request.put("title","다른 요청");
+        assertThat(ok(call("planner",owner,"POST","/tasks",JSON.writeValueAsString(request)),409).path("code").asText()).isEqualTo("COMMAND_REUSE");
+        Object selection=request.remove("templateSelection");
+        assertThat(ok(call("planner",owner,"POST","/tasks",JSON.writeValueAsString(request)),409).path("code").asText()).isEqualTo("COMMAND_REUSE");
+        request.put("templateSelection",selection);
+        UUID seriesCommand=UUID.randomUUID();
+        String seriesBody=JSON.writeValueAsString(Map.of("commandId",seriesCommand,"title","연결 반복","taskType","STUDY","startDate","2026-09-07",
+            "rule",Map.of("frequency","DAILY","interval",1,"weekdays",List.of(),"monthDay",1),
+            "templateSelection",Map.of("templateId",templateId,"expectedTemplateVersion",1)));
+        JsonNode series;
+        try(var pool=Executors.newFixedThreadPool(4)) {
+            var jobs=new ArrayList<Future<JsonNode>>();
+            for(int i=0;i<4;i++) jobs.add(pool.submit(()->ok(call("planner",owner,"POST","/series",seriesBody),201)));
+            series=jobs.getFirst().get();
+            for(var job:jobs) assertThat(job.get()).isEqualTo(series);
+        }
+        assertThat(ok(call("planner",owner,"POST","/series",seriesBody),201)).isEqualTo(series);
+        UUID seriesId=UUID.fromString(series.path("seriesId").asText());
+        String firstTask=infra.database().queryForObject("select id::text from planner.task where series_id=?",String.class,seriesId);
+        ok(call("activity",owner,"POST","/templates/"+templateId+"/versions",JSON.writeValueAsString(Map.of("commandId",UUID.randomUUID(),
+            "expectedRevision",0,"name","새 기록 정의","fields",List.of()))),201);
+        var current=ok(call("activity",owner,"GET","/tasks/"+task+"/record-template",null),200);
+        assertThat(current.path("template").path("currentVersion").path("templateVersion").asLong()).isEqualTo(2);
+        assertThat(current.path("templateLink").path("selectedTemplateVersion").asLong()).isEqualTo(1);
+        ok(call("activity",owner,"POST","/templates/"+templateId+"/archive",JSON.writeValueAsString(Map.of("commandId",UUID.randomUUID(),"expectedRevision",1))),200);
+        ok(call("planner",owner,"POST","/tasks/"+firstTask+"/skip","{\"version\":0}"),200);
+        assertThat(infra.database().queryForObject("select count(*) from planner.task where series_id=?",Integer.class,seriesId)).isEqualTo(2);
+        var next=infra.database().queryForMap("select id,template_binding_id from planner.task where series_id=? and status='PLANNED'",seriesId);
+        assertThat(next.get("template_binding_id").toString()).isEqualTo(series.path("templateLink").path("bindingId").asText());
+        await(()->infra.database().queryForObject("select count(*) from activity.task_reference where task_id=? and template_binding_id is not null",Integer.class,next.get("id"))==1);
+        assertThat(ok(call("activity",owner,"GET","/tasks/"+next.get("id")+"/record-template",null),200).path("template").path("archived").asBoolean()).isTrue();
+        // Exercise the established completion-event boundary; typed record writes remain deliberately gated until09B2.
+        UUID completedId=UUID.randomUUID();
+        var completed=JSON.createObjectNode().put("eventId",UUID.randomUUID().toString()).put("type","ACTIVITY_COMPLETED")
+            .put("version",1).put("aggregateVersion",0).put("occurredAt",Instant.now().toString()).put("userId",owner.toString());
+        completed.putObject("payload").put("activityId",completedId.toString()).put("taskId",next.get("id").toString())
+            .put("activityType","STUDY").put("completedAt","2026-09-01T01:00:00Z").put("outcome","과거 완료 경계");
+        send("todorok.activity.v1",completedId.toString(),completed.toString());
+        await(()->infra.database().queryForObject("select count(*) from planner.task where series_id=?",Integer.class,seriesId)==3);
+        assertThat(infra.database().queryForObject("select count(distinct template_binding_id) from planner.task where series_id=?",Integer.class,seriesId)).isOne();
+        send("todorok.activity.v1",completedId.toString(),completed.toString());
+        var correctionEvent=completed.deepCopy().put("eventId",UUID.randomUUID().toString()).put("type","ACTIVITY_CORRECTED").put("aggregateVersion",1);
+        ((tools.jackson.databind.node.ObjectNode)correctionEvent.get("payload")).put("completionStatus","COMPLETED").put("previousPerformedAt","2026-09-01T01:00:00Z");
+        send("todorok.activity.v1",completedId.toString(),correctionEvent.toString());
+        await(()->infra.database().queryForObject("select count(*) from planner.activity_completion_result where activity_id=? and revision=1",Integer.class,completedId)==1);
+        assertThat(infra.database().queryForObject("select count(*) from planner.task where series_id=?",Integer.class,seriesId)).isEqualTo(3);
+        request.put("commandId",UUID.randomUUID());
+        assertThat(ok(call("planner",owner,"POST","/tasks",JSON.writeValueAsString(request)),409).path("code").asText()).isEqualTo("TEMPLATE_ARCHIVED");
+    }
+
     static String correction(long version, String detail) {
         return "{\"expectedVersion\":" + version + ",\"performedAt\":\"2026-08-31T10:00:00+09:00\",\"note\":\"수정 메모\",\"detail\":" + detail + "}";
     }
@@ -343,6 +489,7 @@ class ActivityServiceRoundTripTest {
         .findAndAddModules()
         .build();
     static final java.security.KeyPair KEYS = keys();
+    static final java.security.KeyPair SERVICE_KEYS = keys();
     static final HttpClient HTTP = HttpClient.newHttpClient();
 
     static java.security.KeyPair keys() {
@@ -378,8 +525,8 @@ class ActivityServiceRoundTripTest {
                 )
                 .load()
                 .migrate();
-        planner = app(PlannerApplication.class, "planner");
         activity = app(ActivityApplication.class, "activity");
+        planner = app(PlannerApplication.class, "planner");
     }
 
     static ConfigurableApplicationContext app(Class<?> main, String schema) {
@@ -387,6 +534,9 @@ class ActivityServiceRoundTripTest {
             "--server.port=0",
             "--server.servlet.context-path=/api/" + schema + "/v1",
             "--todorok.auth.allowed-origins=https://todorok.test",
+            "--todorok.template-service.public-key=" + (schema.equals("activity") ? Base64.getEncoder().encodeToString(SERVICE_KEYS.getPublic().getEncoded()) : ""),
+            "--todorok.template-service.private-key=" + (schema.equals("planner") ? Base64.getEncoder().encodeToString(SERVICE_KEYS.getPrivate().getEncoded()) : ""),
+            "--todorok.template-service.base-url=http://localhost:" + (activity == null ? 1 : activity.getEnvironment().getProperty("local.server.port")) + "/api/activity/v1",
             "--spring.datasource.url=" + infra.jdbcUrl(schema),
             "--spring.datasource.username=postgres",
             "--spring.datasource.password=postgres",
@@ -865,10 +1015,11 @@ class ActivityServiceRoundTripTest {
                 infra
                     .database()
                     .queryForObject(
-                        "select count(*) from activity.climbing_round",
-                        Integer.class
+                        "select count(*) from activity.climbing_round r join activity.activity_record a on a.id=r.activity_id where a.user_id=?",
+                        Integer.class,
+                        owner
                     )
-            ).isLessThanOrEqualTo(1);
+            ).isZero();
         } finally {
             container.start();
         }

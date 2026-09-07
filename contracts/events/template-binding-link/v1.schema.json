@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://todorok.app/schemas/events/template-binding-link/v1",
+  "x-java-name": "TemplateBindingLink",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bindingId",
+    "templateId",
+    "selectedTemplateVersion"
+  ],
+  "properties": {
+    "bindingId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "templateId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "selectedTemplateVersion": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

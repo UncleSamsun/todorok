@@ -65,6 +65,7 @@ All URIs are relative to */api/activity/v1*
 *TemplateApi* | [**archiveTemplate**](docs/TemplateApi.md#archivetemplateoperation) | **POST** /templates/{templateId}/archive |
 *TemplateApi* | [**createTemplate**](docs/TemplateApi.md#createtemplateoperation) | **POST** /templates |
 *TemplateApi* | [**createTemplateVersion**](docs/TemplateApi.md#createtemplateversionoperation) | **POST** /templates/{templateId}/versions |
+*TemplateApi* | [**getTaskRecordTemplate**](docs/TemplateApi.md#gettaskrecordtemplate) | **GET** /tasks/{taskId}/record-template |
 *TemplateApi* | [**getTemplate**](docs/TemplateApi.md#gettemplate) | **GET** /templates/{templateId} |
 *TemplateApi* | [**getTemplateVersion**](docs/TemplateApi.md#gettemplateversion) | **GET** /templates/{templateId}/versions/{templateVersion} |
 *TemplateApi* | [**listTemplates**](docs/TemplateApi.md#listtemplates) | **GET** /templates |
@@ -92,9 +93,11 @@ All URIs are relative to */api/activity/v1*
 - [ProblemDetails](docs/ProblemDetails.md)
 - [ProblemDetailsFieldErrorsInner](docs/ProblemDetailsFieldErrorsInner.md)
 - [StudyDetail](docs/StudyDetail.md)
+- [TaskRecordTemplateResponse](docs/TaskRecordTemplateResponse.md)
 - [TemplateDomain](docs/TemplateDomain.md)
 - [TemplateFieldType](docs/TemplateFieldType.md)
 - [TemplateKind](docs/TemplateKind.md)
+- [TemplateLink](docs/TemplateLink.md)
 - [TemplatePageResponse](docs/TemplatePageResponse.md)
 - [TemplateResponse](docs/TemplateResponse.md)
 - [TemplateVersion](docs/TemplateVersion.md)

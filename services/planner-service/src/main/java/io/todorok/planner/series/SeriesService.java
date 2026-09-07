@@ -20,6 +20,7 @@ public class SeriesService {
     private final NextOccurrencePolicy policy;
     private final Clock clock;
     private final OutboxEventWriter outbox;
+    private final io.todorok.planner.template.TemplateCreationCommands creation;
 
     public SeriesService(
         SeriesRepository series,
@@ -27,7 +28,8 @@ public class SeriesService {
         TaskEvents events,
         NextOccurrencePolicy policy,
         Clock clock,
-        OutboxEventWriter outbox
+        OutboxEventWriter outbox,
+        io.todorok.planner.template.TemplateCreationCommands creation
     ) {
         this.series = series;
         this.tasks = tasks;
@@ -35,13 +37,14 @@ public class SeriesService {
         this.policy = policy;
         this.clock = clock;
         this.outbox = outbox;
+        this.creation = creation;
     }
 
     public SeriesResponse detail(UUID owner, UUID id) {
         return series.findByUserIdAndId(owner, id).orElseThrow(SeriesService::missing).response();
     }
 
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public SeriesResponse create(UUID owner, CreateSeriesRequest request) {
         var item = new TaskSeries(
             owner,
@@ -50,10 +53,15 @@ public class SeriesService {
             request.getStartDate()
         );
         configure(item, request.getRule(), request.getEndDate(), request.getNote());
+        return creation.create(owner, request.getCommandId(), "SERIES", request.getTaskType(), request.getTemplateSelection(), request,
+            SeriesResponse.class, (target, link) -> {
+        item.id = target;
+        item.templateLink = link == null ? null : new io.todorok.planner.template.TemplateLinkColumns(link);
         series.saveAndFlush(item);
         publish(item, "CREATED");
         generate(item, item.startDate.minusDays(1), "COMPLETED");
         return item.response();
+        });
     }
 
     @Transactional
@@ -108,6 +116,7 @@ public class SeriesService {
                 date,
                 policy.scheduledDate(date, LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul"))))
             );
+            task.templateLink(item.templateLink == null ? null : item.templateLink.response());
             try {
                 tasks.saveAndFlush(task);
             } catch (org.springframework.dao.DataIntegrityViolationException e) {
@@ -176,11 +185,13 @@ public class SeriesService {
             new EventEnvelope<>(
                 UUID.randomUUID(),
                 EventType.SERIES_CHANGED,
-                1,
+                2,
                 item.version,
                 clock.instant(),
                 item.userId,
-                Map.of("seriesId", item.id, "command", command)
+                new io.todorok.contracts.events.v2.SeriesChangedV2(item.id, command, item.templateLink == null ? null :
+                    new io.todorok.contracts.events.v2.TemplateBindingLink(item.templateLink.response().getBindingId(),
+                        item.templateLink.response().getTemplateId(), item.templateLink.response().getSelectedTemplateVersion()))
             )
         );
     }

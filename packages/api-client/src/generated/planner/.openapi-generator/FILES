@@ -22,6 +22,8 @@ docs/TaskApi.md
 docs/TaskResponse.md
 docs/TaskStatus.md
 docs/TaskType.md
+docs/TemplateLink.md
+docs/TemplateSelection.md
 docs/UpdateDailyNoteRequest.md
 docs/UpdateSeriesRequest.md
 docs/UpdateTaskRequest.md
@@ -51,6 +53,8 @@ src/models/SessionResponse.ts
 src/models/TaskResponse.ts
 src/models/TaskStatus.ts
 src/models/TaskType.ts
+src/models/TemplateLink.ts
+src/models/TemplateSelection.ts
 src/models/UpdateDailyNoteRequest.ts
 src/models/UpdateSeriesRequest.ts
 src/models/UpdateTaskRequest.ts

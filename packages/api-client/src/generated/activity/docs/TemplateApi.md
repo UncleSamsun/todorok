@@ -7,6 +7,7 @@ All URIs are relative to */api/activity/v1*
 | [**archiveTemplate**](TemplateApi.md#archivetemplateoperation) | **POST** /templates/{templateId}/archive |  |
 | [**createTemplate**](TemplateApi.md#createtemplateoperation) | **POST** /templates |  |
 | [**createTemplateVersion**](TemplateApi.md#createtemplateversionoperation) | **POST** /templates/{templateId}/versions |  |
+| [**getTaskRecordTemplate**](TemplateApi.md#gettaskrecordtemplate) | **GET** /tasks/{taskId}/record-template |  |
 | [**getTemplate**](TemplateApi.md#gettemplate) | **GET** /templates/{templateId} |  |
 | [**getTemplateVersion**](TemplateApi.md#gettemplateversion) | **GET** /templates/{templateId}/versions/{templateVersion} |  |
 | [**listTemplates**](TemplateApi.md#listtemplates) | **GET** /templates |  |
@@ -236,6 +237,77 @@ example().catch(console.error);
 | **409** | 버전 또는 상태 충돌 |  -  |
 | **413** | Template management body exceeds 1 MiB |  -  |
 | **415** | Compressed template management bodies are not supported |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## getTaskRecordTemplate
+
+> TaskRecordTemplateResponse getTaskRecordTemplate(taskId)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  TemplateApi,
+} from '@todorok/api-client';
+import type { GetTaskRecordTemplateRequest } from '@todorok/api-client';
+
+async function example() {
+  console.log("🚀 Testing @todorok/api-client SDK...");
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TemplateApi(config);
+
+  const body = {
+    // string
+    taskId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
+  } satisfies GetTaskRecordTemplateRequest;
+
+  try {
+    const data = await api.getTaskRecordTemplate(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **taskId** | `string` |  | [Defaults to `undefined`] |
+
+### Return type
+
+[**TaskRecordTemplateResponse**](TaskRecordTemplateResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`, `application/problem+json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Current complete definition, or linked&#x3D;false for a task without a binding. Read-only. |  -  |
+| **404** | 대상을 찾을 수 없음 |  -  |
+| **409** | 버전 또는 상태 충돌 |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

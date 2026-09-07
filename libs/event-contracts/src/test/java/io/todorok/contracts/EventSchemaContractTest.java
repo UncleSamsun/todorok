@@ -26,6 +26,33 @@ import org.junit.jupiter.api.Test;
 
 class EventSchemaContractTest {
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"task-scheduled","task-changed","task-rolled-over","series-changed"})
+    void v2SchemasRequireNullableIdentityAndGeneratedModelsRoundTrip(String directory) throws Exception {
+        var schemas=Map.of(SCHEMA_ROOT+"envelope/v1",resource("events/envelope/v1.schema.json"),
+            SCHEMA_ROOT+"template-binding-link/v1",resource("events/template-binding-link/v1.schema.json"),
+            SCHEMA_ROOT+directory+"/v2",resource("events/"+directory+"/v2.schema.json"));
+        var registry=SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12,b->b.schemas(schemas));
+        var schema=registry.getSchema(SchemaLocation.of(SCHEMA_ROOT+directory+"/v2"));
+        String valid=resource("fixtures/events/"+directory+"/v2-valid.json");
+        assertThat(validate(schema,valid)).isEmpty();
+        assertThat(validate(schema,resource("fixtures/events/"+directory+"/v2-invalid.json"))).isNotEmpty();
+        var node=MAPPER.readTree(valid);
+        String name=switch(directory) {
+            case "task-scheduled" -> "TaskScheduledV2";
+            case "task-changed" -> "TaskChangedV2";
+            case "task-rolled-over" -> "TaskRolledOverV2";
+            default -> "SeriesChangedV2";
+        };
+        Class<?> type=Class.forName("io.todorok.contracts.events.v2."+name);
+        var payload=MAPPER.treeToValue(node.get("payload"),type);
+        assertThat(MAPPER.readTree(MAPPER.writeValueAsString(payload))).isEqualTo(node.get("payload"));
+        ((tools.jackson.databind.node.ObjectNode)node.get("payload")).putNull("templateLink");
+        assertThat(validate(schema,node.toString())).isEmpty();
+        ((tools.jackson.databind.node.ObjectNode)node.get("payload")).remove("templateLink");
+        assertThat(validate(schema,node.toString())).isNotEmpty();
+    }
+
     private static final String SCHEMA_ROOT = "https://todorok.app/schemas/events/";
     private static final tools.jackson.databind.ObjectMapper MAPPER =
             tools.jackson.databind.json.JsonMapper.builder().findAndAddModules().build();

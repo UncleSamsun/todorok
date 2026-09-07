@@ -90,6 +90,8 @@ All URIs are relative to */api/planner/v1*
 - [TaskResponse](docs/TaskResponse.md)
 - [TaskStatus](docs/TaskStatus.md)
 - [TaskType](docs/TaskType.md)
+- [TemplateLink](docs/TemplateLink.md)
+- [TemplateSelection](docs/TemplateSelection.md)
 - [UpdateDailyNoteRequest](docs/UpdateDailyNoteRequest.md)
 - [UpdateSeriesRequest](docs/UpdateSeriesRequest.md)
 - [UpdateTaskRequest](docs/UpdateTaskRequest.md)

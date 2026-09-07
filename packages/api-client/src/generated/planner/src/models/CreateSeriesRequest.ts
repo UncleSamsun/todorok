@@ -27,6 +27,13 @@ import {
     TaskTypeToJSON,
     TaskTypeToJSONTyped,
 } from './TaskType';
+import type { TemplateSelection } from './TemplateSelection';
+import {
+    TemplateSelectionFromJSON,
+    TemplateSelectionFromJSONTyped,
+    TemplateSelectionToJSON,
+    TemplateSelectionToJSONTyped,
+} from './TemplateSelection';
 
 /**
  *
@@ -34,6 +41,18 @@ import {
  * @interface CreateSeriesRequest
  */
 export interface CreateSeriesRequest {
+    /**
+     *
+     * @type {string}
+     * @memberof CreateSeriesRequest
+     */
+    commandId?: string;
+    /**
+     *
+     * @type {TemplateSelection}
+     * @memberof CreateSeriesRequest
+     */
+    templateSelection?: TemplateSelection;
     /**
      *
      * @type {string}
@@ -95,6 +114,8 @@ export function CreateSeriesRequestFromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
 
+        'commandId': json['commandId'] == null ? undefined : json['commandId'],
+        'templateSelection': json['templateSelection'] == null ? undefined : TemplateSelectionFromJSON(json['templateSelection']),
         'title': json['title'],
         'taskType': TaskTypeFromJSON(json['taskType']),
         'startDate': json['startDate'],
@@ -115,6 +136,8 @@ export function CreateSeriesRequestToJSONTyped(value?: CreateSeriesRequest | nul
 
     return {
 
+        'commandId': value['commandId'],
+        'templateSelection': TemplateSelectionToJSON(value['templateSelection']),
         'title': value['title'],
         'taskType': TaskTypeToJSON(value['taskType']),
         'startDate': value['startDate'],

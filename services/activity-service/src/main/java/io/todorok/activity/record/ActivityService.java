@@ -112,6 +112,8 @@ public class ActivityService {
         if (
             !request.getActivityType().name().equals(reference.get("task_type"))
         ) throw fail("TASK_TYPE_MISMATCH", false);
+        // 09B2 replaces this explicit boundary with typed value validation and a server snapshot.
+        if (reference.get("template_binding_id") != null) throw fail("TEMPLATE_RECORD_NOT_READY", false);
         if (!"PLANNED".equals(reference.get("status"))) throw fail(
             "TASK_" + reference.get("status"),
             false

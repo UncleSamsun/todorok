@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://todorok.app/schemas/events/task-scheduled/v2",
+  "x-java-name": "TaskScheduledV2",
+  "allOf": [
+    {
+      "$ref": "https://todorok.app/schemas/events/envelope/v1"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "TASK_SCHEDULED"
+        },
+        "version": {
+          "const": 2
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "taskId",
+            "taskType",
+            "scheduledDate",
+            "status",
+            "seriesId",
+            "templateLink"
+          ],
+          "properties": {
+            "taskId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "taskType": {
+              "type": "string",
+              "enum": [
+                "GENERAL",
+                "STUDY",
+                "WORKOUT",
+                "CLIMBING"
+              ]
+            },
+            "scheduledDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "PLANNED",
+                "COMPLETED",
+                "SKIPPED",
+                "DELETED"
+              ]
+            },
+            "seriesId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            },
+            "templateLink": {
+              "anyOf": [
+                {
+                  "$ref": "https://todorok.app/schemas/events/template-binding-link/v1"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

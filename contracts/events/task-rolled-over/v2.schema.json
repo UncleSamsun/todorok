@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://todorok.app/schemas/events/task-rolled-over/v2",
+  "x-java-name": "TaskRolledOverV2",
+  "allOf": [
+    {
+      "$ref": "https://todorok.app/schemas/events/envelope/v1"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "TASK_ROLLED_OVER"
+        },
+        "version": {
+          "const": 2
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "taskId",
+            "taskType",
+            "scheduledDate",
+            "status",
+            "command",
+            "seriesId",
+            "templateLink"
+          ],
+          "properties": {
+            "taskId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "taskType": {
+              "type": "string",
+              "enum": [
+                "GENERAL",
+                "STUDY",
+                "WORKOUT",
+                "CLIMBING"
+              ]
+            },
+            "scheduledDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "PLANNED",
+                "COMPLETED",
+                "SKIPPED",
+                "DELETED"
+              ]
+            },
+            "command": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seriesId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            },
+            "templateLink": {
+              "anyOf": [
+                {
+                  "$ref": "https://todorok.app/schemas/events/template-binding-link/v1"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

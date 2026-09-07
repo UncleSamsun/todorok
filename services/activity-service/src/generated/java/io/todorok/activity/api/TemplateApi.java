@@ -10,6 +10,7 @@ import io.todorok.activity.api.model.CreateTemplateRequest;
 import io.todorok.activity.api.model.CreateTemplateVersionRequest;
 import org.springframework.lang.Nullable;
 import io.todorok.activity.api.model.ProblemDetails;
+import io.todorok.activity.api.model.TaskRecordTemplateResponse;
 import io.todorok.activity.api.model.TemplateDomain;
 import io.todorok.activity.api.model.TemplateKind;
 import io.todorok.activity.api.model.TemplatePageResponse;
@@ -101,6 +102,25 @@ public interface TemplateApi {
     ResponseEntity<TemplateResponse> createTemplateVersion(
          @PathVariable("templateId") UUID templateId,
          @Valid @RequestBody CreateTemplateVersionRequest createTemplateVersionRequest
+    );
+
+
+    String PATH_GET_TASK_RECORD_TEMPLATE = "/tasks/{taskId}/record-template";
+    /**
+     * GET /tasks/{taskId}/record-template
+     *
+     * @param taskId  (required)
+     * @return Current complete definition, or linked&#x3D;false for a task without a binding. Read-only. (status code 200)
+     *         or 대상을 찾을 수 없음 (status code 404)
+     *         or 버전 또는 상태 충돌 (status code 409)
+     */
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = TemplateApi.PATH_GET_TASK_RECORD_TEMPLATE,
+        produces = { "application/json", "application/problem+json" }
+    )
+    ResponseEntity<TaskRecordTemplateResponse> getTaskRecordTemplate(
+         @PathVariable("taskId") UUID taskId
     );
 
 

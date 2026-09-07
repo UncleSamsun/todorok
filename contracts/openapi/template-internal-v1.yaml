@@ -1,0 +1,59 @@
+openapi: 3.1.0
+info:
+  title: 토도록 내부 템플릿 선택 승인
+  version: 1.0.0
+servers:
+  - url: /api/activity/v1
+security:
+  - ServiceAuth: []
+paths:
+  /internal/template-selections:
+    post:
+      tags: [TemplateSelection]
+      operationId: approveTemplateSelection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TemplateSelectionRequest' }
+      responses:
+        '201':
+          description: Immutable approval (identical requests replay the same binding)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TemplateLink' }
+        '400': { $ref: '#/components/responses/Failure' }
+        '401': { $ref: '#/components/responses/Failure' }
+        '403': { $ref: '#/components/responses/Failure' }
+        '404': { $ref: '#/components/responses/Failure' }
+        '409': { $ref: '#/components/responses/Failure' }
+components:
+  securitySchemes:
+    ServiceAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Separate RS256 planner service key; issuer/subject todorok-planner, audience todorok-activity-internal, scope template:select; 60s lifetime; method/path/ownerId/requestId/targetType/targetId/raw body SHA-256 fingerprint claims required.
+  responses:
+    Failure:
+      description: Common validation, authentication, ownership or selection conflict
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+  schemas:
+    TemplateLink:
+      $ref: './common-v1.yaml#/components/schemas/TemplateLink'
+    ProblemDetails:
+      $ref: './common-v1.yaml#/components/schemas/ProblemDetails'
+    TemplateSelectionRequest:
+      type: object
+      additionalProperties: false
+      required: [requestId, ownerId, targetType, targetId, taskType, templateId, expectedTemplateVersion]
+      properties:
+        requestId: { type: string, format: uuid }
+        ownerId: { type: string, format: uuid }
+        targetType: { type: string, enum: [TASK, SERIES] }
+        targetId: { type: string, format: uuid }
+        taskType: { type: string, enum: [STUDY, WORKOUT, CLIMBING] }
+        templateId: { type: string, format: uuid }
+        expectedTemplateVersion: { type: integer, format: int64, minimum: 1 }

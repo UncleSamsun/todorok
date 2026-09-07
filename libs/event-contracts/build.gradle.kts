@@ -14,7 +14,10 @@ dependencies {
 }
 
 sourceSets {
+    main { java.srcDir("src/generated/java") }
     test {
         resources.srcDir(rootProject.file("contracts"))
     }
 }
+
+tasks.named("compileJava") { dependsOn(rootProject.tasks.named("generateEventV2Java")) }

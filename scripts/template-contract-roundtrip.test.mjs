@@ -39,3 +39,29 @@ test('생성 TypeScript 템플릿 응답은 version과 fields를 함께 왕복�
     await rm(output, { recursive: true, force: true })
   }
 })
+
+test('생성 planner 선택 요청과 링크 응답 및 activity record-template은 identity를 보존한다', async () => {
+  const output = await mkdtemp(path.join(os.tmpdir(), 'todorok-binding-contract-'))
+  const uuid = n => `10000000-0000-0000-0000-${String(n).padStart(12, '0')}`
+  const link = { bindingId: uuid(1), templateId: uuid(2), selectedTemplateVersion: 1, name: '선택 당시 정의', fieldSummary: '문제 (개)' }
+  try {
+    for (const service of ['planner', 'activity']) {
+      const target = path.join(output, service)
+      const compiled = spawnSync(process.execPath, [path.resolve('packages/api-client/node_modules/typescript/lib/tsc.js'),
+        '-p', `packages/api-client/src/generated/${service}/tsconfig.json`, '--outDir', target], { encoding: 'utf8' })
+      assert.equal(compiled.status, 0, compiled.stderr || compiled.stdout)
+      const generated = createRequire(import.meta.url)(path.join(target, 'index.js'))
+      const cases = service === 'planner' ? [
+        ['CreateTaskRequest', { commandId: uuid(3), title: '공부', taskType: 'STUDY', scheduledDate: '2026-09-07',
+          templateSelection: { templateId: uuid(2), expectedTemplateVersion: 1 } }],
+        ['TaskResponse', { taskId: uuid(4), userId: uuid(5), title: '공부', taskType: 'STUDY', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0, templateLink: link }],
+      ] : [['TaskRecordTemplateResponse', { linked: true, templateLink: link, template: {
+        templateId: uuid(2), domain: 'STUDY', kind: 'STUDY_CATEGORY', archived: true, revision: 2,
+        currentVersion: { templateId: uuid(2), templateVersion: 2, name: '현재 정의', fields: [] },
+      } }]]
+      for (const [name, json] of cases) {
+        assert.deepEqual(JSON.parse(JSON.stringify(generated[`${name}ToJSON`](generated[`${name}FromJSON`](json)))), json)
+      }
+    }
+  } finally { await rm(output, { recursive: true, force: true }) }
+})

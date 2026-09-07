@@ -21,10 +21,12 @@ docs/MonthlyActivitySummaryResponse.md
 docs/ProblemDetails.md
 docs/ProblemDetailsFieldErrorsInner.md
 docs/StudyDetail.md
+docs/TaskRecordTemplateResponse.md
 docs/TemplateApi.md
 docs/TemplateDomain.md
 docs/TemplateFieldType.md
 docs/TemplateKind.md
+docs/TemplateLink.md
 docs/TemplatePageResponse.md
 docs/TemplateResponse.md
 docs/TemplateVersion.md
@@ -56,9 +58,11 @@ src/models/MonthlyActivitySummaryResponse.ts
 src/models/ProblemDetails.ts
 src/models/ProblemDetailsFieldErrorsInner.ts
 src/models/StudyDetail.ts
+src/models/TaskRecordTemplateResponse.ts
 src/models/TemplateDomain.ts
 src/models/TemplateFieldType.ts
 src/models/TemplateKind.ts
+src/models/TemplateLink.ts
 src/models/TemplatePageResponse.ts
 src/models/TemplateResponse.ts
 src/models/TemplateVersion.ts

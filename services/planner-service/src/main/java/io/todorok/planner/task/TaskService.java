@@ -28,6 +28,7 @@ public class TaskService {
     private final io.todorok.planner.series.SeriesService recurrence;
     private final java.time.Clock clock;
     private final TaskTransitionPolicy transitions;
+    private final io.todorok.planner.template.TemplateCreationCommands creation;
 
     public TaskService(
         TaskRepository tasks,
@@ -35,7 +36,8 @@ public class TaskService {
         io.todorok.planner.series.SeriesRepository series,
         io.todorok.planner.series.SeriesService recurrence,
         java.time.Clock clock,
-        TaskTransitionPolicy transitions
+        TaskTransitionPolicy transitions,
+        io.todorok.planner.template.TemplateCreationCommands creation
     ) {
         this.tasks = tasks;
         this.events = events;
@@ -43,6 +45,7 @@ public class TaskService {
         this.recurrence = recurrence;
         this.clock = clock;
         this.transitions = transitions;
+        this.creation = creation;
     }
 
     public TaskResponse detail(UUID owner, UUID id) {
@@ -89,18 +92,24 @@ public class TaskService {
         return new CalendarSummaryResponse(from, to, days);
     }
 
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public TaskResponse create(UUID owner, CreateTaskRequest request) {
+        String title = title(request.getTitle());
+        return creation.create(owner, request.getCommandId(), "TASK", request.getTaskType(), request.getTemplateSelection(), request,
+            TaskResponse.class, (target, link) -> {
         var task = new Task(
             owner,
-            title(request.getTitle()),
+            title,
             request.getTaskType(),
             request.getScheduledDate()
         );
+        task.id = target;
+        task.templateLink(link);
         task.note = request.getNote();
         tasks.saveAndFlush(task);
         publish(task, "CREATED");
         return task.response();
+        });
     }
 
     @Transactional

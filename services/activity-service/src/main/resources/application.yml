@@ -49,6 +49,8 @@ management:
         enabled: true
 
 todorok:
+  template-service:
+    public-key-location: ${TODOROK_TEMPLATE_SERVICE_PUBLIC_KEY_FILE:}
   messaging:
     enabled: ${MESSAGING_ENABLED:false}
   auth:

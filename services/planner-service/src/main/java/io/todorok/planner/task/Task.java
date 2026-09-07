@@ -66,6 +66,13 @@ public class Task {
 
     protected Task() {}
 
+    @jakarta.persistence.Embedded
+    io.todorok.planner.template.TemplateLinkColumns templateLink;
+
+    public void templateLink(io.todorok.planner.api.model.TemplateLink link) {
+        templateLink = link == null ? null : new io.todorok.planner.template.TemplateLinkColumns(link);
+    }
+
     Task(UUID userId, String title, TaskType type, LocalDate date) {
         id = UUID.randomUUID();
         this.userId = userId;
@@ -92,7 +99,8 @@ public class Task {
             .performedAt(performedAt)
             .completionSummary(completionSummary)
             .startedAt(startedAt)
-            .endedAt(endedAt);
+            .endedAt(endedAt)
+            .templateLink(templateLink == null ? null : templateLink.response());
     }
 
     public static Task occurrence(

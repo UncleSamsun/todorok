@@ -17,6 +17,8 @@ export * from './SessionResponse';
 export * from './TaskResponse';
 export * from './TaskStatus';
 export * from './TaskType';
+export * from './TemplateLink';
+export * from './TemplateSelection';
 export * from './UpdateDailyNoteRequest';
 export * from './UpdateSeriesRequest';
 export * from './UpdateTaskRequest';
