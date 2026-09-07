@@ -182,6 +182,92 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
         }
     }
 
+    void stopConnect() {
+        connect.getDockerClient().pauseContainerCmd(connect.getContainerId()).exec();
+    }
+
+    void startConnect() {
+        connect.getDockerClient().unpauseContainerCmd(connect.getContainerId()).exec();
+        awaitConnectApi();
+        awaitConnectorRunning();
+    }
+
+    void stopConnector() {
+        try {
+            var response = httpClient().send(
+                    HttpRequest.newBuilder(connectorUri("/stop"))
+                            .PUT(HttpRequest.BodyPublishers.noBody())
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new IllegalStateException(
+                        "connector stop failed: " + response.statusCode()
+                                + " " + response.body());
+            }
+        } catch (Exception exception) {
+            throw new IllegalStateException(exception);
+        }
+        awaitCondition(() -> !slotIsActive(), Duration.ofSeconds(30),
+                "replication slot remained active after connector stopped");
+    }
+
+    void startConnector() {
+        changeConnectorState("resume");
+        awaitConnectorRunning();
+    }
+
+    private void changeConnectorState(String action) {
+        try {
+            var response = httpClient().send(
+                    HttpRequest.newBuilder(connectorUri("/" + action))
+                            .PUT(HttpRequest.BodyPublishers.noBody())
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new IllegalStateException(
+                        "connector " + action + " failed: " + response.statusCode()
+                                + " " + response.body());
+            }
+        } catch (Exception exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    void recreateReplicationSlot() {
+        jdbc.execute("select pg_drop_replication_slot('todorok_outbox_slot')");
+        jdbc.queryForList("select * from pg_create_logical_replication_slot("
+                + "'todorok_outbox_slot', 'pgoutput')");
+    }
+
+    void stopKafka() {
+        kafka.getDockerClient().pauseContainerCmd(kafka.getContainerId()).exec();
+    }
+
+    void startKafka() {
+        kafka.getDockerClient().unpauseContainerCmd(kafka.getContainerId()).exec();
+        awaitKafkaReady();
+        restartConnector();
+        awaitConnectorRunning();
+    }
+
+    private void restartConnector() {
+        try {
+            var response = httpClient().send(
+                    HttpRequest.newBuilder(connectorUri(
+                                    "/restart?includeTasks=true&onlyFailed=false"))
+                            .POST(HttpRequest.BodyPublishers.noBody())
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new IllegalStateException(
+                        "connector restart failed: " + response.statusCode()
+                                + " " + response.body());
+            }
+        } catch (Exception exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
     void awaitConnectorRunning() {
         var deadline = System.nanoTime() + Duration.ofSeconds(30).toNanos();
         while (System.nanoTime() < deadline) {
@@ -208,14 +294,58 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
                 }
             }
         }
-        throw new AssertionError("Debezium connector did not reach RUNNING state");
+        throw new AssertionError("Debezium connector did not reach RUNNING state"
+                + "\nconnector status: " + connectorStatus()
+                + "\nconnect logs:\n" + connect.getLogs());
+    }
+
+    private void awaitConnectApi() {
+        awaitCondition(() -> {
+            try {
+                return httpClient().send(
+                        HttpRequest.newBuilder(connectUri("/connectors")).GET().build(),
+                        HttpResponse.BodyHandlers.discarding()).statusCode() == 200;
+            } catch (Exception ignored) {
+                return false;
+            }
+        }, Duration.ofMinutes(2), "Kafka Connect REST API did not recover");
+    }
+
+    private void awaitKafkaReady() {
+        awaitCondition(() -> {
+            try (var admin = AdminClient.create(Map.of(
+                    ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers()))) {
+                admin.listTopics().names().get();
+                return true;
+            } catch (Exception ignored) {
+                return false;
+            }
+        }, Duration.ofMinutes(2), "Kafka broker did not recover");
+    }
+
+    private void awaitCondition(
+            java.util.function.BooleanSupplier condition,
+            Duration timeout,
+            String failureMessage) {
+        var deadline = System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < deadline) {
+            if (condition.getAsBoolean()) return;
+            try {
+                Thread.sleep(250L);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(exception);
+            }
+        }
+        throw new AssertionError(failureMessage);
     }
 
     private boolean slotIsActive() {
-        return Boolean.TRUE.equals(jdbc.queryForObject(
+        var values = jdbc.queryForList(
                 "select active from pg_replication_slots "
                         + "where slot_name = 'todorok_outbox_slot'",
-                Boolean.class));
+                Boolean.class);
+        return values.size() == 1 && Boolean.TRUE.equals(values.getFirst());
     }
 
     private void registerConnector() {

@@ -9,7 +9,7 @@
 | 3 | [#24](https://github.com/UncleSamsun/todorok/issues/24) | 디자인 시스템 및 핵심 UI 기준 문서 확정 | §8.3, §10~11, §19.4, AC-1~2 | #17 |
 | 4 | [#18](https://github.com/UncleSamsun/todorok/issues/18) | OpenAPI·이벤트 Schema·공통 오류 계약 | §16.4, §16.6, §20 | #17 |
 | 5 | [#19](https://github.com/UncleSamsun/todorok/issues/19) | Spring Data JPA·Flyway·PostgreSQL 통합 테스트 기반 ([설계](superpowers/specs/2026-09-02-persistence-foundation-design.md) · [구현 계획](superpowers/plans/2026-09-02-persistence-foundation.md)) | §16.7, §17.3, §20 | #17 |
-| 6 | [#20](https://github.com/UncleSamsun/todorok/issues/20) | Kafka Connect·Debezium outbox·consumer inbox 기반 | §16.4~16.5, §19.2~20 | #18, #19 |
+| 6 | [#20](https://github.com/UncleSamsun/todorok/issues/20) | Kafka Connect·Debezium outbox·consumer inbox 기반 ([설계](superpowers/specs/2026-09-02-outbox-debezium-foundation-design.md) · [구현 계획](superpowers/plans/2026-09-02-outbox-debezium-foundation.md)) | §16.4~16.5, §19.2~20 | #18, #19 |
 | 7 | [#2](https://github.com/UncleSamsun/todorok/issues/2) | 사용자 인증·회전형 refresh session·서비스 간 JWT 검증 | §16.2, §16.6, §18 | #18, #19 |
 | 8 | [#3](https://github.com/UncleSamsun/todorok/issues/3) | 달력 summary·일반 Task CRUD·오늘 화면 | §8~10, §19.2, AC-1 | #2, #18, #19, #24 |
 | 9 | [#4](https://github.com/UncleSamsun/todorok/issues/4) | Task series·반복 일정·자동 이월·지난 기록·reopen | §9.1, §10.2~10.4, AC-3 | #3 |

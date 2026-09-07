@@ -4,7 +4,12 @@ const gradleCommand = process.platform === 'win32' ? 'gradlew.bat' : './gradlew'
 const commands = [
   ['node', ['--test', 'scripts/contracts-generation.test.mjs', 'scripts/openapi-contract.test.mjs', 'scripts/check-contract-drift.test.mjs']],
   ['node', ['scripts/check-contract-drift.mjs']],
-  ['node', ['--test', 'scripts/persistence-compose.test.mjs']],
+  ['node', ['--test',
+    'scripts/persistence-compose.test.mjs',
+    'scripts/connect-config.test.mjs',
+    'scripts/postgres-messaging-config.test.mjs',
+    'scripts/messaging-health.test.mjs',
+  ]],
   [gradleCommand, ['test', '--no-daemon', '--max-workers=1']],
   ['corepack', ['pnpm', 'test:packages']],
   ['corepack', ['pnpm', 'test:web']],

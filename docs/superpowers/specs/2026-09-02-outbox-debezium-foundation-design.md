@@ -18,7 +18,7 @@
 - Kafka domain topic·dead-letter topic의 보존 상한
 - consumer retry·dead-letter 공통 factory
 - Connect 중단·재시작, 중복 event ID, Kafka 복구, slot 유실 복구 테스트
-- WAL·connector·consumer lag 점검 명령과 보존 정리 SQL
+- WAL·connector·consumer lag·outbox/inbox 적체 점검 명령
 
 ## 비범위
 
@@ -40,7 +40,7 @@
 - PostgreSQL replication slot WAL 상한 2GB
 - domain topic 7일 또는 partition당 1GB
 - dead-letter topic 30일 또는 1GB
-- outbox 7일, inbox 30일 보존
+- outbox·inbox 자동 삭제 없음. 안전한 replay watermark 도입 전에는 원본과 멱등 처리 이력을 보존
 
 ## 데이터 흐름
 
@@ -92,7 +92,7 @@ column 이름은 Debezium Outbox Event Router의 기본 field와 맞춘다. `id`
 
 `aggregatetype`은 `task` 또는 `activity`, `aggregateid`는 aggregate UUID 문자열이다. 같은 aggregate ID를 Kafka key로 사용해 한 partition 안의 순서를 유지한다.
 
-outbox row는 INSERT만 허용한다. UPDATE API를 제공하지 않으며 Connect 설정은 outbox UPDATE를 fatal 오류로 취급한다. 삭제는 보존 작업에서만 수행하고 Outbox Event Router가 delete event를 내보내지 않게 한다.
+outbox row는 INSERT만 허용한다. UPDATE API를 제공하지 않으며 Connect 설정은 outbox UPDATE를 fatal 오류로 취급한다. MVP에서는 snapshot·dead-letter 재처리 범위를 증명하는 watermark가 없으므로 자동 삭제하지 않는다.
 
 ### processed_event
 
@@ -214,7 +214,7 @@ errors.log.enable=true
 errors.log.include.messages=false
 ```
 
-database password는 JSON 파일에 넣지 않고 register script가 환경 변수에서 config request에 주입한다.
+database password는 JSON 파일에 넣지 않고 register script가 환경 변수에서 `jq --arg`로 config request에 주입한다. 기존 connector는 비밀 값을 읽어 비교하지 않는다. `CONNECTOR_CONFIG_UPDATE=true`를 명시한 운영 절차에서만 검증된 전체 config를 PUT해 비밀번호 회전과 설정 재적용을 수행한다.
 
 ## Kafka topic 정책
 
@@ -245,13 +245,9 @@ Connect·connect-init은 application 기동 gate가 아니다. Connect가 중단
 
 ## 보존과 상태 점검
 
-`infra/docker/postgres/maintenance/prune-messaging.sql`은 다음 조건을 만족할 때만 outbox를 삭제한다.
+MVP에서는 outbox와 inbox를 자동 삭제하지 않는다. replication slot의 `confirmed_flush_lsn`은 WAL 소비 위치일 뿐 개별 event의 Kafka 발행·consumer 처리·dead-letter 재처리 완료를 증명하지 않기 때문이다. `infra/docker/postgres/maintenance/inspect-messaging-retention.sql`은 planner·activity outbox와 세 서비스 inbox의 건수·가장 오래된 시각만 조회하며 데이터를 변경하지 않는다.
 
-- slot `todorok_outbox_slot` 존재
-- slot active
-- `pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flush_lsn)`이 16MB 이하
-
-조건이 아니면 exception으로 종료한다. 조건이 맞으면 planner·activity에서 `created_at < now() - interval '7 days'`를 삭제하고 세 schema에서 `processed_at < now() - interval '30 days'`를 삭제한다. scheduler 연결은 #14에서 수행한다.
+향후 정리는 producer별 발행 watermark와 consumer별 replay watermark를 모두 비교할 수 있고, snapshot·dead-letter 재처리 정책이 그 범위를 보장할 때 별도 이슈에서 도입한다.
 
 `scripts/messaging-health.mjs`는 다음 값을 JSON으로 출력하고 limit 위반 시 exit code 1을 반환한다.
 
@@ -259,8 +255,10 @@ Connect·connect-init은 application 기동 gate가 아니다. Connect가 중단
 - replication slot active 여부와 retained WAL bytes
 - domain·dead-letter topic retention config
 - consumer group lag
+- schema별 outbox·inbox 건수와 가장 오래된 record 나이
 
 WAL retained bytes 1.5GB는 warning, 2GB는 critical이다. connector 또는 task가 RUNNING이 아니면 critical이다.
+outbox가 7일, inbox가 30일보다 오래되면 삭제하지 않고 warning을 기록한다.
 
 ## 테스트 전략
 
@@ -271,7 +269,7 @@ WAL retained bytes 1.5GB는 warning, 2GB는 critical이다. connector 또는 tas
 - 같은 event ID claim 두 번 호출 시 true, false
 - claim 뒤 local update가 실패하면 rollback 후 다시 true
 - outbox payload가 event JSON Schema를 통과
-- 7일·30일 보존 SQL의 경계 시각
+- 오래된 outbox·inbox가 상태 점검 warning을 만들지만 삭제되지 않음
 
 ### 2. Kafka consumer 기반 테스트
 
@@ -311,7 +309,7 @@ WAL retained bytes 1.5GB는 warning, 2GB는 critical이다. connector 또는 tas
 
 - DB commit 이후 Kafka 발행: outbox writer와 전체 CDC 왕복 테스트
 - Connect·Kafka·consumer 재시작과 중복 전달: 장애 통합 테스트와 inbox transaction 테스트
-- WAL·topic·outbox·inbox 상한: PostgreSQL command, topic init, prune SQL, health script
+- WAL·topic 상한과 outbox·inbox 적체: PostgreSQL command, topic init, read-only inspection, health script
 - Connect 중단·재시작: persistent slot과 offset internal topic 검증
 - dead-letter 이동: consumer failure handler Kafka 테스트
 - slot 유실 복구: slot 재생성·snapshot·event ID 중복 검증

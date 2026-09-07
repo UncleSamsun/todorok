@@ -414,14 +414,15 @@ git commit -m "feat(messaging): consumer 재시도와 dead-letter 기반 추가"
 - Modify: `.env.example`
 - Modify: `infra/docker/postgres/init/001-create-service-roles.sh`
 - Create: `infra/docker/postgres/replication/initialize-outbox-replication.sh`
-- Create: `infra/docker/postgres/maintenance/prune-messaging.sql`
-- Create: `libs/messaging-support/src/test/java/io/todorok/messaging/MessagingRetentionIntegrationTest.java`
+- Create: `infra/docker/postgres/maintenance/inspect-messaging-retention.sql`
+- Create: `scripts/messaging-health.mjs`
+- Create: `scripts/messaging-health.test.mjs`
 - Create: `scripts/postgres-messaging-config.test.mjs`
 - Modify: `infra/docker/compose.yml`
 
 **Interfaces:**
 - Consumes: migrated planner·activity outbox table.
-- Produces: `debezium_app`, `todorok_outbox` publication, `todorok_outbox_slot`, safe prune SQL.
+- Produces: `debezium_app`, `todorok_outbox` publication, `todorok_outbox_slot`, read-only retention inspection.
 
 - [ ] **Step 1: PostgreSQL config 실패 테스트 작성**
 
@@ -477,11 +478,9 @@ select * from pg_create_logical_replication_slot(
 );
 ```
 
-- [ ] **Step 5: 보존 SQL 작성**
+- [ ] **Step 5: read-only 보존 상태 점검 작성**
 
-DO block에서 slot 존재·active·confirmed_flush_lsn non-null·WAL lag 16MB 이하를 확인한다. 조건 미달이면 exception을 던지고, 통과하면 planner·activity 7일 outbox와 세 schema 30일 inbox를 삭제한다.
-
-`MessagingRetentionIntegrationTest`는 PostgreSQLContainer에 slot과 여섯 table을 만들고 7일 경계 전후 outbox, 30일 경계 전후 inbox를 삽입한다. slot active 조건을 충족한 connection에서 SQL을 실행한 뒤 오래된 row만 삭제됐는지 검증한다. slot이 없거나 inactive인 case는 SQL exception과 삭제 0건을 검증한다.
+MVP에서는 replay 안전성을 증명하는 watermark가 없으므로 outbox·inbox 자동 삭제를 금지한다. inspection SQL은 schema별 건수와 가장 오래된 시각만 조회한다. health 판정은 outbox 7일·inbox 30일 초과를 warning으로 알리되 row를 보존한다.
 
 - [ ] **Step 6: Compose 연결과 test 통과**
 
@@ -489,7 +488,7 @@ postgres service에 네 command flag를 추가하고, `replication-init`은 post
 
 Run: `node --test scripts/postgres-messaging-config.test.mjs`
 
-Run: `gradlew.bat :libs:messaging-support:test --tests '*MessagingRetentionIntegrationTest' --no-daemon --no-configuration-cache`
+Run: `node --test scripts/messaging-health.test.mjs`
 
 Run: `docker compose --env-file .env.example -f infra/docker/compose.yml config --quiet`
 
@@ -743,7 +742,7 @@ messaging-integration CDC tests
 
 - [ ] **Step 6: 문서 상태 갱신**
 
-README에 connector 등록, health, prune 명령과 장애 복구 순서를 기록한다. MVP 계획 T4를 완료 체크하고 roadmap #20 행에 설계·구현 계획 링크를 추가한다.
+README에 connector 등록·명시적 config 재적용, health, read-only retention 점검과 장애 복구 순서를 기록한다. MVP 계획 T4를 완료 체크하고 roadmap #20 행에 설계·구현 계획 링크를 추가한다.
 
 - [ ] **Step 7: 전체 검증**
 

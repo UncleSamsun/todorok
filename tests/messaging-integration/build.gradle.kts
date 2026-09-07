@@ -6,6 +6,10 @@ tasks.test {
     systemProperty("todorok.repository.root", rootProject.projectDir.absolutePath)
 }
 
+sourceSets.test {
+    resources.srcDir(rootProject.file("contracts"))
+}
+
 dependencies {
     testImplementation(platform("org.springframework.boot:spring-boot-dependencies:4.1.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")

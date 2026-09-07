@@ -251,7 +251,7 @@ Lane A와 B는 병렬로 시작할 수 있다. Activity core 이후 공부·운�
 - [x] **T3 (P1)** Spring Data JPA·Flyway·Testcontainers 기반 구현
   - Files: `services/*/`, `infra/docker/postgres/`
   - Verify: 실제 PostgreSQL migration·validate·rollback-safe schema 테스트
-- [ ] **T4 (P1)** Kafka Connect·Debezium outbox·consumer inbox 구현
+- [x] **T4 (P1)** Kafka Connect·Debezium outbox·consumer inbox 구현
   - Files: `infra/`, `contracts/events/`, `libs/event-contracts/`
   - Verify: DB commit부터 consumer 결과까지 중복·재시작 fault 테스트
 - [ ] **T5 (P1)** 인증·bootstrap·token rotation 구현

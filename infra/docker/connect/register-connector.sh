@@ -5,10 +5,18 @@ connect_url="${CONNECT_URL:-http://connect:8083}"
 connector_name=todorok-postgres-outbox
 rendered_request="$(mktemp)"
 current_config="$(mktemp)"
-trap 'rm -f "$rendered_request" "$current_config"' EXIT
+rendered_config="$(mktemp)"
+trap 'rm -f "$rendered_request" "$current_config" "$rendered_config"' EXIT
 
-envsubst '${POSTGRES_DB} ${DEBEZIUM_DB_PASSWORD}' \
-  < /connect/connector-template.json > "$rendered_request"
+: "${POSTGRES_DB:?POSTGRES_DB is required}"
+: "${DEBEZIUM_DB_PASSWORD:?DEBEZIUM_DB_PASSWORD is required}"
+connector_config_update="${CONNECTOR_CONFIG_UPDATE:-false}"
+
+jq --arg database "$POSTGRES_DB" --arg password "$DEBEZIUM_DB_PASSWORD" \
+  '.config["database.dbname"] = $database
+   | .config["database.password"] = $password' \
+  /connect/connector-template.json > "$rendered_request"
+jq '.config' "$rendered_request" > "$rendered_config"
 
 http_code="$(curl --silent --show-error \
   --output "$current_config" --write-out '%{http_code}' \
@@ -27,12 +35,26 @@ if [[ "$http_code" != "200" ]]; then
   exit 1
 fi
 
+config_mismatch=false
 while IFS= read -r key; do
   [[ "$key" == "database.password" ]] && continue
   expected="$(jq -r --arg key "$key" '.config[$key]' "$rendered_request")"
   actual="$(jq -r --arg key "$key" '.[$key]' "$current_config")"
   if [[ "$expected" != "$actual" ]]; then
     echo "connector config mismatch for $key" >&2
-    exit 1
+    config_mismatch=true
   fi
 done < <(jq -r '.config | keys[]' "$rendered_request")
+
+if [[ "$config_mismatch" == "true" && "$connector_config_update" != "true" ]]; then
+  echo "set CONNECTOR_CONFIG_UPDATE=true to apply the reviewed config" >&2
+  exit 1
+fi
+
+if [[ "$connector_config_update" == "true" ]]; then
+  curl --fail --silent --show-error \
+    --request PUT \
+    --header 'Content-Type: application/json' \
+    --data-binary "@$rendered_config" \
+    "$connect_url/connectors/$connector_name/config" >/dev/null
+fi

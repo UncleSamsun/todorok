@@ -57,3 +57,16 @@ test('connector는 단일 slot과 Outbox Event Router만 사용한다', async ()
   assert.equal(config['errors.tolerance'], 'none')
   assert.equal(config['errors.log.include.messages'], 'false')
 })
+
+test('connector 비밀번호는 JSON-safe하게 주입하고 갱신은 명시적으로만 허용한다', async () => {
+  const script = await readFile('infra/docker/connect/register-connector.sh', 'utf8')
+  assert.doesNotMatch(script, /envsubst/)
+  assert.match(
+    script,
+    /jq --arg database "\$POSTGRES_DB" --arg password "\$DEBEZIUM_DB_PASSWORD"/,
+  )
+  assert.match(script, /CONNECTOR_CONFIG_UPDATE:-false/)
+
+  const services = composeServices()
+  assert.equal(services['connect-init'].environment.CONNECTOR_CONFIG_UPDATE, 'false')
+})

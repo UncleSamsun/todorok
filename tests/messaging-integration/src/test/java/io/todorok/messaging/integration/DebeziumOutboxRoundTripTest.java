@@ -7,9 +7,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 class DebeziumOutboxRoundTripTest {
 
+    private static final JsonMapper MAPPER = JsonMapper.builder().build();
     private static MessagingInfrastructureFixture fixture;
 
     @BeforeAll
@@ -23,37 +27,41 @@ class DebeziumOutboxRoundTripTest {
     }
 
     @Test
-    void routesPlannerAndActivityEnvelopes() {
-        var taskEventId = UUID.fromString("00000000-0000-0000-0000-000000000401");
-        var activityEventId = UUID.fromString("00000000-0000-0000-0000-000000000402");
+    void routesPlannerAndActivityEnvelopes() throws Exception {
+        var taskEnvelope = fixtureJson("fixtures/events/task-changed/v1-valid.json");
+        var activityEnvelope = fixtureJson("fixtures/events/activity-completed/v1-valid.json");
+        var taskEventId = UUID.fromString(taskEnvelope.path("eventId").asText());
+        var activityEventId = UUID.fromString(activityEnvelope.path("eventId").asText());
 
         fixture.insertOutbox(
                 "planner", taskEventId, "task", "task-1",
-                "TASK_CHANGED", envelope(taskEventId, "TASK_CHANGED"));
+                "TASK_CHANGED", MAPPER.writeValueAsString(taskEnvelope));
         fixture.insertOutbox(
                 "activity", activityEventId, "activity", "activity-1",
-                "ACTIVITY_COMPLETED", envelope(activityEventId, "ACTIVITY_COMPLETED"));
+                "ACTIVITY_COMPLETED", MAPPER.writeValueAsString(activityEnvelope));
 
         var task = fixture.consume("todorok.task.v1", taskEventId, Duration.ofSeconds(20));
         var activity = fixture.consume(
                 "todorok.activity.v1", activityEventId, Duration.ofSeconds(20));
         assertThat(task.key()).isEqualTo("task-1");
-        assertThat(task.value().path("eventId").asText()).isEqualTo(taskEventId.toString());
+        assertThat(task.value()).isEqualTo(taskEnvelope);
         assertThat(activity.key()).isEqualTo("activity-1");
-        assertThat(activity.value().path("eventId").asText())
-                .isEqualTo(activityEventId.toString());
+        assertThat(activity.value()).isEqualTo(activityEnvelope);
     }
 
     @Test
-    void preservesOrderForSameAggregateAndIgnoresOtherTables() {
+    void preservesOrderForSameAggregateAndIgnoresOtherTables() throws Exception {
         var first = UUID.fromString("00000000-0000-0000-0000-000000000411");
         var second = UUID.fromString("00000000-0000-0000-0000-000000000412");
+        var firstEnvelope = withEventId(
+                fixtureJson("fixtures/events/task-changed/v1-valid.json"), first);
+        var secondEnvelope = withEventId(firstEnvelope, second);
         fixture.insertOutbox(
                 "planner", first, "task", "task-order",
-                "TASK_CHANGED", envelope(first, "TASK_CHANGED"));
+                "TASK_CHANGED", MAPPER.writeValueAsString(firstEnvelope));
         fixture.insertOutbox(
                 "planner", second, "task", "task-order",
-                "TASK_CHANGED", envelope(second, "TASK_CHANGED"));
+                "TASK_CHANGED", MAPPER.writeValueAsString(secondEnvelope));
         fixture.updateServiceMetadata("planner", 2);
 
         var firstRecord = fixture.consume(
@@ -64,16 +72,67 @@ class DebeziumOutboxRoundTripTest {
         assertThat(fixture.hasCdcRecordForServiceMetadata(Duration.ofSeconds(2))).isFalse();
     }
 
-    private String envelope(UUID eventId, String type) {
-        return """
-                {
-                  "eventId": "%s",
-                  "type": "%s",
-                  "version": 1,
-                  "occurredAt": "2026-09-02T00:00:00Z",
-                  "userId": "00000000-0000-0000-0000-000000000499",
-                  "payload": {"probe": true}
-                }
-                """.formatted(eventId, type);
+    @Test
+    void publishesEventInsertedWhileConnectIsStopped() throws Exception {
+        var eventId = UUID.fromString("00000000-0000-0000-0000-000000000421");
+        var envelope = withEventId(
+                fixtureJson("fixtures/events/task-changed/v1-valid.json"), eventId);
+
+        fixture.stopConnect();
+        fixture.insertOutbox(
+                "planner", eventId, "task", "task-connect-recovery",
+                "TASK_CHANGED", MAPPER.writeValueAsString(envelope));
+        fixture.startConnect();
+
+        assertThat(fixture.consume("todorok.task.v1", eventId, Duration.ofSeconds(30)).value())
+                .isEqualTo(envelope);
+    }
+
+    @Test
+    void publishesEventAfterKafkaRecovers() throws Exception {
+        var eventId = UUID.fromString("00000000-0000-0000-0000-000000000422");
+        var envelope = withEventId(
+                fixtureJson("fixtures/events/activity-completed/v1-valid.json"), eventId);
+
+        fixture.stopKafka();
+        fixture.insertOutbox(
+                "activity", eventId, "activity", "activity-kafka-recovery",
+                "ACTIVITY_COMPLETED", MAPPER.writeValueAsString(envelope));
+        fixture.startKafka();
+
+        assertThat(fixture.consume(
+                "todorok.activity.v1", eventId, Duration.ofSeconds(45)).value())
+                .isEqualTo(envelope);
+    }
+
+    @Test
+    void restoresRetainedOutboxAfterReplicationSlotLoss() throws Exception {
+        var eventId = UUID.fromString("00000000-0000-0000-0000-000000000423");
+        var envelope = withEventId(
+                fixtureJson("fixtures/events/task-changed/v1-valid.json"), eventId);
+
+        fixture.stopConnector();
+        fixture.recreateReplicationSlot();
+        fixture.insertOutbox(
+                "planner", eventId, "task", "task-slot-recovery",
+                "TASK_CHANGED", MAPPER.writeValueAsString(envelope));
+        fixture.startConnector();
+
+        assertThat(fixture.consume("todorok.task.v1", eventId, Duration.ofSeconds(45)).value())
+                .isEqualTo(envelope);
+    }
+
+    private JsonNode fixtureJson(String path) throws Exception {
+        try (var input = DebeziumOutboxRoundTripTest.class
+                .getClassLoader().getResourceAsStream(path)) {
+            if (input == null) throw new IllegalStateException("fixture not found: " + path);
+            return MAPPER.readTree(input);
+        }
+    }
+
+    private JsonNode withEventId(JsonNode source, UUID eventId) {
+        var copy = (ObjectNode) source.deepCopy();
+        copy.put("eventId", eventId.toString());
+        return copy;
     }
 }
