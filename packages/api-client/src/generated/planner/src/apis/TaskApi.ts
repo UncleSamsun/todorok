@@ -53,6 +53,10 @@ export interface DeleteTaskRequest {
     version: number;
 }
 
+export interface GetTaskRequest {
+    taskId: string;
+}
+
 export interface ReopenTaskRequest {
     taskId: string;
     versionCommand: VersionCommand;
@@ -136,6 +140,27 @@ export interface TaskApiInterface {
     /**
      */
     deleteTask(requestParameters: DeleteTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+
+    /**
+     * Creates request options for getTask without sending the request
+     * @param {string} taskId
+     * @throws {RequiredError}
+     * @memberof TaskApiInterface
+     */
+    getTaskRequestOpts(requestParameters: GetTaskRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     *
+     * @param {string} taskId
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TaskApiInterface
+     */
+    getTaskRaw(requestParameters: GetTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TaskResponse>>;
+
+    /**
+     */
+    getTask(requestParameters: GetTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TaskResponse>;
 
     /**
      * Creates request options for reopenTask without sending the request
@@ -363,6 +388,57 @@ export class TaskApi extends runtime.BaseAPI implements TaskApiInterface {
      */
     async deleteTask(requestParameters: DeleteTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.deleteTaskRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     * Creates request options for getTask without sending the request
+     */
+    async getTaskRequestOpts(requestParameters: GetTaskRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['taskId'] == null) {
+            throw new runtime.RequiredError(
+                'taskId',
+                'Required parameter "taskId" was null or undefined when calling getTask().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/tasks/{taskId}`;
+        urlPath = urlPath.replace('{taskId}', encodeURIComponent(String(requestParameters['taskId'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async getTaskRaw(requestParameters: GetTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TaskResponse>> {
+        const requestOptions = await this.getTaskRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => TaskResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getTask(requestParameters: GetTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TaskResponse> {
+        const response = await this.getTaskRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**

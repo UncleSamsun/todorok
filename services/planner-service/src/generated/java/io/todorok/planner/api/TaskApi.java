@@ -89,6 +89,24 @@ public interface TaskApi {
     );
 
 
+    String PATH_GET_TASK = "/tasks/{taskId}";
+    /**
+     * GET /tasks/{taskId}
+     *
+     * @param taskId  (required)
+     * @return Task 상세 (status code 200)
+     *         or 대상을 찾을 수 없음 (status code 404)
+     */
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = TaskApi.PATH_GET_TASK,
+        produces = { "application/json", "application/problem+json" }
+    )
+    ResponseEntity<TaskResponse> getTask(
+         @PathVariable("taskId") UUID taskId
+    );
+
+
     String PATH_REOPEN_TASK = "/tasks/{taskId}/reopen";
     /**
      * POST /tasks/{taskId}/reopen

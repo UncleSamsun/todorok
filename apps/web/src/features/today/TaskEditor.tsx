@@ -1,0 +1,57 @@
+import { useState, type SubmitEvent } from 'react'
+import type { Task } from './model'
+export function TaskEditor({
+  task,
+  busy,
+  error,
+  save,
+  remove,
+  cancel,
+}: {
+  task: Task
+  busy: boolean
+  error: string
+  save: (title: string, date: string) => void
+  remove: () => void
+  cancel: () => void
+}) {
+  const [title, setTitle] = useState(task.title),
+    [date, setDate] = useState(task.scheduledDate)
+  function submit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (title.trim() && !busy) save(title.trim(), date)
+  }
+  return (
+    <form className="task-form" aria-label="할 일 수정" onSubmit={submit}>
+      <label htmlFor="edit-title">제목 수정</label>
+      <input
+        autoFocus
+        id="edit-title"
+        required
+        maxLength={120}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+      <label htmlFor="edit-date">날짜 수정</label>
+      <input
+        id="edit-date"
+        type="date"
+        required
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+      />
+      {error && <p role="alert">{error}</p>}
+      <div className="form-actions">
+        <button disabled={busy || !title.trim()} type="submit">
+          수정 저장
+        </button>
+        <button type="button" disabled={busy} onClick={remove}>
+          삭제
+        </button>
+        <button type="button" disabled={busy} onClick={cancel}>
+          닫기
+        </button>
+      </div>
+    </form>
+  )
+}

@@ -1,4 +1,5 @@
 export type TaskType = 'GENERAL' | 'WORKOUT' | 'STUDY' | 'CLIMBING'
+export * from './calendar'
 
 export type TaskStatus = 'PLANNED' | 'COMPLETED' | 'SKIPPED' | 'DELETED'
 

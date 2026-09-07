@@ -58,6 +58,7 @@ All URIs are relative to */api/planner/v1*
 *TaskApi* | [**completeTask**](docs/TaskApi.md#completetask) | **POST** /tasks/{taskId}/complete |
 *TaskApi* | [**createTask**](docs/TaskApi.md#createtaskoperation) | **POST** /tasks |
 *TaskApi* | [**deleteTask**](docs/TaskApi.md#deletetask) | **DELETE** /tasks/{taskId} |
+*TaskApi* | [**getTask**](docs/TaskApi.md#gettask) | **GET** /tasks/{taskId} |
 *TaskApi* | [**reopenTask**](docs/TaskApi.md#reopentask) | **POST** /tasks/{taskId}/reopen |
 *TaskApi* | [**updateTask**](docs/TaskApi.md#updatetaskoperation) | **PATCH** /tasks/{taskId} |
 
