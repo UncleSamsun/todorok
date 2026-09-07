@@ -34,6 +34,17 @@
 - 07 UI `4bbf1de`: queryparam구독·동기화갱신/전환·StrictMode 보완, 집중17/build통과. 최종리뷰3건(HTTP5xx불확실요청보존, 이탈후세션내초안/요청복원, 부분시간입력거부)을 집중보완 중이며 전체07미완료.
 - 07 최종완료: `77bf83b` 세션초안/불확실HTTP/부분시간 보완·집중30/build/diff·재리뷰 통과. 서버실제왕복과 UI실제3유형브라우저 증거를 합쳐 전체07 완료.
 - 08 기록변경 서버단계 착수: correction/void/지난기록 반영 후 월별조회·UI를 후속하위단계로 연결한다. 09–16 미착수.
+- 08 서버 `65aa6b8`: 실제Kafka6+시간보강1/contracts19/migration-security4/drift/build통과. 리뷰에서동시PATCH중별도header/detail SQL조회가다른revision을섞을수있는P2를발견해 일관snapshot조회·list/replay 회귀보완 중이다.
+- 08 서버완료: `a3a58ff` 단일SQLsnapshot·PGbarrier9조합·samecommand8경합·validator3개·재리뷰 통과. 월별조회API/기록관리UI 하위단계 착수. 전체08미완료.
+- 08 UI환경: backendbuild85961 exit0, planner `78e7f4ca90890651d0c80c49f18c2bb7e71e944e24c621044216b4ebd2a80166`, activity `f2a41f32bd694d81347dd076af285135ecd8f7baff5cf30129d31af9877633c9`. runtime8767 exit0 project`todorok-task08-ui` localhost5188. probe40915 exit0: 실제badmonth400/correction+void APPLIED/month합계확인. UI브라우저 검증용유지중.
+- 08 UI `53c031a`: 월API DB/Clock/실제HTTP·신규UI3개/build/drift통과. 기존StrictMode조회대기와 실제과거Task선택timeout 미해결로 집중인계. 별도허용된브라우저CLI0.36 정상실행·부모로그인PASS확인(차단된실행파일과구분). 전체08미완료.
+- 08 실제UI 후속: 과거Task 선택·저장·APPLIED는 native 조작으로 확인했다. 저장 후 이미 방문했던 도메인의 월요약/목록이25초 동안 이전값을 유지하는 실제 캐시갱신 누락을 발견했다. 기존 생성/APPLIED 경로가 calendar만 무효화하고 새 Activity조회키를 빠뜨린 원인으로 집중회귀·수정 중이다. StrictMode조회는1,111ms에성공하여 초기render부하와 구분했고 timeout상향 없이 mount완료대기를검증한다.
+- 08 검증계속: async act 초기mount와단일worker로 기존69/69통과, 월요약stale 신규회귀RED확인 후 생성/APPLIED경로수정 중이다. 월경계·윤년·세유형·조회불변성 직접DB증거의 누락을 `task-08-summary-boundary-brief.md`에 명시해 UI수정이후 순차보강한다. 현재08완료아님.
+- 08 UI최신검증: 수정후70/70·build통과와실제과거저장/APPLIED→수정45분→합계75분→VOIDED→합계30분·탭간월공유를확인했다. 부모모바일캡처검토에서390px추가버튼글자줄바꿈을발견해배치보완요청했다. 빌드전환중단발성blank원인도증거확인중이며 최종리뷰/DB누락보강전완료처리하지않는다.
+- 08 UI보완확정 `3e8fe6d`:70/70/build/실제저장수정취소·390px버튼행보완통과,부모최종캡처확인. `a3a58ff..3e8fe6d` frozen diff중요리뷰와별도DB경계검증보강착수. PWA전환blank는아래14필수항목에별도추적한다.
+- 08 중요리뷰: 요구미충족/수정필요. 편집version혼합·수정/void동기화미연결·완료Task신규폼·400옛snapshot재전송·불확실응답시간비교누락·등록캐시미갱신·메모수정시간초손실7건,재시도44px1건을 `task-08-summary-review.md`에기록했다. DB검증작업완료후UI담당수정라운드1로순차전달한다. 서버SQL중요결함은발견되지않았다.
+- 08 DB경계 `9424f97`: 실제PostgreSQL추가5개exit0·XML5/0/0/0부모확인. 윤년/UTC동일시각·다중세트·두유형상태/owner·소수초·조회전체행불변통과. 보강test읽기전용리뷰착수. UI라운드1은 `task-08-summary-fix-brief.md`로직전담당에게전달했으며유일한구현작업이다.
+- 08 DB보강리뷰:실행은통과했지만서울/UTC경계동일시간상쇄와Activity없는Taskreference누락2건으로검증미충족. `task-08-summary-boundary-review.md`에기록하고현재UI작업후순차보완한다. 테스트가녹색인것을요구증명과동일시하지않는다.
 - 03 실제 브라우저에서 native fetch의 잘못된 receiver로 Illegal invocation이 발생해 서버 요청이 없음을 재현했다. local 함수 호출로 수정하고 receiver-sensitive 회귀 테스트·build 통과 후 실제 브라우저를 재검증 중이다. 단위 테스트 통과를 실제 로그인 성공으로 대체하지 않는다.
 - 새 worktree의 event-contracts Gradle gate 성공(캐시 재사용). 작업 01 runtime 테스트 결과는 위 완료 증거를 따른다.
 - PRD AC-3를 §10.4의 반복 조건표와 일치시키는 문서 정정을 반영했다. 월말/집계 신규 규칙과 구분한다.
@@ -60,3 +71,7 @@
 | 16 | 실기기·7일 관찰 실제 증거 필요 | 전체 기능 gate |
 
 현재 결론: 외부 자료·실기기·운영 권한이 필요한 후반 검증은 실제 확보 상태로 판정하며, 로컬 기능 구현은 계속한다. 공개 endpoint·집계 의미를 바꾸는 작업은 PRD와 계약을 먼저 갱신한다.
+
+## 후속 필수 검증
+
+- 14 PWA/배포 업데이트: 작업08 frontend교체에서 기존 열린브라우저의 옛lazy chunk요청이 SPA fallback HTML(200/736bytes)을받아빈화면이발생했다. nginx12:12:23Z요청은 `DomainPage-DfclhuWz.js`/`StudyPage-DE_Ha1XF.js`, 직전새SW는새chunk를precache했다. 새로고침후새index와실제전체흐름은정상이다. 정적asset없는경로의정확한404와oldchunk/lazyimport실패복구, SW업데이트중열린페이지회귀를작업14에서검증한다. 새로고침복구를자동복구완료로간주하지않는다.
