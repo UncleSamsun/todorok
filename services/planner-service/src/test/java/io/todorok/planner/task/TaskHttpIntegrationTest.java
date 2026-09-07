@@ -32,6 +32,187 @@ import tools.jackson.databind.json.JsonMapper;
 )
 class TaskHttpIntegrationTest {
 
+    @Test
+    void dailyNotesAreVersionedIsolatedAndValidateLimits() throws Exception {
+        UUID owner = UUID.randomUUID(),
+            other = UUID.randomUUID();
+        String path = "/notes/2026-09-09";
+        var missing = call(owner, "GET", path, null);
+        assertThat(missing.statusCode()).isEqualTo(200);
+        assertThat(body(missing).get("version").isNull()).isTrue();
+        assertThat(body(missing).get("content").asText()).isEmpty();
+        var created = call(
+            owner,
+            "PATCH",
+            path,
+            "{\"content\":\"메모\",\"expectedVersion\":null}"
+        );
+        assertThat(created.statusCode()).isEqualTo(200);
+        assertThat(body(created).get("version").asLong()).isZero();
+        assertThat(call(other, "PATCH", path, "{\"content\":\"other\",\"expectedVersion\":0}").statusCode()).isEqualTo(409);
+        assertThat(
+            body(call(other, "GET", path, null))
+                .get("version")
+                .isNull()
+        ).isTrue();
+        assertThat(call(other, "PATCH", path, "{\"content\":\"other\",\"expectedVersion\":null}").statusCode()).isEqualTo(200);
+        assertThat(body(call(owner, "GET", path, null)).get("content").asText()).isEqualTo("메모");
+        assertThat(
+            call(
+                owner,
+                "PATCH",
+                path,
+                "{\"content\":\"\",\"expectedVersion\":null}"
+            ).statusCode()
+        ).isEqualTo(409);
+        assertThat(
+            call(owner, "PATCH", path, "{\"content\":\"\",\"expectedVersion\":0}").statusCode()
+        ).isEqualTo(200);
+        assertThat(
+            body(call(owner, "GET", path, null))
+                .get("version")
+                .asLong()
+        ).isEqualTo(1);
+        assertThat(
+            call(
+                owner,
+                "PATCH",
+                path,
+                "{\"content\":\"old\",\"expectedVersion\":0}"
+            ).statusCode()
+        ).isEqualTo(409);
+        assertThat(
+            call(
+                owner,
+                "PATCH",
+                path,
+                "{\"content\":\"" + "가".repeat(20000) + "\",\"expectedVersion\":1}"
+            ).statusCode()
+        ).isEqualTo(200);
+        assertThat(
+            call(
+                owner,
+                "PATCH",
+                path,
+                "{\"content\":\"" + "가".repeat(20001) + "\",\"expectedVersion\":2}"
+            ).statusCode()
+        ).isEqualTo(400);
+        assertThat(call(owner, "GET", "/notes/2026-02-30", null).statusCode()).isEqualTo(400);
+        assertThat(
+            call(owner, "PATCH", path, "{\"content\":null,\"expectedVersion\":2}").statusCode()
+        ).isEqualTo(400);
+    }
+
+    @Test
+    void concurrentFirstNoteWriteHasOneWinner() throws Exception {
+        UUID owner = UUID.randomUUID();
+        var start = new java.util.concurrent.CountDownLatch(1);
+        try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            var requests = new ArrayList<java.util.concurrent.Future<Integer>>();
+            for (int i = 0; i < 8; i++) {
+                int writer = i;
+                requests.add(
+                    executor.submit(() -> {
+                        start.await();
+                        return call(
+                            owner,
+                            "PATCH",
+                            "/notes/2026-09-10",
+                            "{\"content\":\"writer" + writer + "\",\"expectedVersion\":null}"
+                        ).statusCode();
+                    })
+                );
+            }
+            start.countDown();
+            var statuses = new ArrayList<Integer>();
+            for (var request : requests) statuses.add(request.get());
+            assertThat(statuses).containsOnly(200, 409);
+            assertThat(
+                statuses
+                    .stream()
+                    .filter(status -> status == 200)
+                    .count()
+            ).isOne();
+        }
+        assertThat(
+            jdbc.queryForObject(
+                "select count(*) from planner.daily_note where user_id=?",
+                Integer.class,
+                owner
+            )
+        ).isOne();
+    }
+
+    @Test
+    void taskAndSeriesNotesPreserveOmissionAndAllowExplicitClear() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String s = series(owner, "GENERAL", "2026-09-09", null, DAILY),
+            id = active(s);
+        String patch = "{\"title\":\"반복\",\"scheduledDate\":\"2026-09-09\",\"version\":0";
+        assertThat(
+            body(call(owner, "PATCH", "/tasks/" + id, patch + "}"))
+                .get("note")
+                .asText()
+        ).isEqualTo("유지할 메모");
+        assertThat(
+            body(call(owner, "PATCH", "/tasks/" + id, patch + ",\"note\":\"이번 회차만\"}"))
+                .get("note")
+                .asText()
+        ).isEqualTo("이번 회차만");
+        assertThat(
+            call(
+                owner,
+                "PATCH",
+                "/tasks/" + id,
+                "{\"title\":\"반복\",\"scheduledDate\":\"2026-09-09\",\"version\":1,\"note\":\"" +
+                    "가".repeat(20001) +
+                    "\"}"
+            ).statusCode()
+        ).isEqualTo(400);
+        String seriesPatch = "{\"title\":\"반복\",\"rule\":" + DAILY + ",\"version\":0";
+        assertThat(
+            body(call(owner, "PATCH", "/series/" + s, seriesPatch + "}"))
+                .get("note")
+                .asText()
+        ).isEqualTo("유지할 메모");
+        assertThat(
+            call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":1}").statusCode()
+        ).isEqualTo(200);
+        assertThat(
+            body(call(owner, "GET", "/tasks/" + active(s), null))
+                .get("note")
+                .asText()
+        ).isEqualTo("유지할 메모");
+        var currentSeries = body(call(owner, "GET", "/series/" + s, null));
+        assertThat(
+            body(
+                call(
+                    owner,
+                    "PATCH",
+                    "/series/" + s,
+                    "{\"title\":\"반복\",\"rule\":" +
+                        DAILY +
+                        ",\"version\":" +
+                        currentSeries.get("version").asLong() +
+                        ",\"note\":\"\"}"
+                )
+            )
+                .get("note")
+                .asText()
+        ).isEmpty();
+        String next = active(s);
+        assertThat(
+            body(call(owner, "PATCH", "/tasks/" + next, patch + ",\"note\":\"\"}"))
+                .get("note")
+                .asText()
+        ).isEmpty();
+        assertThat(
+            body(call(owner, "GET", "/notes/2026-09-09", null))
+                .get("version")
+                .isNull()
+        ).isTrue();
+    }
+
     @org.springframework.boot.test.context.TestConfiguration
     static class FixedTime {
 
@@ -48,7 +229,8 @@ class TaskHttpIntegrationTest {
     @Autowired
     io.todorok.planner.series.SeriesService seriesService;
 
-    String series(UUID owner, String type, String start, String end, String rule) throws Exception {
+    String series(UUID owner, String type, String start, String end, String rule)
+        throws Exception {
         var response = call(
             owner,
             "POST",
@@ -106,7 +288,12 @@ class TaskHttpIntegrationTest {
         assertThat(initial.get("occurrenceDate").asText()).isEqualTo("2026-09-07");
         assertThat(initial.get("note").asText()).isEqualTo("유지할 메모");
         assertThat(
-            call(owner, "POST", "/tasks/" + first + "/complete", "{\"version\":0}").statusCode()
+            call(
+                owner,
+                "POST",
+                "/tasks/" + first + "/complete",
+                "{\"version\":0}"
+            ).statusCode()
         ).isEqualTo(200);
         String second = active(s);
         assertThat(
@@ -315,7 +502,12 @@ class TaskHttpIntegrationTest {
         );
         try {
             assertThat(
-                call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":0}").statusCode()
+                call(
+                    owner,
+                    "POST",
+                    "/tasks/" + id + "/complete",
+                    "{\"version\":0}"
+                ).statusCode()
             ).isEqualTo(500);
             assertThat(active(s)).isEqualTo(id);
             assertThat(events(owner)).isEqualTo(2);
@@ -344,7 +536,9 @@ class TaskHttpIntegrationTest {
         String s = series(owner, "GENERAL", "2026-09-07", null, MONDAY),
             id = active(s);
         String update =
-            "{\"title\":\"새 반복\",\"note\":\"새 메모\",\"rule\":" + DAILY + ",\"version\":0}";
+            "{\"title\":\"새 반복\",\"note\":\"새 메모\",\"rule\":" +
+            DAILY +
+            ",\"version\":0}";
         assertThat(call(other, "GET", "/series/" + s, null).statusCode()).isEqualTo(404);
         assertThat(call(other, "PATCH", "/series/" + s, update).statusCode()).isEqualTo(404);
         assertThat(
@@ -429,7 +623,8 @@ class TaskHttpIntegrationTest {
     }
 
     @Test
-    void databaseUniqueCollisionReturns409AndRollsBackCompletedTaskAndEvents() throws Exception {
+    void databaseUniqueCollisionReturns409AndRollsBackCompletedTaskAndEvents()
+        throws Exception {
         UUID owner = UUID.randomUUID();
         String s = series(owner, "GENERAL", "2026-09-09", null, DAILY),
             id = active(s);
@@ -449,7 +644,12 @@ class TaskHttpIntegrationTest {
             "create trigger inject_active_test before insert on planner.task for each row execute function planner.inject_active_test()"
         );
         try {
-            var response = call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":0}");
+            var response = call(
+                owner,
+                "POST",
+                "/tasks/" + id + "/complete",
+                "{\"version\":0}"
+            );
             assertThat(response.statusCode()).as(response.body()).isEqualTo(409);
             assertThat(active(s)).isEqualTo(id);
             assertThat(events(owner)).isEqualTo(2);
@@ -484,7 +684,10 @@ class TaskHttpIntegrationTest {
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry r) {
         r.add("spring.datasource.url", DB::getJdbcUrl);
-        r.add("spring.datasource.hikari.connection-init-sql", () -> "set search_path to planner");
+        r.add(
+            "spring.datasource.hikari.connection-init-sql",
+            () -> "set search_path to planner"
+        );
         r.add("spring.datasource.username", DB::getUsername);
         r.add("spring.datasource.password", DB::getPassword);
         r.add("todorok.auth.public-key", () ->
@@ -685,7 +888,9 @@ class TaskHttpIntegrationTest {
         assertThat(
             call(owner, "GET", "/calendar?from=2026-09-01&to=2026-10-13", null).statusCode()
         ).isEqualTo(400);
-        assertThat(call(owner, "GET", "/calendar/2026-02-30", null).statusCode()).isEqualTo(400);
+        assertThat(call(owner, "GET", "/calendar/2026-02-30", null).statusCode()).isEqualTo(
+            400
+        );
         assertThat(
             call(
                 owner,
@@ -697,9 +902,9 @@ class TaskHttpIntegrationTest {
         assertThat(
             call(owner, "GET", "/calendar?from=2026-09-08&to=2026-09-07", null).statusCode()
         ).isEqualTo(400);
-        var days = body(call(owner, "GET", "/calendar?from=2026-09-07&to=2026-09-08", null)).get(
-            "days"
-        );
+        var days = body(
+            call(owner, "GET", "/calendar?from=2026-09-07&to=2026-09-08", null)
+        ).get("days");
         assertThat(days.size()).isEqualTo(2);
         assertThat(days.get(0).get("totalCount").asInt()).isEqualTo(3);
         assertThat(days.get(1).get("totalCount").asInt()).isZero();
@@ -762,7 +967,12 @@ class TaskHttpIntegrationTest {
                 ).statusCode()
             ).isEqualTo(500);
             assertThat(
-                call(owner, "POST", "/tasks/" + id + "/complete", "{\"version\":0}").statusCode()
+                call(
+                    owner,
+                    "POST",
+                    "/tasks/" + id + "/complete",
+                    "{\"version\":0}"
+                ).statusCode()
             ).isEqualTo(500);
             assertThat(
                 jdbc.queryForObject(
@@ -787,8 +997,11 @@ class TaskHttpIntegrationTest {
     }
 
     @Test
-    void projectionsUseOneQueryFor100And1000TasksAndKeepExactCategoryCounts() throws Exception {
-        var stats = entityManagerFactory.unwrap(org.hibernate.SessionFactory.class).getStatistics();
+    void projectionsUseOneQueryFor100And1000TasksAndKeepExactCategoryCounts()
+        throws Exception {
+        var stats = entityManagerFactory
+            .unwrap(org.hibernate.SessionFactory.class)
+            .getStatistics();
         for (int size : List.of(100, 1000)) {
             UUID owner = UUID.randomUUID();
             jdbc.update(
@@ -801,27 +1014,29 @@ class TaskHttpIntegrationTest {
             assertThat(day.get("tasks").size()).isEqualTo(size);
             assertThat(stats.getPrepareStatementCount()).isEqualTo(1);
             stats.clear();
-            var summary = body(call(owner, "GET", "/calendar?from=2026-09-01&to=2026-10-12", null));
+            var summary = body(
+                call(owner, "GET", "/calendar?from=2026-09-01&to=2026-10-12", null)
+            );
             assertThat(stats.getPrepareStatementCount()).isEqualTo(1);
             assertThat(summary.get("days").size()).isEqualTo(42);
             var target = summary.get("days").get(6);
             assertThat(target.get("totalCount").asInt()).isEqualTo(size);
             assertThat(target.get("completedCount").asInt()).isEqualTo(size / 4);
-            assertThat(target.get("categoryProgress").get(0).get("totalCount").asInt()).isEqualTo(
-                size / 2
-            );
+            assertThat(
+                target.get("categoryProgress").get(0).get("totalCount").asInt()
+            ).isEqualTo(size / 2);
             assertThat(
                 target.get("categoryProgress").get(0).get("completedCount").asInt()
             ).isEqualTo(size / 4);
-            assertThat(target.get("categoryProgress").get(1).get("taskType").asText()).isEqualTo(
-                "WORKOUT"
-            );
-            assertThat(target.get("categoryProgress").get(2).get("taskType").asText()).isEqualTo(
-                "STUDY"
-            );
-            assertThat(target.get("categoryProgress").get(3).get("taskType").asText()).isEqualTo(
-                "CLIMBING"
-            );
+            assertThat(
+                target.get("categoryProgress").get(1).get("taskType").asText()
+            ).isEqualTo("WORKOUT");
+            assertThat(
+                target.get("categoryProgress").get(2).get("taskType").asText()
+            ).isEqualTo("STUDY");
+            assertThat(
+                target.get("categoryProgress").get(3).get("taskType").asText()
+            ).isEqualTo("CLIMBING");
             assertThat(
                 body(call(UUID.randomUUID(), "GET", "/calendar/2026-09-07", null))
                     .get("tasks")

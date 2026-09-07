@@ -81,6 +81,7 @@ public class TaskResponse {
    * @return taskId
    */
   @NotNull @Valid
+
   @JsonProperty("taskId")
   public UUID getTaskId() {
     return taskId;
@@ -101,6 +102,7 @@ public class TaskResponse {
    * @return seriesId
    */
   @Valid
+
   @JsonProperty("seriesId")
   public @Nullable UUID getSeriesId() {
     return seriesId;
@@ -122,6 +124,7 @@ public class TaskResponse {
    * @return occurrenceDate
    */
   @Valid
+
   @JsonProperty("occurrenceDate")
   public @Nullable LocalDate getOccurrenceDate() {
     return occurrenceDate;
@@ -142,6 +145,7 @@ public class TaskResponse {
    * Get note
    * @return note
    */
+
 
   @JsonProperty("note")
   public @Nullable String getNote() {
@@ -164,6 +168,7 @@ public class TaskResponse {
    * @return userId
    */
   @NotNull @Valid
+
   @JsonProperty("userId")
   public UUID getUserId() {
     return userId;
@@ -184,6 +189,7 @@ public class TaskResponse {
    * @return title
    */
   @NotNull
+
   @JsonProperty("title")
   public String getTitle() {
     return title;
@@ -204,6 +210,7 @@ public class TaskResponse {
    * @return taskType
    */
   @NotNull @Valid
+
   @JsonProperty("taskType")
   public TaskType getTaskType() {
     return taskType;
@@ -224,6 +231,7 @@ public class TaskResponse {
    * @return scheduledDate
    */
   @NotNull @Valid
+
   @JsonProperty("scheduledDate")
   public LocalDate getScheduledDate() {
     return scheduledDate;
@@ -244,6 +252,7 @@ public class TaskResponse {
    * @return status
    */
   @NotNull @Valid
+
   @JsonProperty("status")
   public TaskStatus getStatus() {
     return status;
@@ -265,6 +274,7 @@ public class TaskResponse {
    * @return version
    */
   @NotNull @Min(value = 0L)
+
   @JsonProperty("version")
   public Long getVersion() {
     return version;

@@ -32,6 +32,12 @@ export interface CreateTaskRequest {
      * @type {string}
      * @memberof CreateTaskRequest
      */
+    note?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof CreateTaskRequest
+     */
     title: string;
     /**
      *
@@ -69,6 +75,7 @@ export function CreateTaskRequestFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
 
+        'note': json['note'] == null ? undefined : json['note'],
         'title': json['title'],
         'taskType': TaskTypeFromJSON(json['taskType']),
         'scheduledDate': json['scheduledDate'],
@@ -86,6 +93,7 @@ export function CreateTaskRequestToJSONTyped(value?: CreateTaskRequest | null, i
 
     return {
 
+        'note': value['note'],
         'title': value['title'],
         'taskType': TaskTypeToJSON(value['taskType']),
         'scheduledDate': value['scheduledDate'],

@@ -30,6 +30,15 @@ it('blocks cached calendar-error retries during pending or failed rollover, then
   const session = new SessionClient({
     fetcher: async (url) => {
       const path = String(url)
+      if (path.includes('/notes/'))
+        return new Response(
+          JSON.stringify({
+            date: path.split('/').at(-1),
+            content: '',
+            version: null,
+          }),
+          { status: 200 },
+        )
       if (path.endsWith('/refresh'))
         return json({
           accessToken: 'test',
@@ -47,10 +56,13 @@ it('blocks cached calendar-error retries during pending or failed rollover, then
     },
   })
   render(<App session={session} />)
-  await waitFor(() =>
-    expect(
-      screen.getAllByRole('button', { name: '다시 불러오기' }),
-    ).toHaveLength(2),
+  // The lazy Today module can take longer to load alongside PostgreSQL/browser suites.
+  await waitFor(
+    () =>
+      expect(
+        screen.getAllByRole('button', { name: '다시 불러오기' }),
+      ).toHaveLength(2),
+    { timeout: 10000 },
   )
   fireEvent.click(screen.getByRole('button', { name: /^2026-09-06,/ }))
   await waitFor(() =>
@@ -154,6 +166,15 @@ it('waits for successful rollover before reading calendars and exposes failure w
   const session = new SessionClient({
     fetcher: async (url) => {
       const path = String(url)
+      if (path.includes('/notes/'))
+        return new Response(
+          JSON.stringify({
+            date: path.split('/').at(-1),
+            content: '',
+            version: null,
+          }),
+          { status: 200 },
+        )
       calls.push(path)
       let data: unknown
       if (path.endsWith('/refresh'))

@@ -44,6 +44,7 @@ public class VersionCommand {
    * @return version
    */
   @NotNull @Min(value = 0L)
+
   @JsonProperty("version")
   public Long getVersion() {
     return version;

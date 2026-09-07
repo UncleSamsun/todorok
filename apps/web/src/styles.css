@@ -583,6 +583,35 @@ select {
     display: none;
   }
 }
+.sticky-note {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--selected);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.note-preview {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.sticky-note textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  margin-top: 8px;
+  font: inherit;
+  color: inherit;
+  background: var(--color-surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
 @media (prefers-color-scheme: dark) {
   :root {
     --color-background: #1d2023;

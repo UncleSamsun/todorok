@@ -2,8 +2,11 @@ package io.todorok.planner.api.model;
 
 import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.lang.Nullable;
@@ -21,6 +24,9 @@ import jakarta.annotation.Generated;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 public class UpdateTaskRequest {
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String note;
 
   private String title;
 
@@ -42,6 +48,28 @@ public class UpdateTaskRequest {
     this.version = version;
   }
 
+  public UpdateTaskRequest note(@Nullable String note) {
+    this.note = note;
+    return this;
+  }
+
+  /**
+   * Get note
+   * @return note
+   */
+  @Size(max = 20000)
+
+  @JsonProperty("note")
+  public @Nullable String getNote() {
+    return note;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("note")
+  public void setNote(@Nullable String note) {
+    this.note = note;
+  }
+
   public UpdateTaskRequest title(String title) {
     this.title = title;
     return this;
@@ -52,6 +80,7 @@ public class UpdateTaskRequest {
    * @return title
    */
   @NotNull @Size(min = 1, max = 120)
+
   @JsonProperty("title")
   public String getTitle() {
     return title;
@@ -72,6 +101,7 @@ public class UpdateTaskRequest {
    * @return scheduledDate
    */
   @NotNull @Valid
+
   @JsonProperty("scheduledDate")
   public LocalDate getScheduledDate() {
     return scheduledDate;
@@ -93,6 +123,7 @@ public class UpdateTaskRequest {
    * @return version
    */
   @NotNull @Min(value = 0L)
+
   @JsonProperty("version")
   public Long getVersion() {
     return version;
@@ -112,20 +143,22 @@ public class UpdateTaskRequest {
       return false;
     }
     UpdateTaskRequest updateTaskRequest = (UpdateTaskRequest) o;
-    return Objects.equals(this.title, updateTaskRequest.title) &&
+    return Objects.equals(this.note, updateTaskRequest.note) &&
+        Objects.equals(this.title, updateTaskRequest.title) &&
         Objects.equals(this.scheduledDate, updateTaskRequest.scheduledDate) &&
         Objects.equals(this.version, updateTaskRequest.version);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(title, scheduledDate, version);
+    return Objects.hash(note, title, scheduledDate, version);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class UpdateTaskRequest {\n");
+    sb.append("    note: ").append(toIndentedString(note)).append("\n");
     sb.append("    title: ").append(toIndentedString(title)).append("\n");
     sb.append("    scheduledDate: ").append(toIndentedString(scheduledDate)).append("\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");

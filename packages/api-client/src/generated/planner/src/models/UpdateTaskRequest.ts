@@ -24,6 +24,12 @@ export interface UpdateTaskRequest {
      * @type {string}
      * @memberof UpdateTaskRequest
      */
+    note?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof UpdateTaskRequest
+     */
     title: string;
     /**
      *
@@ -59,6 +65,7 @@ export function UpdateTaskRequestFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
 
+        'note': json['note'] == null ? undefined : json['note'],
         'title': json['title'],
         'scheduledDate': json['scheduledDate'],
         'version': json['version'],
@@ -76,6 +83,7 @@ export function UpdateTaskRequestToJSONTyped(value?: UpdateTaskRequest | null, i
 
     return {
 
+        'note': value['note'],
         'title': value['title'],
         'scheduledDate': value['scheduledDate'],
         'version': value['version'],

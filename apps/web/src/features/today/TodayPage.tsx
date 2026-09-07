@@ -16,10 +16,11 @@ import { QuickAdd } from './QuickAdd'
 import { TaskGroups } from './TaskGroups'
 import { TaskEditor } from './TaskEditor'
 import { SeriesEditor } from './SeriesEditor'
+import { StickyNote } from './StickyNote'
 import type { Task } from './model'
 const apiDate = (value: string) => value
 export function TodayPage() {
-  const { session } = useAuth(),
+  const { session, state } = useAuth(),
     queries = useQueryClient(),
     navigate = useNavigate()
   const api = useMemo(() => {
@@ -31,6 +32,7 @@ export function TodayPage() {
       tasks: new planner.TaskApi(config),
       calendar: new planner.CalendarApi(config),
       series: new planner.SeriesApi(config),
+      notes: new planner.NoteApi(config),
     }
   }, [session])
   const [selected, setSelected] = useState(seoulToday),
@@ -207,7 +209,9 @@ export function TodayPage() {
             disabled={busy}
             onClick={() =>
               select(
-                view === 'week' ? addDays(selected, 7) : addMonths(selected, 1),
+                view === 'week'
+                  ? addDays(selected, 7)
+                  : addMonths(selected, 1),
               )
             }
           >
@@ -305,6 +309,14 @@ export function TodayPage() {
           check={check}
           edit={(task) => void edit(task)}
         />
+        <StickyNote
+          key={state.generation}
+          date={selected}
+          api={api.notes}
+          isCurrent={() =>
+            session.getSnapshot().generation === state.generation
+          }
+        />
         {adding && (
           <QuickAdd
             key={`${adding}-${selected}`}
@@ -342,11 +354,12 @@ export function TodayPage() {
             busy={busy}
             error={error}
             cancel={() => setEditing(null)}
-            save={(title, date) =>
+            save={(title, date, note) =>
               void mutate(() =>
                 api.tasks.updateTask({
                   taskId: editing.taskId,
                   updateTaskRequest: {
+                    note,
                     title,
                     scheduledDate: apiDate(date),
                     version: editing.version,

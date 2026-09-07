@@ -1,28 +1,24 @@
 
-# UpdateTaskRequest
+# UpdateDailyNoteRequest
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`note` | string
-`title` | string
-`scheduledDate` | string
-`version` | number
+`content` | string
+`expectedVersion` | number
 
 ## Example
 
 ```typescript
-import type { UpdateTaskRequest } from '@todorok/api-client'
+import type { UpdateDailyNoteRequest } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
-  "note": null,
-  "title": null,
-  "scheduledDate": null,
-  "version": null,
-} satisfies UpdateTaskRequest
+  "content": null,
+  "expectedVersion": null,
+} satisfies UpdateDailyNoteRequest
 
 console.log(example)
 
@@ -31,7 +27,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as UpdateTaskRequest
+const exampleParsed = JSON.parse(exampleJSON) as UpdateDailyNoteRequest
 console.log(exampleParsed)
 ```
 

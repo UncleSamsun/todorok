@@ -11,6 +11,40 @@ tags:
   - name: Calendar
   - name: Task
 paths:
+  /notes/{date}:
+    parameters:
+      - name: date
+        in: path
+        required: true
+        schema: { type: string, format: date }
+    get:
+      tags: [Note]
+      operationId: getDailyNote
+      responses:
+        '200':
+          description: 날짜 메모 (미작성 version은 null)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DailyNoteResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [Note]
+      operationId: updateDailyNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateDailyNoteRequest' }
+      responses:
+        '200':
+          description: 저장된 날짜 메모
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DailyNoteResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /auth/login:
     post:
       tags: [Auth]
@@ -476,6 +510,7 @@ components:
       additionalProperties: false
       required: [title, taskType, scheduledDate]
       properties:
+        note: { type: string, maxLength: 20000 }
         title: { type: string, minLength: 1, maxLength: 120 }
         taskType: { $ref: '#/components/schemas/TaskType' }
         scheduledDate: { type: string, format: date }
@@ -484,9 +519,25 @@ components:
       additionalProperties: false
       required: [title, scheduledDate, version]
       properties:
+        note: { type: string, maxLength: 20000 }
         title: { type: string, minLength: 1, maxLength: 120 }
         scheduledDate: { type: string, format: date }
         version: { type: integer, format: int64, minimum: 0 }
+    DailyNoteResponse:
+      type: object
+      additionalProperties: false
+      required: [date, content, version]
+      properties:
+        date: { type: string, format: date }
+        content: { type: string, maxLength: 20000 }
+        version: { type: [integer, 'null'], nullable: true, format: int64, minimum: 0 }
+    UpdateDailyNoteRequest:
+      type: object
+      additionalProperties: false
+      required: [content, expectedVersion]
+      properties:
+        content: { type: string, maxLength: 20000 }
+        expectedVersion: { type: [integer, 'null'], nullable: true, format: int64, minimum: 0 }
     VersionCommand:
       type: object
       additionalProperties: false

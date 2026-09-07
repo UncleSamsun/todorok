@@ -28,13 +28,15 @@ const json = (body: unknown, status = 200) =>
     headers: { 'content-type': 'application/json' },
   })
 const calendarResponse = (url: unknown) =>
-  String(url).endsWith('/rollover')
-    ? json({ today: seoulToday(), movedCount: 0 })
-    : String(url).includes('/calendar?')
-      ? json({ from: seoulToday(), to: seoulToday(), days: [] })
-      : String(url).includes('/calendar/')
-        ? json({ date: seoulToday(), tasks: [] })
-        : null
+  String(url).includes('/notes/')
+    ? json({ date: seoulToday(), content: '', version: null })
+    : String(url).endsWith('/rollover')
+      ? json({ today: seoulToday(), movedCount: 0 })
+      : String(url).includes('/calendar?')
+        ? json({ from: seoulToday(), to: seoulToday(), days: [] })
+        : String(url).includes('/calendar/')
+          ? json({ date: seoulToday(), tasks: [] })
+          : null
 
 describe('App', () => {
   it('starts on the Seoul date across the UTC midnight boundary', () => {
@@ -57,7 +59,9 @@ describe('App', () => {
           : json({}, 401)),
     })
     render(<App session={client} />)
-    expect(await screen.findByRole('heading', { name: '토도록' })).toBeVisible()
+    expect(
+      await screen.findByRole('heading', { name: '토도록' }),
+    ).toBeVisible()
     fireEvent.change(screen.getByLabelText('이메일'), {
       target: { value: 'owner@example.com' },
     })
@@ -96,7 +100,9 @@ describe('App', () => {
     expect(screen.getByText(today)).toBeVisible()
     queries.setQueryData(['private'], 'private data')
     fireEvent.click(screen.getByRole('button', { name: '로그아웃' }))
-    expect(await screen.findByRole('button', { name: '로그인' })).toBeVisible()
+    expect(
+      await screen.findByRole('button', { name: '로그인' }),
+    ).toBeVisible()
     expect(queries.getQueryData(['private'])).toBeUndefined()
   })
   it('blocks a previous user query response after changing session', async () => {

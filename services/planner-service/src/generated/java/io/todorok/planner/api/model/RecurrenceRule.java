@@ -94,6 +94,7 @@ public class RecurrenceRule {
    * @return frequency
    */
   @NotNull
+
   @JsonProperty("frequency")
   public FrequencyEnum getFrequency() {
     return frequency;
@@ -116,6 +117,7 @@ public class RecurrenceRule {
    * @return interval
    */
   @NotNull @Min(value = 1) @Max(value = 365)
+
   @JsonProperty("interval")
   public Integer getInterval() {
     return interval;
@@ -144,6 +146,7 @@ public class RecurrenceRule {
    * @return weekdays
    */
   @NotNull @Size(max = 7)
+
   @JsonProperty("weekdays")
   public Set<@Min(1) @Max(7)Integer> getWeekdays() {
     return weekdays;
@@ -167,6 +170,7 @@ public class RecurrenceRule {
    * @return monthDay
    */
   @NotNull @Min(value = 1) @Max(value = 31)
+
   @JsonProperty("monthDay")
   public Integer getMonthDay() {
     return monthDay;

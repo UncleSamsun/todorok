@@ -20,6 +20,10 @@ fun registerContractTask(
     cleanupOutput.set(true)
     openapiGeneratorIgnoreList.set(listOf(".gitignore"))
     generatorName.set(generator)
+    if (taskName == "generatePlannerSpring") {
+        templateDir.set(layout.projectDirectory.dir("contracts/generator/planner-spring").asFile.absolutePath)
+        inputs.dir("contracts/generator/planner-spring")
+    }
     inputSpec.set(layout.projectDirectory.file(spec).asFile.absolutePath)
     configFile.set(layout.projectDirectory.file(config).asFile.absolutePath)
     outputDir.set(layout.dir(contractsOutputRoot.map { root -> File(root, output) }))

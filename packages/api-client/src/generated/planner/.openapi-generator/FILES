@@ -7,8 +7,10 @@ docs/CalendarSummaryResponse.md
 docs/CategoryProgress.md
 docs/CreateSeriesRequest.md
 docs/CreateTaskRequest.md
+docs/DailyNoteResponse.md
 docs/DayDetailResponse.md
 docs/LoginRequest.md
+docs/NoteApi.md
 docs/ProblemDetails.md
 docs/ProblemDetailsFieldErrorsInner.md
 docs/RecurrenceRule.md
@@ -20,12 +22,14 @@ docs/TaskApi.md
 docs/TaskResponse.md
 docs/TaskStatus.md
 docs/TaskType.md
+docs/UpdateDailyNoteRequest.md
 docs/UpdateSeriesRequest.md
 docs/UpdateTaskRequest.md
 docs/VersionCommand.md
 package.json
 src/apis/AuthApi.ts
 src/apis/CalendarApi.ts
+src/apis/NoteApi.ts
 src/apis/SeriesApi.ts
 src/apis/TaskApi.ts
 src/apis/index.ts
@@ -35,6 +39,7 @@ src/models/CalendarSummaryResponse.ts
 src/models/CategoryProgress.ts
 src/models/CreateSeriesRequest.ts
 src/models/CreateTaskRequest.ts
+src/models/DailyNoteResponse.ts
 src/models/DayDetailResponse.ts
 src/models/LoginRequest.ts
 src/models/ProblemDetails.ts
@@ -46,6 +51,7 @@ src/models/SessionResponse.ts
 src/models/TaskResponse.ts
 src/models/TaskStatus.ts
 src/models/TaskType.ts
+src/models/UpdateDailyNoteRequest.ts
 src/models/UpdateSeriesRequest.ts
 src/models/UpdateTaskRequest.ts
 src/models/VersionCommand.ts

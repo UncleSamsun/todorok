@@ -46,6 +46,7 @@ public class LoginRequest {
    * @return email
    */
   @NotNull @Size(min = 1, max = 254) @jakarta.validation.constraints.Email
+
   @JsonProperty("email")
   public String getEmail() {
     return email;
@@ -66,6 +67,7 @@ public class LoginRequest {
    * @return password
    */
   @NotNull @Size(min = 8, max = 72)
+
   @JsonProperty("password")
   public String getPassword() {
     return password;

@@ -53,6 +53,7 @@ public class SessionResponse {
    * @return accessToken
    */
   @NotNull
+
   @JsonProperty("accessToken")
   public String getAccessToken() {
     return accessToken;
@@ -73,6 +74,7 @@ public class SessionResponse {
    * @return expiresAt
    */
   @NotNull @Valid
+
   @JsonProperty("expiresAt")
   public OffsetDateTime getExpiresAt() {
     return expiresAt;
@@ -93,6 +95,7 @@ public class SessionResponse {
    * @return userId
    */
   @NotNull @Valid
+
   @JsonProperty("userId")
   public UUID getUserId() {
     return userId;

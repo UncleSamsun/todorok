@@ -57,6 +57,7 @@ public class CalendarSummaryResponse {
    * @return from
    */
   @NotNull @Valid
+
   @JsonProperty("from")
   public LocalDate getFrom() {
     return from;
@@ -77,6 +78,7 @@ public class CalendarSummaryResponse {
    * @return to
    */
   @NotNull @Valid
+
   @JsonProperty("to")
   public LocalDate getTo() {
     return to;
@@ -105,6 +107,7 @@ public class CalendarSummaryResponse {
    * @return days
    */
   @NotNull @Valid @Size(max = 42)
+
   @JsonProperty("days")
   public List<@Valid CalendarDaySummary> getDays() {
     return days;

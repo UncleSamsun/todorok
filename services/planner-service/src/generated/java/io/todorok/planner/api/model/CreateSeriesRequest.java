@@ -68,6 +68,7 @@ public class CreateSeriesRequest {
    * @return title
    */
   @NotNull @Size(min = 1, max = 120)
+
   @JsonProperty("title")
   public String getTitle() {
     return title;
@@ -88,6 +89,7 @@ public class CreateSeriesRequest {
    * @return taskType
    */
   @NotNull @Valid
+
   @JsonProperty("taskType")
   public TaskType getTaskType() {
     return taskType;
@@ -108,6 +110,7 @@ public class CreateSeriesRequest {
    * @return startDate
    */
   @NotNull @Valid
+
   @JsonProperty("startDate")
   public LocalDate getStartDate() {
     return startDate;
@@ -128,6 +131,7 @@ public class CreateSeriesRequest {
    * @return endDate
    */
   @Valid
+
   @JsonProperty("endDate")
   public @Nullable LocalDate getEndDate() {
     return endDate;
@@ -149,6 +153,7 @@ public class CreateSeriesRequest {
    * @return note
    */
   @Size(max = 20000)
+
   @JsonProperty("note")
   public @Nullable String getNote() {
     return note;
@@ -170,6 +175,7 @@ public class CreateSeriesRequest {
    * @return rule
    */
   @NotNull @Valid
+
   @JsonProperty("rule")
   public RecurrenceRule getRule() {
     return rule;

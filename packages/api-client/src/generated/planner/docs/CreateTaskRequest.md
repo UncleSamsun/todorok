@@ -6,6 +6,7 @@
 
 Name | Type
 ------------ | -------------
+`note` | string
 `title` | string
 `taskType` | [TaskType](TaskType.md)
 `scheduledDate` | string
@@ -17,6 +18,7 @@ import type { CreateTaskRequest } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "note": null,
   "title": null,
   "taskType": null,
   "scheduledDate": null,

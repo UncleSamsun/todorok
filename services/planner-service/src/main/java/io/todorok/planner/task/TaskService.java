@@ -97,6 +97,7 @@ public class TaskService {
             request.getTaskType(),
             request.getScheduledDate()
         );
+        task.note = request.getNote();
         tasks.saveAndFlush(task);
         publish(task, "CREATED");
         return task.response();
@@ -106,10 +107,14 @@ public class TaskService {
     public TaskResponse update(UUID owner, UUID id, UpdateTaskRequest request) {
         Task task = owned(owner, id, request.getVersion());
         String title = title(request.getTitle());
+        String note = request.getNote() == null ? task.note : request.getNote();
         if (
-            task.title.equals(title) && task.scheduledDate.equals(request.getScheduledDate())
+            task.title.equals(title) &&
+            task.scheduledDate.equals(request.getScheduledDate()) &&
+            java.util.Objects.equals(task.note, note)
         ) return task.response();
         task.title = title;
+        task.note = note;
         task.scheduledDate = request.getScheduledDate();
         tasks.flush();
         publish(task, "UPDATED");
@@ -143,7 +148,9 @@ public class TaskService {
     private Task owned(UUID owner, UUID id, long version) {
         tasks
             .seriesId(owner, id)
-            .ifPresent(seriesId -> series.lock(owner, seriesId).orElseThrow(TaskService::missing));
+            .ifPresent(seriesId ->
+                series.lock(owner, seriesId).orElseThrow(TaskService::missing)
+            );
         var task = tasks.lock(owner, id).orElseThrow(TaskService::missing);
         if (task.version != version) throw conflict(
             "VERSION_CONFLICT",

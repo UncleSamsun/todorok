@@ -59,6 +59,7 @@ public class CalendarDaySummary {
    * @return date
    */
   @NotNull @Valid
+
   @JsonProperty("date")
   public LocalDate getDate() {
     return date;
@@ -80,6 +81,7 @@ public class CalendarDaySummary {
    * @return totalCount
    */
   @NotNull @Min(value = 0)
+
   @JsonProperty("totalCount")
   public Integer getTotalCount() {
     return totalCount;
@@ -101,6 +103,7 @@ public class CalendarDaySummary {
    * @return completedCount
    */
   @NotNull @Min(value = 0)
+
   @JsonProperty("completedCount")
   public Integer getCompletedCount() {
     return completedCount;
@@ -129,6 +132,7 @@ public class CalendarDaySummary {
    * @return categoryProgress
    */
   @NotNull @Valid @Size(min = 4, max = 4)
+
   @JsonProperty("categoryProgress")
   public List<@Valid CategoryProgress> getCategoryProgress() {
     return categoryProgress;

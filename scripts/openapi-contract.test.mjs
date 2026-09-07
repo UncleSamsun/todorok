@@ -15,6 +15,8 @@ test('planner 계약은 핵심 operationId와 공통 오류 참조를 제공한�
     'deleteTask',
     'completeTask',
     'reopenTask',
+    'getDailyNote',
+    'updateDailyNote',
   ]) {
     assert.match(yaml, new RegExp(`operationId: ${operationId}\\b`))
   }

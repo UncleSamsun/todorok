@@ -51,6 +51,7 @@ public class CategoryProgress {
    * @return taskType
    */
   @NotNull @Valid
+
   @JsonProperty("taskType")
   public TaskType getTaskType() {
     return taskType;
@@ -72,6 +73,7 @@ public class CategoryProgress {
    * @return totalCount
    */
   @NotNull @Min(value = 0)
+
   @JsonProperty("totalCount")
   public Integer getTotalCount() {
     return totalCount;
@@ -93,6 +95,7 @@ public class CategoryProgress {
    * @return completedCount
    */
   @NotNull @Min(value = 0)
+
   @JsonProperty("completedCount")
   public Integer getCompletedCount() {
     return completedCount;

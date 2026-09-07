@@ -51,6 +51,7 @@ public class ProblemDetailsFieldErrorsInner {
    * @return field
    */
   @NotNull @Size(min = 1)
+
   @JsonProperty("field")
   public String getField() {
     return field;
@@ -71,6 +72,7 @@ public class ProblemDetailsFieldErrorsInner {
    * @return code
    */
   @NotNull @Pattern(regexp = "^[A-Z][A-Z0-9_]+$")
+
   @JsonProperty("code")
   public String getCode() {
     return code;
@@ -91,6 +93,7 @@ public class ProblemDetailsFieldErrorsInner {
    * @return message
    */
   @NotNull @Size(min = 1)
+
   @JsonProperty("message")
   public String getMessage() {
     return message;

@@ -62,6 +62,7 @@ public class UpdateSeriesRequest {
    * @return title
    */
   @NotNull @Size(min = 1, max = 120)
+
   @JsonProperty("title")
   public String getTitle() {
     return title;
@@ -82,6 +83,7 @@ public class UpdateSeriesRequest {
    * @return endDate
    */
   @Valid
+
   @JsonProperty("endDate")
   public @Nullable LocalDate getEndDate() {
     return endDate;
@@ -103,6 +105,7 @@ public class UpdateSeriesRequest {
    * @return note
    */
   @Size(max = 20000)
+
   @JsonProperty("note")
   public @Nullable String getNote() {
     return note;
@@ -124,6 +127,7 @@ public class UpdateSeriesRequest {
    * @return rule
    */
   @NotNull @Valid
+
   @JsonProperty("rule")
   public RecurrenceRule getRule() {
     return rule;
@@ -145,6 +149,7 @@ public class UpdateSeriesRequest {
    * @return version
    */
   @NotNull @Min(value = 0L)
+
   @JsonProperty("version")
   public Long getVersion() {
     return version;

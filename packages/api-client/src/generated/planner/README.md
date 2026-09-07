@@ -55,6 +55,8 @@ All URIs are relative to */api/planner/v1*
 *AuthApi* | [**refreshSession**](docs/AuthApi.md#refreshsession) | **POST** /auth/refresh |
 *CalendarApi* | [**getCalendarSummary**](docs/CalendarApi.md#getcalendarsummary) | **GET** /calendar |
 *CalendarApi* | [**getDayDetail**](docs/CalendarApi.md#getdaydetail) | **GET** /calendar/{date} |
+*NoteApi* | [**getDailyNote**](docs/NoteApi.md#getdailynote) | **GET** /notes/{date} |
+*NoteApi* | [**updateDailyNote**](docs/NoteApi.md#updatedailynoteoperation) | **PATCH** /notes/{date} |
 *SeriesApi* | [**archiveSeries**](docs/SeriesApi.md#archiveseries) | **POST** /series/{seriesId}/archive |
 *SeriesApi* | [**createSeries**](docs/SeriesApi.md#createseriesoperation) | **POST** /series |
 *SeriesApi* | [**getSeries**](docs/SeriesApi.md#getseries) | **GET** /series/{seriesId} |
@@ -76,6 +78,7 @@ All URIs are relative to */api/planner/v1*
 - [CategoryProgress](docs/CategoryProgress.md)
 - [CreateSeriesRequest](docs/CreateSeriesRequest.md)
 - [CreateTaskRequest](docs/CreateTaskRequest.md)
+- [DailyNoteResponse](docs/DailyNoteResponse.md)
 - [DayDetailResponse](docs/DayDetailResponse.md)
 - [LoginRequest](docs/LoginRequest.md)
 - [ProblemDetails](docs/ProblemDetails.md)
@@ -87,6 +90,7 @@ All URIs are relative to */api/planner/v1*
 - [TaskResponse](docs/TaskResponse.md)
 - [TaskStatus](docs/TaskStatus.md)
 - [TaskType](docs/TaskType.md)
+- [UpdateDailyNoteRequest](docs/UpdateDailyNoteRequest.md)
 - [UpdateSeriesRequest](docs/UpdateSeriesRequest.md)
 - [UpdateTaskRequest](docs/UpdateTaskRequest.md)
 - [VersionCommand](docs/VersionCommand.md)

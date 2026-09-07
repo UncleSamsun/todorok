@@ -25,10 +25,20 @@ it('keeps the draft and expected version together when the same task is clicked 
     status: 'PLANNED',
     version: 0,
   }
-  const writes: { title: string; scheduledDate: string; version: number }[] = []
+  const writes: { title: string; scheduledDate: string; version: number }[] =
+    []
   const session = new SessionClient({
     fetcher: async (url, init) => {
       const path = String(url)
+      if (path.includes('/notes/'))
+        return new Response(
+          JSON.stringify({
+            date: path.split('/').at(-1),
+            content: '',
+            version: null,
+          }),
+          { status: 200 },
+        )
       let value: unknown
       let status = 200
       if (path.endsWith('/refresh')) {
@@ -44,7 +54,9 @@ it('keeps the draft and expected version together when the same task is clicked 
       } else if (path.includes('/calendar/')) {
         value = { date: '2026-09-07', tasks: [remote] }
       } else if (init?.method === 'PATCH') {
-        const update = JSON.parse(String(init.body)) as (typeof writes)[number]
+        const update = JSON.parse(
+          String(init.body),
+        ) as (typeof writes)[number]
         writes.push(update)
         if (update.version !== remote.version) {
           status = 409
@@ -90,6 +102,7 @@ it('keeps the draft and expected version together when the same task is clicked 
   fireEvent.click(screen.getByRole('button', { name: '수정 저장' }))
   await waitFor(() => expect(writes).toHaveLength(1))
   expect(writes[0]).toEqual({
+    note: '',
     title: '내 초안',
     scheduledDate: '2026-09-08',
     version: 0,
@@ -102,13 +115,24 @@ it('keeps the draft and expected version together when the same task is clicked 
 
   fireEvent.click(screen.getByRole('button', { name: '닫기' }))
   fireEvent.click(screen.getByRole('button', { name: '원래 제목 수정' }))
-  expect(await screen.findByLabelText('제목 수정')).toHaveValue('다른 탭 변경')
+  expect(await screen.findByLabelText('제목 수정')).toHaveValue(
+    '다른 탭 변경',
+  )
   expect(screen.getByLabelText('날짜 수정')).toHaveValue('2026-09-09')
 })
 it('keeps four empty groups and preserves quick-add input after a failed save', async () => {
   const session = new SessionClient({
     fetcher: async (url, init) => {
       const path = String(url)
+      if (path.includes('/notes/'))
+        return new Response(
+          JSON.stringify({
+            date: path.split('/').at(-1),
+            content: '',
+            version: null,
+          }),
+          { status: 200 },
+        )
       const value = path.endsWith('/refresh')
         ? {
             accessToken: 'token',
@@ -123,7 +147,8 @@ it('keeps four empty groups and preserves quick-add input after a failed save', 
               ? { date: '2026-09-07', tasks: [] }
               : {}
       return new Response(JSON.stringify(value), {
-        status: init?.method === 'POST' && path.endsWith('/tasks') ? 500 : 200,
+        status:
+          init?.method === 'POST' && path.endsWith('/tasks') ? 500 : 200,
         headers: { 'content-type': 'application/json' },
       })
     },

@@ -81,6 +81,7 @@ public class SeriesResponse {
    * @return seriesId
    */
   @NotNull @Valid
+
   @JsonProperty("seriesId")
   public UUID getSeriesId() {
     return seriesId;
@@ -101,6 +102,7 @@ public class SeriesResponse {
    * @return userId
    */
   @NotNull @Valid
+
   @JsonProperty("userId")
   public UUID getUserId() {
     return userId;
@@ -121,6 +123,7 @@ public class SeriesResponse {
    * @return title
    */
   @NotNull
+
   @JsonProperty("title")
   public String getTitle() {
     return title;
@@ -141,6 +144,7 @@ public class SeriesResponse {
    * @return taskType
    */
   @NotNull @Valid
+
   @JsonProperty("taskType")
   public TaskType getTaskType() {
     return taskType;
@@ -161,6 +165,7 @@ public class SeriesResponse {
    * @return startDate
    */
   @NotNull @Valid
+
   @JsonProperty("startDate")
   public LocalDate getStartDate() {
     return startDate;
@@ -181,6 +186,7 @@ public class SeriesResponse {
    * @return endDate
    */
   @Valid
+
   @JsonProperty("endDate")
   public @Nullable LocalDate getEndDate() {
     return endDate;
@@ -201,6 +207,7 @@ public class SeriesResponse {
    * Get note
    * @return note
    */
+
 
   @JsonProperty("note")
   public @Nullable String getNote() {
@@ -223,6 +230,7 @@ public class SeriesResponse {
    * @return rule
    */
   @NotNull @Valid
+
   @JsonProperty("rule")
   public RecurrenceRule getRule() {
     return rule;
@@ -243,6 +251,7 @@ public class SeriesResponse {
    * @return archived
    */
   @NotNull
+
   @JsonProperty("archived")
   public Boolean getArchived() {
     return archived;
@@ -264,6 +273,7 @@ public class SeriesResponse {
    * @return version
    */
   @NotNull @Min(value = 0L)
+
   @JsonProperty("version")
   public Long getVersion() {
     return version;

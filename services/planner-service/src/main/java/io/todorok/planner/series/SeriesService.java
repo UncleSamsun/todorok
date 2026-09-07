@@ -62,7 +62,12 @@ public class SeriesService {
         if (item.archived) throw conflict("SERIES_ARCHIVED");
         var before = item.response();
         item.title = title(request.getTitle());
-        configure(item, request.getRule(), request.getEndDate(), request.getNote());
+        configure(
+            item,
+            request.getRule(),
+            request.getEndDate(),
+            request.getNote() == null ? item.note : request.getNote()
+        );
         if (!before.equals(item.response())) {
             series.flush();
             publish(item, "UPDATED");

@@ -4,11 +4,7 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.todorok.planner.api.model.TaskResponse;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.lang.Nullable;
 import java.time.OffsetDateTime;
@@ -20,30 +16,33 @@ import java.util.*;
 import jakarta.annotation.Generated;
 
 /**
- * DayDetailResponse
+ * DailyNoteResponse
  */
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
-public class DayDetailResponse {
+public class DailyNoteResponse {
 
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
   private LocalDate date;
 
-  private List<@Valid TaskResponse> tasks = new ArrayList<>();
+  private String content;
 
-  public DayDetailResponse() {
+  private Long version = null;
+
+  public DailyNoteResponse() {
     super();
   }
 
   /**
    * Constructor with only required parameters
    */
-  public DayDetailResponse(LocalDate date, List<@Valid TaskResponse> tasks) {
+  public DailyNoteResponse(LocalDate date, String content, Long version) {
     this.date = date;
-    this.tasks = tasks;
+    this.content = content;
+    this.version = version;
   }
 
-  public DayDetailResponse date(LocalDate date) {
+  public DailyNoteResponse date(LocalDate date) {
     this.date = date;
     return this;
   }
@@ -64,33 +63,47 @@ public class DayDetailResponse {
     this.date = date;
   }
 
-  public DayDetailResponse tasks(List<@Valid TaskResponse> tasks) {
-    this.tasks = tasks;
-    return this;
-  }
-
-  public DayDetailResponse addTasksItem(TaskResponse tasksItem) {
-    if (this.tasks == null) {
-      this.tasks = new ArrayList<>();
-    }
-    this.tasks.add(tasksItem);
+  public DailyNoteResponse content(String content) {
+    this.content = content;
     return this;
   }
 
   /**
-   * Get tasks
-   * @return tasks
+   * Get content
+   * @return content
    */
-  @NotNull @Valid
+  @NotNull @Size(max = 20000)
 
-  @JsonProperty("tasks")
-  public List<@Valid TaskResponse> getTasks() {
-    return tasks;
+  @JsonProperty("content")
+  public String getContent() {
+    return content;
   }
 
-  @JsonProperty("tasks")
-  public void setTasks(List<@Valid TaskResponse> tasks) {
-    this.tasks = tasks;
+  @JsonProperty("content")
+  public void setContent(String content) {
+    this.content = content;
+  }
+
+  public DailyNoteResponse version(Long version) {
+    this.version = version;
+    return this;
+  }
+
+  /**
+   * Get version
+   * minimum: 0
+   * @return version
+   */
+  @Min(value = 0L)
+
+  @JsonProperty("version")
+  public Long getVersion() {
+    return version;
+  }
+
+  @JsonProperty("version")
+  public void setVersion(Long version) {
+    this.version = version;
   }
 
   @Override
@@ -101,22 +114,24 @@ public class DayDetailResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DayDetailResponse dayDetailResponse = (DayDetailResponse) o;
-    return Objects.equals(this.date, dayDetailResponse.date) &&
-        Objects.equals(this.tasks, dayDetailResponse.tasks);
+    DailyNoteResponse dailyNoteResponse = (DailyNoteResponse) o;
+    return Objects.equals(this.date, dailyNoteResponse.date) &&
+        Objects.equals(this.content, dailyNoteResponse.content) &&
+        Objects.equals(this.version, dailyNoteResponse.version);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(date, tasks);
+    return Objects.hash(date, content, version);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DayDetailResponse {\n");
+    sb.append("class DailyNoteResponse {\n");
     sb.append("    date: ").append(toIndentedString(date)).append("\n");
-    sb.append("    tasks: ").append(toIndentedString(tasks)).append("\n");
+    sb.append("    content: ").append(toIndentedString(content)).append("\n");
+    sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("}");
     return sb.toString();
   }

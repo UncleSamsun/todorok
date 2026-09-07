@@ -1,6 +1,7 @@
 java/io/todorok/planner/api/ApiUtil.java
 java/io/todorok/planner/api/AuthApi.java
 java/io/todorok/planner/api/CalendarApi.java
+java/io/todorok/planner/api/NoteApi.java
 java/io/todorok/planner/api/SeriesApi.java
 java/io/todorok/planner/api/TaskApi.java
 java/io/todorok/planner/api/model/CalendarDaySummary.java
@@ -8,6 +9,7 @@ java/io/todorok/planner/api/model/CalendarSummaryResponse.java
 java/io/todorok/planner/api/model/CategoryProgress.java
 java/io/todorok/planner/api/model/CreateSeriesRequest.java
 java/io/todorok/planner/api/model/CreateTaskRequest.java
+java/io/todorok/planner/api/model/DailyNoteResponse.java
 java/io/todorok/planner/api/model/DayDetailResponse.java
 java/io/todorok/planner/api/model/LoginRequest.java
 java/io/todorok/planner/api/model/ProblemDetails.java
@@ -19,6 +21,7 @@ java/io/todorok/planner/api/model/SessionResponse.java
 java/io/todorok/planner/api/model/TaskResponse.java
 java/io/todorok/planner/api/model/TaskStatus.java
 java/io/todorok/planner/api/model/TaskType.java
+java/io/todorok/planner/api/model/UpdateDailyNoteRequest.java
 java/io/todorok/planner/api/model/UpdateSeriesRequest.java
 java/io/todorok/planner/api/model/UpdateTaskRequest.java
 java/io/todorok/planner/api/model/VersionCommand.java

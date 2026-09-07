@@ -49,6 +49,7 @@ public class RolloverResponse {
    * @return today
    */
   @NotNull @Valid
+
   @JsonProperty("today")
   public LocalDate getToday() {
     return today;
@@ -70,6 +71,7 @@ public class RolloverResponse {
    * @return movedCount
    */
   @NotNull @Min(value = 0)
+
   @JsonProperty("movedCount")
   public Integer getMovedCount() {
     return movedCount;

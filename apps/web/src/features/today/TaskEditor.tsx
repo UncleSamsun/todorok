@@ -13,17 +13,18 @@ export function TaskEditor({
   task: Task
   busy: boolean
   error: string
-  save: (title: string, date: string) => void
+  save: (title: string, date: string, note: string) => void
   remove: () => void
   skip: () => void
   reopen: () => void
   cancel: () => void
 }) {
   const [title, setTitle] = useState(task.title),
-    [date, setDate] = useState(task.scheduledDate)
+    [date, setDate] = useState(task.scheduledDate),
+    [note, setNote] = useState(task.note ?? '')
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (title.trim() && !busy) save(title.trim(), date)
+    if (title.trim() && !busy) save(title.trim(), date, note)
   }
   return (
     <form className="task-form" aria-label="할 일 수정" onSubmit={submit}>
@@ -44,6 +45,19 @@ export function TaskEditor({
         value={date}
         onChange={(e) => setDate(e.target.value)}
       />
+      <label htmlFor="task-note">할 일 메모</label>
+      <textarea
+        id="task-note"
+        maxLength={20000}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+      />
+      {task.seriesId && (
+        <p>
+          이 메모는 이번 할 일에 저장됩니다. 다음 회차의 메모는 아래 반복
+          설정에서 수정할 수 있습니다.
+        </p>
+      )}
       {error && <p role="alert">{error}</p>}
       <div className="form-actions">
         <button disabled={busy || !title.trim()} type="submit">
