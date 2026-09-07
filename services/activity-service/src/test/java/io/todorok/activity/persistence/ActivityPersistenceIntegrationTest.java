@@ -3,7 +3,10 @@ package io.todorok.activity.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
+import java.time.ZoneId;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
@@ -98,6 +101,153 @@ class ActivityPersistenceIntegrationTest {
     }
 
     @Test
+    void summarizesTheLeapYearSeoulMonthAcrossEquivalentOffsets() {
+        UUID seoulOwner = UUID.randomUUID();
+        createAt(seoulOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-01T00:00:00+09:00", studyDetail(1));
+        createAt(seoulOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-01-31T23:59:59+09:00", studyDetail(1));
+        createAt(seoulOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-29T23:59:59+09:00", studyDetail(1));
+        createAt(seoulOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-03-01T00:00:00+09:00", studyDetail(1));
+
+        UUID utcOwner = UUID.randomUUID();
+        createAt(utcOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-01-31T15:00:00Z", studyDetail(1));
+        createAt(utcOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-01-31T14:59:59Z", studyDetail(1));
+        createAt(utcOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-29T14:59:59Z", studyDetail(1));
+        createAt(utcOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-29T15:00:00Z", studyDetail(1));
+
+        var seoulSummary = activities.monthlySummary(
+            seoulOwner, YearMonth.of(2024, 2), ActivityType.STUDY);
+        var utcSummary = activities.monthlySummary(
+            utcOwner, YearMonth.of(2024, 2), ActivityType.STUDY);
+
+        assertThat(seoulSummary.getCompletedCount()).isEqualTo(2);
+        assertThat(seoulSummary.getDurationSeconds()).isEqualTo(120L);
+        assertThat(utcSummary.getCompletedCount()).isEqualTo(2);
+        assertThat(utcSummary.getDurationSeconds()).isEqualTo(120L);
+    }
+
+    @Test
+    void sumsWorkoutSetsWithoutCountingTheActivityMoreThanOnce() {
+        UUID owner = UUID.randomUUID();
+        var workout = new ActivityDetail().workout(new WorkoutDetail()
+            .addSetsItem(new WorkoutSet().exercise("row").durationSeconds(60))
+            .addSetsItem(new WorkoutSet().exercise("press").durationSeconds(120)));
+        createAt(owner, ActivityType.WORKOUT, ActivityCompletionStatus.COMPLETED,
+            "2024-02-10T10:00:00+09:00", workout);
+
+        var summary = activities.monthlySummary(
+            owner, YearMonth.of(2024, 2), ActivityType.WORKOUT);
+
+        assertThat(summary.getCompletedCount()).isEqualTo(1);
+        assertThat(summary.getDurationSeconds()).isEqualTo(180L);
+    }
+
+    @Test
+    void summarizesStudyAndClimbingByStatusOwnerAndType() {
+        UUID studyOwner = UUID.randomUUID();
+        createAt(studyOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-03T10:00:00+09:00", studyDetail(2));
+        createAt(studyOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-04T10:00:00+09:00", studyDetail(null));
+        createAt(studyOwner, ActivityType.STUDY, ActivityCompletionStatus.PARTIAL,
+            "2024-02-05T10:00:00+09:00", studyDetail(3));
+        createAt(studyOwner, ActivityType.STUDY, ActivityCompletionStatus.PARTIAL,
+            "2024-02-06T10:00:00+09:00", studyDetail(0));
+        var voidedStudy = createAt(
+            studyOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-07T10:00:00+09:00", studyDetail(5));
+        activities.voidRecord(studyOwner, voidedStudy.getActivityId(),
+            new VoidActivityRequest("summary fixture", 0L));
+        createAt(UUID.randomUUID(), ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-08T10:00:00+09:00", studyDetail(7));
+        createAt(studyOwner, ActivityType.CLIMBING, ActivityCompletionStatus.COMPLETED,
+            "2024-02-09T10:00:00+09:00", climbingDetail(999));
+
+        UUID climbingOwner = UUID.randomUUID();
+        createAt(climbingOwner, ActivityType.CLIMBING, ActivityCompletionStatus.COMPLETED,
+            "2024-02-03T11:00:00+09:00", climbingDetail(40));
+        createAt(climbingOwner, ActivityType.CLIMBING, ActivityCompletionStatus.COMPLETED,
+            "2024-02-04T11:00:00+09:00", climbingDetail(null));
+        createAt(climbingOwner, ActivityType.CLIMBING, ActivityCompletionStatus.PARTIAL,
+            "2024-02-05T11:00:00+09:00", climbingDetail(20));
+        createAt(climbingOwner, ActivityType.CLIMBING, ActivityCompletionStatus.PARTIAL,
+            "2024-02-06T11:00:00+09:00", climbingDetail(0));
+        var voidedClimbing = createAt(
+            climbingOwner, ActivityType.CLIMBING, ActivityCompletionStatus.COMPLETED,
+            "2024-02-07T11:00:00+09:00", climbingDetail(50));
+        activities.voidRecord(climbingOwner, voidedClimbing.getActivityId(),
+            new VoidActivityRequest("summary fixture", 0L));
+        createAt(UUID.randomUUID(), ActivityType.CLIMBING, ActivityCompletionStatus.COMPLETED,
+            "2024-02-08T11:00:00+09:00", climbingDetail(70));
+        createAt(climbingOwner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-09T11:00:00+09:00", studyDetail(4));
+
+        var studySummary = activities.monthlySummary(
+            studyOwner, YearMonth.of(2024, 2), ActivityType.STUDY);
+        var climbingSummary = activities.monthlySummary(
+            climbingOwner, YearMonth.of(2024, 2), ActivityType.CLIMBING);
+
+        assertThat(studySummary.getCompletedCount()).isEqualTo(2);
+        assertThat(studySummary.getDurationSeconds()).isEqualTo(300L);
+        assertThat(climbingSummary.getCompletedCount()).isEqualTo(2);
+        assertThat(climbingSummary.getDurationSeconds()).isEqualTo(60L);
+    }
+
+    @Test
+    void floorsFractionalHeaderSecondsAndDoesNotAddDetailDuration() {
+        UUID owner = UUID.randomUUID();
+        var request = recordRequestAt(
+            owner, ActivityType.CLIMBING, ActivityCompletionStatus.COMPLETED,
+            OffsetDateTime.parse("2024-02-12T10:00:00+09:00"), climbingDetail(99))
+            .startedAt(OffsetDateTime.parse("2024-02-12T10:00:00+09:00"))
+            .endedAt(OffsetDateTime.parse("2024-02-12T10:00:01.900+09:00"));
+        activities.create(owner, request);
+
+        var summary = activities.monthlySummary(
+            owner, YearMonth.of(2024, 2), ActivityType.CLIMBING);
+
+        assertThat(summary.getCompletedCount()).isEqualTo(1);
+        assertThat(summary.getDurationSeconds()).isEqualTo(1L);
+    }
+
+    @Test
+    void repeatedAndEmptyMonthlySummaryReadsLeaveOwnerStateUnchanged() {
+        UUID owner = UUID.randomUUID();
+        var original = createAt(
+            owner, ActivityType.STUDY, ActivityCompletionStatus.COMPLETED,
+            "2024-02-15T10:00:00+09:00", studyDetail(2));
+        activities.correct(owner, original.getActivityId(), new CorrectActivityRequest(
+            0L, OffsetDateTime.parse("2024-02-16T10:00:00+09:00"), studyDetail(3))
+            .note("summary read-only fixture"));
+        var before = ownerState(owner);
+
+        var first = activities.monthlySummary(
+            owner, YearMonth.of(2024, 2), ActivityType.STUDY);
+        assertThat(first.getCompletedCount()).isEqualTo(1);
+        assertThat(first.getDurationSeconds()).isEqualTo(180L);
+        assertThat(ownerState(owner)).isEqualTo(before);
+
+        var repeated = activities.monthlySummary(
+            owner, YearMonth.of(2024, 2), ActivityType.STUDY);
+        assertThat(repeated.getCompletedCount()).isEqualTo(1);
+        assertThat(repeated.getDurationSeconds()).isEqualTo(180L);
+        assertThat(ownerState(owner)).isEqualTo(before);
+
+        var empty = activities.monthlySummary(
+            owner, YearMonth.of(2024, 1), ActivityType.STUDY);
+        assertThat(empty.getCompletedCount()).isZero();
+        assertThat(empty.getDurationSeconds()).isZero();
+        assertThat(ownerState(owner)).isEqualTo(before);
+    }
+
+    @Test
     void readsOneRevisionWhenCorrectionCommitsBetweenResultSetAndMapping() throws Exception {
         for (ActivityType type : ActivityType.values()) {
             for (String operation : List.of("GET", "LIST", "REPLAY")) {
@@ -175,6 +325,91 @@ class ActivityPersistenceIntegrationTest {
         jdbc.update("insert into task_reference(task_id,user_id,task_type,scheduled_date,status,version) values (?,?,?,date '2026-09-07','PLANNED',0)", task, owner, type.name());
         return new CreateActivityRequest(UUID.randomUUID(), task, type, ActivityCompletionStatus.COMPLETED,
             OffsetDateTime.parse("2026-09-07T10:00:00+09:00"), detail(type, 11)).note("old");
+    }
+
+    private ActivityResponse createAt(
+        UUID owner,
+        ActivityType type,
+        ActivityCompletionStatus status,
+        String performedAt,
+        ActivityDetail detail
+    ) {
+        return activities.create(owner, recordRequestAt(
+            owner, type, status, OffsetDateTime.parse(performedAt), detail));
+    }
+
+    private CreateActivityRequest recordRequestAt(
+        UUID owner,
+        ActivityType type,
+        ActivityCompletionStatus status,
+        OffsetDateTime performedAt,
+        ActivityDetail detail
+    ) {
+        UUID task = UUID.randomUUID();
+        var scheduledDate = performedAt.atZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDate();
+        jdbc.update(
+            "insert into task_reference(task_id,user_id,task_type,scheduled_date,status,version) values (?,?,?,?,?,?)",
+            task, owner, type.name(), scheduledDate, "PLANNED", 0L);
+        // These explicit dates only build monthly aggregate fixtures; they do not exercise correction behavior.
+        return new CreateActivityRequest(
+            UUID.randomUUID(), task, type, status, performedAt, detail).note("summary boundary fixture");
+    }
+
+    private ActivityDetail studyDetail(Integer durationMinutes) {
+        return new ActivityDetail().study(
+            new StudyDetail().subject("summary fixture").durationMinutes(durationMinutes));
+    }
+
+    private ActivityDetail climbingDetail(Integer durationSeconds) {
+        return new ActivityDetail().climbing(
+            new ClimbingDetail().durationSeconds(durationSeconds));
+    }
+
+    private Map<String, List<String>> ownerState(UUID owner) {
+        var state = new LinkedHashMap<String, List<String>>();
+        state.put("activity_record", jsonRows(
+            "select a.* from activity_record a where a.user_id=? order by a.id", owner));
+        state.put("task_reference", jsonRows("""
+            select t.* from task_reference t
+            where exists (select 1 from activity_record a where a.task_id=t.task_id and a.user_id=?)
+            order by t.task_id
+            """, owner));
+        state.put("workout_detail", jsonRows("""
+            select d.* from workout_detail d join activity_record a on a.id=d.activity_id
+            where a.user_id=? order by d.activity_id
+            """, owner));
+        state.put("workout_set", jsonRows("""
+            select d.* from workout_set d join activity_record a on a.id=d.activity_id
+            where a.user_id=? order by d.activity_id,d.position
+            """, owner));
+        state.put("study_detail", jsonRows("""
+            select d.* from study_detail d join activity_record a on a.id=d.activity_id
+            where a.user_id=? order by d.activity_id
+            """, owner));
+        state.put("climbing_detail", jsonRows("""
+            select d.* from climbing_detail d join activity_record a on a.id=d.activity_id
+            where a.user_id=? order by d.activity_id
+            """, owner));
+        state.put("climbing_round", jsonRows("""
+            select d.* from climbing_round d join activity_record a on a.id=d.activity_id
+            where a.user_id=? order by d.activity_id,d.position
+            """, owner));
+        state.put("activity_revision_history", jsonRows("""
+            select h.* from activity_revision_history h join activity_record a on a.id=h.activity_id
+            where a.user_id=? order by h.activity_id,h.revision
+            """, owner));
+        state.put("outbox_event", jsonRows("""
+            select o.* from outbox_event o join activity_record a on o.aggregateid=a.id::text
+            where a.user_id=? order by o.id
+            """, owner));
+        return state;
+    }
+
+    private List<String> jsonRows(String ownerQuery, UUID owner) {
+        return jdbc.queryForList(
+            "select to_jsonb(owner_row)::text from (" + ownerQuery + ") owner_row",
+            String.class,
+            owner);
     }
 
     private ActivityDetail detail(ActivityType type, int value) {
