@@ -29,6 +29,7 @@ test('rejects objects that violate the exact Problem Details schema', () => {
     { ...problem, type: 'a^b' },
     { ...problem, type: 'a|b' },
     { ...problem, type: 'a{b}' },
+    { ...problem, type: 'https://example.test/한글' },
     { ...problem, instance: '%' },
     { ...problem, fieldErrors: [{ field: '', code: 'NOT_BLANK', message: 'required' }] },
     { ...problem, fieldErrors: [{ field: 'name', code: 'bad-code', message: 'required' }] },
@@ -43,6 +44,7 @@ test('rejects objects that violate the exact Problem Details schema', () => {
 test('accepts empty title and relative URI references allowed by the schema', () => {
   const valid = { ...problem, type: '', title: '', instance: '../tasks/1' }
   assert.equal(classifyApiError(valid).kind, 'problem')
+  assert.equal(classifyApiError({ ...problem, type: 'https://example.test/%ED%95%9C%EA%B8%80' }).kind, 'problem')
 })
 
 test('does not automatically retry a failed mutation', async () => {

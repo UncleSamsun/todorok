@@ -71,3 +71,14 @@
   - 결과: 성공. worker 내부 trace와 처리 후 cleanup, async 응답 trace 일치를 검증했다.
 - `pnpm --filter @todorok/api-client test`
   - 결과: 성공. 런타임 5개 테스트와 TypeScript 타입 검사가 통과했다.
+
+## 리뷰 수정 3차
+
+- RFC 3986 URI-reference는 IRI가 아니므로 URL 정규화 전에 raw 비ASCII 문자를 거부한다. 같은 UTF-8 값의 percent-encoded URI-reference는 허용한다.
+- ASCII 검사는 RFC 3986의 unreserved, reserved, 유효한 percent-encoding을 남기고 raw 공백·제어 문자와 금지 문자를 거부하는 범위임을 재확인했다.
+
+### RED/GREEN
+
+- `pnpm --filter @todorok/api-client test`
+  - RED: raw 한글 URI-reference가 정상 문제 응답으로 분류되어 1개 실패했다.
+  - GREEN: 런타임 5개 테스트와 TypeScript 타입 검사가 통과했다.
