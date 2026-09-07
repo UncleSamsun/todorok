@@ -1,0 +1,136 @@
+import { StrictMode } from 'react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, expect, it, vi } from 'vitest'
+import { QueryClient } from '@tanstack/react-query'
+import { SessionClient } from '@todorok/api-client'
+import { App } from '../../App'
+
+afterEach(() => { cleanup(); window.history.replaceState({}, '', '/'); vi.restoreAllMocks() })
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => { resolve = done })
+  return { promise, resolve }
+}
+const task = (taskId = 'task-1', completed = false) => ({ taskId, userId: 'owner', title: taskId, taskType: 'CLIMBING', scheduledDate: '2026-09-07', status: completed ? 'COMPLETED' : 'PLANNED', version: 0, ...(completed ? { completionSummary: '완등 기록' } : {}) })
+const activityResponse = (activityId = 'activity-1', syncState = 'APPLIED') => Response.json({ activityId, taskId: 'task-1', userId: 'owner', activityType: 'CLIMBING', performedAt: '2026-09-07T00:00:00+09:00', detail: { climbing: {} }, status: 'COMPLETED', version: 0, syncState })
+async function setup(handlers: { post?: () => Promise<Response>; get?: (id: string) => Promise<Response>; completed?: () => boolean } = {}, strict = false) {
+  const session = new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url)
+    if (path.endsWith('/refresh')) return Response.json({ accessToken: 'token', userId: 'owner', expiresAt: '2099-01-01T00:00:00Z' })
+    if (path.endsWith('/logout')) return new Response(null, { status: 204 })
+    if (path.endsWith('/rollover')) return Response.json({ today: '2026-09-07', movedCount: 0 })
+    if (path.includes('/calendar?')) return Response.json({ from: '2026-09-06', to: '2026-09-12', days: [] })
+    if (path.includes('/calendar/')) return Response.json({ date: '2026-09-07', tasks: [task('task-1', handlers.completed?.())] })
+    if (path.includes('/notes/')) return Response.json({ date: '2026-09-07', content: '', version: null })
+    if (path.includes('/tasks/task-')) return Response.json(task(path.split('/').at(-1)))
+    if (path.endsWith('/activities') && init?.method === 'POST') return handlers.post?.() ?? activityResponse()
+    if (path.includes('/activities/')) return handlers.get?.(path.split('/').at(-1)!) ?? activityResponse()
+    return Response.json({}, { status: 404 })
+  } })
+  const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const invalidations = vi.spyOn(queries, 'invalidateQueries')
+  const app = <App session={session} queryClient={queries} />
+  render(strict ? <StrictMode>{app}</StrictMode> : app)
+  await screen.findByRole('button', { name: 'task-1 기록' })
+  invalidations.mockClear()
+  return { session, queries, invalidations }
+}
+async function navigate(path: string) {
+  await act(async () => { window.history.pushState({}, '', path); window.dispatchEvent(new PopStateEvent('popstate')) })
+}
+async function settle(pending: ReturnType<typeof deferred<Response>>, value = activityResponse()) {
+  await act(async () => { pending.resolve(value); await pending.promise; await new Promise((resolve) => setTimeout(resolve, 30)) })
+}
+
+it('submits successfully after StrictMode mounts, cleans up, and replays effects', async () => {
+  const post = vi.fn(async () => activityResponse())
+  await setup({ post }, true)
+  fireEvent.click(screen.getByRole('button', { name: 'task-1 기록' }))
+  fireEvent.click(await screen.findByRole('button', { name: '기록 저장' }))
+  await waitFor(() => expect(location.search).toContain('activityId=activity-1'))
+  expect(post).toHaveBeenCalledTimes(1)
+})
+
+it.each(['cancel', 'task switch', 'logout'] as const)('ignores deferred POST success after %s', async (action) => {
+  const pending = deferred<Response>(), post = vi.fn(() => pending.promise)
+  const { queries, invalidations } = await setup({ post })
+  fireEvent.click(screen.getByRole('button', { name: 'task-1 기록' }))
+  fireEvent.click(await screen.findByRole('button', { name: '기록 저장' }))
+  await waitFor(() => expect(post).toHaveBeenCalledTimes(1))
+  if (action === 'cancel') {
+    fireEvent.click(screen.getByRole('button', { name: '취소' }))
+    await screen.findByRole('button', { name: 'task-1 기록' })
+  } else if (action === 'task switch') {
+    await navigate('/climbing?taskId=task-2')
+    await screen.findByText('task-2')
+    fireEvent.change(screen.getByLabelText('기록 메모'), { target: { value: '새 작업 메모' } })
+  } else {
+    fireEvent.click(screen.getByRole('button', { name: '로그아웃' }))
+    await waitFor(() => expect(location.pathname).toBe('/login'))
+  }
+  const destination = location.pathname + location.search
+  const cached = queries.getQueryData(['calendar', 'day', '2026-09-07'])
+  invalidations.mockClear()
+  await settle(pending)
+  expect(location.pathname + location.search).toBe(destination)
+  expect(invalidations).not.toHaveBeenCalled()
+  expect(queries.getQueryData(['calendar', 'day', '2026-09-07'])).toBe(cached)
+  if (action === 'task switch') {
+    expect(screen.getByLabelText('기록 메모')).toHaveValue('새 작업 메모')
+    expect(screen.getByRole('button', { name: '기록 저장' })).toBeEnabled()
+  }
+})
+
+it('automatically polls PENDING to APPLIED and refreshes the existing calendar row once', async () => {
+  let reads = 0, completed = false
+  const get = vi.fn(async () => { completed = ++reads > 1; return activityResponse('activity-1', completed ? 'APPLIED' : 'PENDING') })
+  const { invalidations } = await setup({ get, completed: () => completed })
+  await navigate('/today?date=2026-09-07&activityId=activity-1')
+  await screen.findByText('기록됨 · 일정 반영 중')
+  expect(screen.getByRole('button', { name: 'task-1 기록' })).toHaveAttribute('aria-pressed', 'false')
+  await screen.findByText('일정 반영 완료', {}, { timeout: 4000 })
+  await screen.findByText('완등 기록')
+  expect(screen.getAllByRole('button', { name: 'task-1 기록' })).toHaveLength(1)
+  expect(screen.getByRole('button', { name: 'task-1 기록' })).toHaveAttribute('aria-pressed', 'true')
+  expect(invalidations).toHaveBeenCalledTimes(1)
+  expect(invalidations).toHaveBeenCalledWith({ queryKey: ['calendar'] })
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 1600)) })
+  expect(get).toHaveBeenCalledTimes(2)
+  expect(invalidations).toHaveBeenCalledTimes(1)
+})
+
+it('invalidates once for manual APPLIED confirmation and independently for the next activity', async () => {
+  let reads = 0
+  const { invalidations } = await setup({ get: async (id) => activityResponse(id, ++reads === 1 ? 'CONFLICT' : 'APPLIED') })
+  await navigate('/today?activityId=activity-1')
+  fireEvent.click(await screen.findByRole('button', { name: '상태 다시 확인' }))
+  await screen.findByText('일정 반영 완료')
+  expect(invalidations).toHaveBeenCalledTimes(1)
+  invalidations.mockClear()
+  await navigate('/today?activityId=activity-2')
+  await screen.findByText('일정 반영 완료')
+  await waitFor(() => expect(invalidations).toHaveBeenCalledTimes(1))
+})
+
+it.each([
+  ['activity switch', 'manual'], ['logout', 'manual'],
+  ['activity switch', 'automatic'], ['logout', 'automatic'],
+] as const)('ignores a deferred GET after %s (%s)', async (action, mode) => {
+  const pending = deferred<Response>()
+  let reads = 0
+  const { invalidations } = await setup({ get: async (id) => id === 'activity-1' && ++reads > 1 ? pending.promise : activityResponse(id, mode === 'automatic' ? 'PENDING' : 'CONFLICT') })
+  await navigate('/today?activityId=activity-1')
+  const check = await screen.findByRole('button', { name: '상태 다시 확인' })
+  if (mode === 'manual') fireEvent.click(check)
+  await waitFor(() => expect(reads).toBe(2), { timeout: 4000 })
+  if (action === 'activity switch') await navigate('/today?activityId=activity-2')
+  else {
+    fireEvent.click(screen.getByRole('button', { name: '로그아웃' }))
+    await waitFor(() => expect(location.pathname).toBe('/login'))
+  }
+  invalidations.mockClear()
+  await settle(pending)
+  expect(invalidations).not.toHaveBeenCalled()
+  expect(screen.queryByText('일정 반영 완료')).not.toBeInTheDocument()
+  if (action === 'activity switch') expect(screen.getByRole('button', { name: '상태 다시 확인' })).toBeEnabled()
+})

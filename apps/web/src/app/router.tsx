@@ -6,6 +6,7 @@ import {
   Route,
   Routes,
   useNavigate,
+  useSearchParams,
 } from 'react-router'
 import { useAuth } from '../features/auth/AuthProvider'
 import { LoginPage } from '../features/auth/LoginPage'
@@ -111,7 +112,7 @@ function EnterSession({
   return <p role="status">오늘을 여는 중…</p>
 }
 function DomainOrRecord({ type, fallback }: { type: 'WORKOUT' | 'STUDY' | 'CLIMBING'; fallback: ReactNode }) {
-  const taskId = new URLSearchParams(location.search).get('taskId')
+  const [params] = useSearchParams(), taskId = params.get('taskId')
   return taskId ? <RecordPage key={taskId} type={type} /> : fallback
 }
 export function AppRouter() {

@@ -28,3 +28,12 @@
 - 증거 이미지: `.local/task07-runtime/task07-mobile.png`.
 
 초기 브라우저 실행 두 번은 submit 셀렉터와 CLI select 사용법 불일치로 기록 저장 전에 중단했다. 세 번째 부분 실행에서 운동·공부 저장까지 확인한 뒤 클라이밍 select의 접근 가능한 이름 누락을 발견해 `aria-label`을 추가했다. 최종 전체 실행은 위 항목을 모두 통과했다.
+
+## 후속 수명주기 회귀 검증 (2026-09-07)
+
+- RED: `pnpm --filter @todorok/web exec vitest run src/features/activity/lifecycle.test.tsx`에서 8건 중 2건 실패, 6건 통과. 지연 POST 뒤 taskId를 바꾸면 이전 성공 응답이 `/climbing?taskId=task-2`를 `/today?...activityId=activity-1`로 덮었다. 수동 APPLIED 확인은 calendar 무효화를 예상 1회 대신 2회 실행했다.
+- 원인과 수정: `DomainOrRecord`의 전역 location 조회를 `useSearchParams` 구독으로 바꿔 taskId 변경 때 기록 컴포넌트 key가 실제 갱신되도록 했다. APPLIED 무효화는 조회 결과 effect 한 곳에서만 실행하고 세션 generation·activityId·version으로 중복을 막는다. 수동 확인 중 상태는 query의 `isFetching`에서 읽어 이전 promise가 새 화면의 상태를 변경하지 않게 했다.
+- GREEN: `pnpm --filter @todorok/web exec vitest run src/features/activity/lifecycle.test.tsx src/features/activity/RecordPage.test.tsx src/App.test.tsx` — 3 files, 17 tests 통과. 새 lifecycle 10건은 React StrictMode effect replay 이후 제출, 취소·Task 전환·logout 이후 지연 POST 무시, 실제 refetchInterval의 PENDING→APPLIED 자동 조회와 기존 Task 단일 행 완료/요약 갱신 및 무효화 1회, 수동 확인 무효화 1회와 다음 Activity의 독립 갱신, 수동/자동 GET 이후 Activity 전환·logout guard를 검증했다. APPLIED 뒤 추가 polling도 발생하지 않았다.
+- 기존 RecordPage의 응답 유실 commandId 재전송, 로컬 시간 오류, 명확한 validation 거절 후 편집 회귀를 유지했다. 첫 build는 테스트의 지원하지 않는 `getByRole` 옵션 `exact` 때문에 실패했고 제거 후 `pnpm --filter @todorok/web build`와 `git diff --check`를 통과했다.
+- 초기 탐색 실행은 StrictMode로 모든 fixture를 감싸 취소된 GET도 횟수에 넣는 mock 때문에 추가 실패가 있었다. StrictMode 제출 검증은 유지하고 나머지 상태 전이 fixture는 일반 mount로 분리한 뒤 위 RED를 재확인했다. 초기 `test -- ...`는 전체 suite를 실행했으므로 최종 집중 실행은 `exec vitest run`을 사용했다.
+- 이 후속 작업에서 backend/runtime을 다시 만들거나 브라우저 검증을 재실행하지 않았다. 상위의 실제 브라우저 증거와 이번 개발 effect replay·지연응답 회귀 증거는 별개다. 작업07 전체 완료 여부는 부모 검토에 남긴다.
