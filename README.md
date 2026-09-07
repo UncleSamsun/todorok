@@ -54,3 +54,5 @@ GitHub: https://github.com/UncleSamsun/todorok
 - Kafka 장애 복구는 broker 정상 응답을 먼저 확인한 뒤 connector와 task를 재시작하고, health 결과가 `healthy` 또는 원인이 확인된 `warning`인지 검증합니다.
 - Connect worker를 교체해도 Kafka internal topic의 config·offset과 PostgreSQL slot에서 이어서 처리합니다. 통합 테스트는 기존 worker container를 제거하고 새 worker로 이벤트 수신을 확인합니다.
 - replication slot을 재생성한 경우 connector를 중지하고 slot이 없는 동안 저장된 outbox까지 `snapshot.mode=when_needed`로 다시 발행됐는지 event ID로 확인합니다. consumer inbox가 중복 반영을 막으므로 inbox 기록을 먼저 정리하지 않습니다.
+- `node scripts/compose-smoke.mjs`는 고유 project와 volume으로 이미지를 build한 뒤 새 DB 기동, Nginx·서비스·Connect health, marker 저장, 같은 volume 재기동을 검증하고 자원을 정리합니다. 이미 검증한 local image만 다시 확인할 때는 `--skip-build`를 사용합니다.
+- Connect worker는 768MB container 안에서 heap을 384MB로 제한해 connector 초기화 중 native memory 여유를 둡니다.

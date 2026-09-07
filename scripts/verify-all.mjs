@@ -14,6 +14,8 @@ const commands = [
     'scripts/connect-config.test.mjs',
     'scripts/postgres-messaging-config.test.mjs',
     'scripts/messaging-health.test.mjs',
+    'scripts/connect-registration.integration.test.mjs',
+    'scripts/compose-smoke.test.mjs',
   ]],
   [gradleCommand, ['test', '--no-daemon', '--max-workers=1']],
   ['corepack', ['pnpm', 'test:packages']],
