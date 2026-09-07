@@ -24,6 +24,8 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -384,6 +386,105 @@ class TemplateFoundationHttpTest {
             Integer.class, invalidTimeField)).isZero();
         assertThat(mapper.readTree(send("GET", "/templates/" + templateId, null, owner).body())
             .get("currentVersion").get("name").asText()).isEqualTo("불변");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"OMITTED", "null", "{}", "\"invalid\"", "true", "0"})
+    void rejectsMissingNullOrNonArrayFieldsOnCreateWithoutPersistingState(String fieldsJson) throws Exception {
+        UUID owner = UUID.randomUUID();
+        var before = templateState(owner);
+        String body = "{\"commandId\":\"" + UUID.randomUUID()
+            + "\",\"name\":\"입력 확인\",\"domain\":\"STUDY\",\"kind\":\"STUDY_CATEGORY\""
+            + (fieldsJson.equals("OMITTED") ? "" : ",\"fields\":" + fieldsJson) + "}";
+
+        var response = send("POST", "/templates", body, owner);
+
+        if (fieldsJson.equals("OMITTED")) {
+            // The configured decoder does not retain the generated empty-list initializer for an omitted field.
+            assertThat(mapper.readValue(body, io.todorok.activity.api.model.CreateTemplateRequest.class).getFields())
+                .isNull();
+        }
+        assertRejectedFields(response, fieldsJson);
+        assertThat(templateState(owner)).isEqualTo(before);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"OMITTED", "null", "{}", "\"invalid\"", "true", "0"})
+    void rejectsMissingNullOrNonArrayFieldsOnVersionWithoutClearingDefinition(String fieldsJson) throws Exception {
+        UUID owner = UUID.randomUUID();
+        var created = send("POST", "/templates", templateBody(UUID.randomUUID(), "보존할 정의",
+            "STUDY", "STUDY_CATEGORY", List.of(field("NUMBER", "문제 수", "문제"))), owner);
+        assertThat(created.statusCode()).isEqualTo(201);
+        String id = mapper.readTree(created.body()).get("templateId").asText();
+        var before = templateState(owner);
+        String body = "{\"commandId\":\"" + UUID.randomUUID()
+            + "\",\"expectedRevision\":0,\"name\":\"의도하지 않은 변경\""
+            + (fieldsJson.equals("OMITTED") ? "" : ",\"fields\":" + fieldsJson) + "}";
+
+        var response = send("POST", "/templates/" + id + "/versions", body, owner);
+
+        if (fieldsJson.equals("OMITTED")) {
+            assertThat(mapper.readValue(body, io.todorok.activity.api.model.CreateTemplateVersionRequest.class).getFields())
+                .isNull();
+        }
+        assertRejectedFields(response, fieldsJson);
+        assertThat(templateState(owner)).isEqualTo(before);
+        assertThat(send("GET", "/templates/" + id, null, owner).body()).isEqualTo(created.body());
+    }
+
+    @Test
+    void explicitEmptyFieldsCreatesAndClearsOnlyTheNewVersion() throws Exception {
+        UUID owner = UUID.randomUUID();
+        var empty = send("POST", "/templates", templateBody(UUID.randomUUID(), "빈 정의",
+            "STUDY", "STUDY_CATEGORY", List.of()), owner);
+        assertThat(empty.statusCode()).isEqualTo(201);
+        assertThat(mapper.readTree(empty.body()).get("currentVersion").get("fields").size()).isZero();
+
+        var created = send("POST", "/templates", templateBody(UUID.randomUUID(), "기존 항목",
+            "STUDY", "STUDY_CATEGORY", List.of(field("NUMBER", "문제 수", "문제"))), owner);
+        assertThat(created.statusCode()).isEqualTo(201);
+        String id = mapper.readTree(created.body()).get("templateId").asText();
+        String versionRequest = versionBody(UUID.randomUUID(), 0, "명시적 비우기", List.of());
+        var cleared = send("POST", "/templates/" + id + "/versions", versionRequest, owner);
+        assertThat(cleared.statusCode()).isEqualTo(201);
+        var current = mapper.readTree(cleared.body());
+        assertThat(current.get("revision").asLong()).isEqualTo(1);
+        assertThat(current.get("currentVersion").get("templateVersion").asLong()).isEqualTo(2);
+        assertThat(current.get("currentVersion").get("fields").size()).isZero();
+        assertThat(mapper.readTree(send("GET", "/templates/" + id + "/versions/1", null, owner).body()))
+            .isEqualTo(mapper.readTree(created.body()).get("currentVersion"));
+        var after = templateState(owner);
+        assertThat(send("POST", "/templates/" + id + "/versions", versionRequest, owner).body())
+            .isEqualTo(cleared.body());
+        assertThat(templateState(owner)).isEqualTo(after);
+        assertThat(jdbc.queryForObject("select count(*) from template_management_command where user_id=?",
+            Integer.class, owner)).isEqualTo(3);
+    }
+
+    private void assertRejectedFields(HttpResponse<String> response, String fieldsJson) {
+        if (fieldsJson.equals("OMITTED") || fieldsJson.equals("null")) {
+            assertProblem(response, 400, "VALIDATION_FAILED");
+            JsonNode errors = mapper.readTree(response.body()).get("fieldErrors");
+            assertThat(errors.size()).isEqualTo(1);
+            assertThat(errors.get(0).get("field").asText()).isEqualTo("fields");
+            assertThat(errors.get(0).get("code").asText()).isEqualTo("NOT_NULL");
+        } else {
+            assertProblem(response, 400, "MALFORMED_JSON");
+        }
+    }
+
+    private Map<String, List<String>> templateState(UUID owner) {
+        var state = new LinkedHashMap<String, List<String>>();
+        for (String table : List.of("record_template", "template_management_command")) {
+            state.put(table, jdbc.queryForList("select to_jsonb(t)::text from " + table
+                + " t where user_id=? order by 1", String.class, owner));
+        }
+        for (String table : List.of("template_version", "template_field_identity", "template_field_definition")) {
+            state.put(table, jdbc.queryForList("select to_jsonb(t)::text from " + table
+                + " t where template_id in (select id from record_template where user_id=?) order by 1",
+                String.class, owner));
+        }
+        return state;
     }
 
     private Map<String, Object> field(String type, String name, String unit) {

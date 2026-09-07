@@ -82,3 +82,39 @@ corepack pnpm --filter @todorok/api-client build
 - 작업 09B의 selection binding, planner Task/series, 이벤트, Activity 기록 값/snapshot/correction 연결은 의도적으로 구현하지 않았다. 작업 09C의 관리·추가·기록 UI도 미구현이다. 따라서 전체 작업 09와 M3는 완료가 아니다.
 - 전체 저장소 `verify-all.mjs`는 실행하지 않았다. 이번 변경의 관련 activity suite, 실제 proxy, 계약 생성/roundtrip/drift와 두 build를 각각 실행했다. 새 proxy/roundtrip test는 이후 `verify-all.mjs` 목록에 포함했다.
 - 기존 migration V1–V4, ActivityService/ActivityDetailStore, StudyDetail 입력 계약, Task/series/event/legacy 데이터는 수정하지 않았다.
+
+## 수정 라운드 1 — 필수 fields 리뷰 반증과 회귀 보강
+
+기준: `314d0d8`. 리뷰에서는 생성 DTO의 `fields = new ArrayList<>()` 초기값 때문에 누락 요청이 빈 정의로 저장될 수 있다고 판단했다. 그러나 제품 코드를 바꾸기 전에 실행한 실제 PostgreSQL·인증 HTTP 회귀 13개가 모두 통과했다. 따라서 이 라운드에는 재현된 RED와 제품 수정에 의한 GREEN이 없으며, 결함을 수정했다고 보고하지 않는다.
+
+누락 요청이 다른 이유로 실패한 것인지 확인하기 위해 실제 응답과 주입된 역직렬화 경로를 추가 조사했다. create와 새 version 모두 아래 결과였다.
+
+- HTTP 400, `code=VALIDATION_FAILED`, `detail=One or more fields are invalid.`
+- `fieldErrors`는 정확히 한 건: `field=fields`, `code=NOT_NULL`, `message=널이어서는 안됩니다`.
+- 동일 요청 본문을 서비스 런타임의 ObjectMapper로 각각 CreateTemplateRequest/CreateTemplateVersionRequest에 역직렬화하면 `getFields()`는 null이다. 선언된 빈 배열 초기값이 실제 누락 입력의 최종 값으로 유지되지 않는다. Bean Validation의 `@NotNull`이 이를 거절한다. 특정 생성자의 내부 호출을 추적했다는 의미는 아니다.
+
+진단용 출력은 제거하고 응답 code·유일한 fieldErrors·누락 역직렬화 결과를 회귀 assertion으로 남겼다. 누락을 빈 배열로 받아들이는 경로가 생기면 HTTP 기대와 DB 상태 비교가 실패한다.
+
+보강한 범위는 다음과 같다.
+
+- create와 새 version 각각 fields 누락·null·객체·문자열·boolean·숫자 6가지 입력을 거절한다. 누락/null은 `VALIDATION_FAILED`와 fields/NOT_NULL, 비배열은 `MALFORMED_JSON`을 확인했다.
+- 거절 전후 인증 owner 범위의 record_template·template_version·template_field_identity·template_field_definition·template_management_command 전체 행을 비교했다. 새 version fixture에는 실제 기존 필드가 있으며, 거절 뒤 GET body도 최초 생성 결과와 동일하다.
+- 명시적 `fields: []`의 최초 생성과 새 version 생성은 201이다. 새 version만 빈 정의가 되고 원래 version의 필드는 유지된다. 동일 version command 재전달은 최초 응답을 반환하고 모든 DB 행과 command 수가 유지된다.
+- 기존 다섯 형식 정상 생성과 템플릿 전용 엄격 입력/기존 Activity 경로 비영향 시나리오도 함께 확인했다.
+
+최종 실행 명령:
+
+```powershell
+.\gradlew.bat :services:activity-service:test `
+  --tests '*TemplateFoundationHttpTest.rejectsMissingNullOrNonArrayFields*' `
+  --tests '*TemplateFoundationHttpTest.explicitEmptyFieldsCreatesAndClearsOnlyTheNewVersion' `
+  --tests '*TemplateFoundationHttpTest.rejectsUnknownDuplicateOversizedAndCompressedBodiesOnlyOnTemplateWrites' `
+  --tests '*TemplateFoundationHttpTest.createsAndReadsACompleteFiveTypeDefinitionWithoutCreatingTasksOrEvents' `
+  :services:activity-service:assemble --no-daemon --max-workers=1
+```
+
+- 최종 15 tests, failures 0, errors 0, skipped 0. XML과 종료 코드 0을 확인했다. app jar·migration jar assemble도 성공했다.
+- 앞선 제품 무수정 최초 회귀는 13/13, 원인 진단 실행은 12/12였다. 최종 15개 결과와 구분한다.
+- 기존 생성 코드의 deprecated API·컨테이너 `@Valid` 안내 및 JVM agent/CDS 경고가 있었으나 테스트·빌드 실패는 없었다.
+- 제품 코드·입력 계약·생성 설정·생성물·기존 Activity 경로는 수정하지 않았다. 생성 설정 변경이 없어 별도 재생성·drift 재실행은 하지 않았고 Gradle 생성 작업은 UP-TO-DATE였다. 기존 전체 28개 suite도 반복하지 않았다.
+- 이 라운드의 변경은 HTTP 회귀와 본 보고서뿐이다. 리뷰의 중요 지적은 현재 런타임 실행 증거로 반박되었으며, 최종 리뷰 판정과 전체 진행 장부는 부모 작업에서 갱신한다. 작업09B/C와 전체09는 여전히 후속 범위다.
