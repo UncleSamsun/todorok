@@ -16,5 +16,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    // Each React/jsdom worker is CPU-heavy; avoid starving async UI commits.
+    maxWorkers: 1,
   },
 })

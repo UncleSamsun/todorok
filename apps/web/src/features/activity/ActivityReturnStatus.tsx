@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { activity } from '@todorok/api-client'
 import { useAuth } from '../auth/AuthProvider'
 import { SyncStatus } from './SyncStatus'
+import { refreshActivity } from './refreshActivity'
 
 export function ActivityReturnStatus({ activityId }: { activityId: string }) {
   const { session, state } = useAuth(), queries = useQueryClient(), applied = useRef(new Set<string>())
@@ -13,7 +14,7 @@ export function ActivityReturnStatus({ activityId }: { activityId: string }) {
     const identity = `${state.generation}:${activityId}:${result.data.version}`
     if (applied.current.has(identity)) return
     applied.current.add(identity)
-    void queries.invalidateQueries({ queryKey: ['calendar'] })
+    void refreshActivity(queries, state.userId, true)
   }, [activityId, queries, result.data, session, state.generation])
   if (result.isPending) return <p role="status">기록 상태를 불러오는 중…</p>
   if (result.isError) return <p role="alert">기록 상태를 불러오지 못했습니다. <button onClick={() => void result.refetch()}>다시 불러오기</button></p>

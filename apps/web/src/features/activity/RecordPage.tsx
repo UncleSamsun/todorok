@@ -9,6 +9,7 @@ import { ClimbingFields } from './ClimbingFields'
 import { RecordTimeFields, toDate } from './RecordTimeFields'
 import { SyncStatus } from './SyncStatus'
 import { useRecordDraft } from './RecordDrafts'
+import { refreshActivity } from './refreshActivity'
 
 const titles = { WORKOUT: '운동 기록', STUDY: '공부 기록', CLIMBING: '클라이밍 기록' } as const
 const midnightSeoul = (date: string) => new Date(`${date}T00:00:00+09:00`)
@@ -50,7 +51,7 @@ export function RecordPage({ type }: { type: RecordType }) {
       if (!current(id)) return
       clear()
       setSaved(result)
-      if (result.syncState === 'APPLIED') await queries.invalidateQueries({ queryKey: ['calendar'] })
+      await refreshActivity(queries, state.userId, result.syncState === 'APPLIED')
       if (current(id)) void navigate(`/today?date=${performedDate}&activityId=${result.activityId}`)
     } catch (reason) {
       if (!current(id)) return

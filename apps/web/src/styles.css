@@ -494,6 +494,12 @@ select {
 .month-picker strong { min-width: 104px; text-align: center; }
 .month-picker button { padding: 6px; font-size: 22px; }
 .domain-actions { display: flex; gap: 8px; }
+.domain-actions button { white-space: nowrap; }
+@media (max-width: 480px) {
+  .domain-summary-heading { flex-direction: column; align-items: stretch; }
+  .month-picker { justify-content: space-between; }
+  .domain-actions { justify-content: flex-end; }
+}
 .domain-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 28px; }
 .domain-summary > div { min-height: 94px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 7px; padding: 10px 4px; }
 .domain-summary span { color: var(--muted); font-size: 13px; }

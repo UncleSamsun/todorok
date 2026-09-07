@@ -30,7 +30,7 @@ async function setup(handlers: { post?: (body: unknown) => Promise<Response>; ge
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const invalidations = vi.spyOn(queries, 'invalidateQueries')
   const app = <App session={session} queryClient={queries} />
-  render(strict ? <StrictMode>{app}</StrictMode> : app)
+  await act(async () => { render(strict ? <StrictMode>{app}</StrictMode> : app) })
   await screen.findByRole('button', { name: 'task-1 기록' })
   invalidations.mockClear()
   return { session, queries, invalidations }
@@ -198,7 +198,10 @@ it.each(['cancel', 'task switch', 'logout'] as const)('ignores deferred POST suc
 it('automatically polls PENDING to APPLIED and refreshes the existing calendar row once', async () => {
   let reads = 0, completed = false
   const get = vi.fn(async () => { completed = ++reads > 1; return activityResponse('activity-1', completed ? 'APPLIED' : 'PENDING') })
-  const { invalidations } = await setup({ get, completed: () => completed })
+  const { invalidations, queries } = await setup({ get, completed: () => completed })
+  const related = [['activities', 'owner'], ['activity-summary', 'owner', '2026-09', 'CLIMBING'], ['calendar-summary', 'owner', '2026-09']]
+  related.forEach((key) => queries.setQueryData(key, { previous: true }))
+  queries.setQueryData(['activity-summary', 'other-owner', '2026-09', 'CLIMBING'], { previous: true })
   await navigate('/today?date=2026-09-07&activityId=activity-1')
   await screen.findByText('기록됨 · 일정 반영 중')
   expect(screen.getByRole('button', { name: 'task-1 기록' })).toHaveAttribute('aria-pressed', 'false')
@@ -207,7 +210,9 @@ it('automatically polls PENDING to APPLIED and refreshes the existing calendar r
   expect(screen.getAllByRole('button', { name: 'task-1 기록' })).toHaveLength(1)
   expect(screen.getByRole('button', { name: 'task-1 기록' })).toHaveAttribute('aria-pressed', 'true')
   expect(invalidations).toHaveBeenCalledTimes(1)
-  expect(invalidations).toHaveBeenCalledWith({ queryKey: ['calendar'] })
+  expect(invalidations).toHaveBeenCalledWith({ predicate: expect.any(Function) })
+  related.forEach((key) => expect(queries.getQueryState(key)?.isInvalidated).toBe(true))
+  expect(queries.getQueryState(['activity-summary', 'other-owner', '2026-09', 'CLIMBING'])?.isInvalidated).toBe(false)
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 1600)) })
   expect(get).toHaveBeenCalledTimes(2)
   expect(invalidations).toHaveBeenCalledTimes(1)
