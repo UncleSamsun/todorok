@@ -46,7 +46,7 @@ GitHub: https://github.com/UncleSamsun/todorok
 
 ## 메시징 운영 점검
 
-- `node scripts/messaging-health.mjs`는 Connect와 task 상태, replication slot·WAL, topic 보존 설정, consumer lag, outbox·inbox 적체를 JSON으로 출력합니다. 기본 Compose 환경 파일은 `.env`이며 다른 파일은 `MESSAGING_ENV_FILE`로 지정합니다.
+- `node scripts/messaging-health.mjs`는 Connect와 task 상태, replication slot·WAL, topic 보존 설정, consumer lag, outbox·inbox 건수와 가장 오래된 record 나이를 JSON으로 출력합니다. 수치나 출력 형식을 읽을 수 없으면 정상으로 간주하지 않고 exit code 1로 끝납니다. 기본 Compose 환경 파일은 `.env`이며 다른 파일은 `MESSAGING_ENV_FILE`로 지정합니다.
 - outbox·inbox는 자동 삭제하지 않습니다. `infra/docker/postgres/maintenance/inspect-messaging-retention.sql`은 schema별 건수와 가장 오래된 record만 조회합니다. CDC snapshot과 dead-letter 재처리 범위를 증명하는 watermark를 도입하기 전에는 데이터를 지우지 않습니다.
 - 기존 connector 설정이나 비밀번호를 재적용할 때만 `CONNECTOR_CONFIG_UPDATE=true`로 `connect-init`을 한 번 실행합니다. 플래그가 없으면 connector 설정 drift를 보고하고 변경하지 않습니다.
 - Kafka 장애 복구는 broker 정상 응답을 먼저 확인한 뒤 connector와 task를 재시작하고, health 결과가 `healthy` 또는 원인이 확인된 `warning`인지 검증합니다.

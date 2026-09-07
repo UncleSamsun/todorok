@@ -14,6 +14,18 @@ const TOPIC_POLICIES = new Map([
 export function evaluateMessagingHealth(state) {
   const critical = []
   const warning = []
+  const measurements = [
+    state.retainedWalBytes,
+    state.consumerLag,
+    state.outboxOldestAgeSeconds,
+    state.inboxOldestAgeSeconds,
+    state.outboxRowCount,
+    state.inboxRowCount,
+  ]
+
+  if (measurements.some((value) => !Number.isFinite(value) || value < 0)) {
+    return { status: 'critical', reasons: ['measurement_invalid'] }
+  }
 
   if (state.connectorState !== 'RUNNING') critical.push('connector_not_running')
   if (!state.taskStates?.length || state.taskStates.some((value) => value !== 'RUNNING')) {
@@ -42,6 +54,8 @@ function runCompose(args, input) {
   const result = spawnSync('docker', composeArgs(args), {
     encoding: 'utf8',
     input,
+    timeout: 15_000,
+    killSignal: 'SIGTERM',
   })
   if (result.status !== 0) {
     throw new Error(result.stderr || result.stdout || `docker compose ${args.join(' ')} failed`)
@@ -51,7 +65,9 @@ function runCompose(args, input) {
 
 async function readConnectorState() {
   const connectUrl = process.env.CONNECT_URL ?? 'http://localhost:8084'
-  const response = await fetch(`${connectUrl}/connectors/${CONNECTOR_NAME}/status`)
+  const response = await fetch(`${connectUrl}/connectors/${CONNECTOR_NAME}/status`, {
+    signal: AbortSignal.timeout(15_000),
+  })
   if (!response.ok) throw new Error(`Connect status failed: HTTP ${response.status}`)
   const status = await response.json()
   return {
@@ -68,38 +84,65 @@ with slot_state as (
     from pg_replication_slots
    where slot_name = 'todorok_outbox_slot'
 ), outbox_age as (
-  select coalesce(extract(epoch from clock_timestamp() - min(recorded_at)), 0) as seconds
+  select coalesce(extract(epoch from clock_timestamp() - min(recorded_at)), 0) as seconds,
+         coalesce(sum(row_count), 0) as row_count
     from (
-      select min(created_at) as recorded_at from planner.outbox_event
+      select min(created_at) as recorded_at, count(*) as row_count from planner.outbox_event
       union all
-      select min(created_at) from activity.outbox_event
+      select min(created_at), count(*) from activity.outbox_event
     ) records
 ), inbox_age as (
-  select coalesce(extract(epoch from clock_timestamp() - min(recorded_at)), 0) as seconds
+  select coalesce(extract(epoch from clock_timestamp() - min(recorded_at)), 0) as seconds,
+         coalesce(sum(row_count), 0) as row_count
     from (
-      select min(processed_at) as recorded_at from planner.processed_event
+      select min(processed_at) as recorded_at, count(*) as row_count from planner.processed_event
       union all
-      select min(processed_at) from activity.processed_event
+      select min(processed_at), count(*) from activity.processed_event
       union all
-      select min(processed_at) from notification.processed_event
+      select min(processed_at), count(*) from notification.processed_event
     ) records
 )
 select coalesce((select active from slot_state), false),
        coalesce((select retained_wal_bytes from slot_state), 0),
        (select seconds from outbox_age),
-       (select seconds from inbox_age);
+       (select seconds from inbox_age),
+       (select row_count from outbox_age),
+       (select row_count from inbox_age);
 `
   const output = runCompose([
     'exec', '-T', 'postgres', 'sh', '-lc',
-    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F , -f -',
+    'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F , -f -',
   ], query).trim()
-  const [slotActive, retainedWalBytes, outboxAge, inboxAge] = output.split(',')
-  return {
-    slotActive: slotActive === 't',
-    retainedWalBytes: Number(retainedWalBytes),
-    outboxOldestAgeSeconds: Number(outboxAge),
-    inboxOldestAgeSeconds: Number(inboxAge),
+  return parseDatabaseState(output)
+}
+
+export function parseDatabaseState(output) {
+  const fields = output.trim().split(',')
+  if (fields.length !== 6 || !['t', 'f'].includes(fields[0])) {
+    throw new Error('invalid PostgreSQL messaging health output')
   }
+  const values = fields.slice(1).map(Number)
+  if (values.some((value) => !Number.isFinite(value) || value < 0)) {
+    throw new Error('invalid PostgreSQL messaging health measurement')
+  }
+  const [retainedWalBytes, outboxAge, inboxAge, outboxRowCount, inboxRowCount] = values
+  return {
+    slotActive: fields[0] === 't',
+    retainedWalBytes,
+    outboxOldestAgeSeconds: outboxAge,
+    inboxOldestAgeSeconds: inboxAge,
+    outboxRowCount,
+    inboxRowCount,
+  }
+}
+
+export function topicPolicyMatches(output, expected) {
+  const pairs = new Map()
+  for (const match of output.matchAll(/(?:^|[,\s])([a-z.]+)=(-?\d+)(?=,|\s|$)/g)) {
+    pairs.set(match[1], match[2])
+  }
+  return pairs.get('retention.ms') === expected.retentionMs
+    && pairs.get('retention.bytes') === expected.retentionBytes
 }
 
 function readTopicPolicies() {
@@ -109,8 +152,7 @@ function readTopicPolicies() {
       '--bootstrap-server', 'localhost:9092', '--entity-type', 'topics',
       '--entity-name', topic, '--describe',
     ])
-    if (!output.includes(`retention.ms=${expected.retentionMs}`)
-        || !output.includes(`retention.bytes=${expected.retentionBytes}`)) {
+    if (!topicPolicyMatches(output, expected)) {
       return false
     }
   }
@@ -122,15 +164,26 @@ function readConsumerLag() {
     'exec', '-T', 'kafka', '/opt/kafka/bin/kafka-consumer-groups.sh',
     '--bootstrap-server', 'localhost:9092', '--all-groups', '--describe',
   ])
-  const lines = output.split(/\r?\n/).filter(Boolean)
+  return parseConsumerLag(output)
+}
+
+export function parseConsumerLag(output) {
+  if (/no consumer groups found/i.test(output)) return 0
+  const lines = output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
   const header = lines.find((line) => /\bLAG\b/.test(line))
-  if (!header) return 0
+  if (!header) throw new Error('invalid Kafka consumer lag output')
   const columns = header.trim().split(/\s+/)
   const lagIndex = columns.indexOf('LAG')
-  return lines.slice(lines.indexOf(header) + 1).reduce((sum, line) => {
+  const dataLines = lines.slice(lines.indexOf(header) + 1)
+    .filter((line) => !line.startsWith('Consumer group'))
+  if (dataLines.length === 0) throw new Error('Kafka consumer lag rows are missing')
+  return dataLines.reduce((sum, line) => {
     const fields = line.trim().split(/\s+/)
     const value = Number(fields[lagIndex])
-    return sum + (Number.isFinite(value) ? value : 0)
+    if (!Number.isFinite(value) || value < 0) {
+      throw new Error('invalid Kafka consumer lag measurement')
+    }
+    return sum + value
   }, 0)
 }
 
