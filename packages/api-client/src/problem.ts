@@ -33,6 +33,7 @@ export async function requestJson(
   fetcher: typeof fetch = fetch,
 ): Promise<unknown> {
   const response = await fetcher(input, init)
+  if (response.status === 204 || response.status === 205) return undefined
   const contentType = response.headers.get('content-type') ?? ''
   const payload: unknown = contentType.includes('json') ? await response.json() : await response.text()
   if (!response.ok) throw payload
