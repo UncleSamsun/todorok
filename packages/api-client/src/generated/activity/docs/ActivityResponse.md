@@ -11,7 +11,7 @@ Name | Type
 `taskId` | string
 `userId` | string
 `activityType` | [ActivityType](ActivityType.md)
-`performedAt` | string
+`performedAt` | Date
 `detail` | { [key: string]: any; }
 `status` | [ActivityStatus](ActivityStatus.md)
 `version` | number

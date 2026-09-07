@@ -17,6 +17,16 @@ export function buildSmokePlan({ projectName, envFile }) {
   }
 }
 
+export function combineSmokeErrors(primaryError, cleanupError) {
+  if (primaryError && cleanupError) {
+    return new AggregateError(
+      [primaryError, cleanupError],
+      'Compose smoke와 cleanup이 모두 실패했습니다.',
+    )
+  }
+  return primaryError ?? cleanupError
+}
+
 function runDocker(args, options = {}) {
   const result = spawnSync('docker', args, {
     cwd: path.resolve('.'),
@@ -121,6 +131,7 @@ export async function runComposeSmoke() {
     '',
   ].join('\n'))
 
+  let primaryError
   try {
     const firstUp = ['up', '--detach']
     if (!skipBuild) firstUp.push('--build')
@@ -133,10 +144,25 @@ export async function runComposeSmoke() {
     compose(plan, ['up', '--detach', '--wait', '--wait-timeout', '300'])
     verifyRuntime(plan)
     verifyMarker(plan)
-  } finally {
-    runDocker(plan.cleanupArgs, { timeout: 300_000 })
-    await rm(directory, { recursive: true, force: true })
+  } catch (error) {
+    primaryError = error
   }
+
+  let cleanupError
+  try {
+    runDocker(plan.cleanupArgs, { timeout: 300_000 })
+  } catch (error) {
+    cleanupError = error
+  } finally {
+    try {
+      await rm(directory, { recursive: true, force: true })
+    } catch (error) {
+      cleanupError = combineSmokeErrors(cleanupError, error)
+    }
+  }
+
+  const failure = combineSmokeErrors(primaryError, cleanupError)
+  if (failure) throw failure
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {

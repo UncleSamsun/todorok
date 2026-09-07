@@ -31,9 +31,10 @@ http_code="$(curl "${curl_retry[@]}" --silent --show-error \
 
 if [[ "$http_code" == "404" ]]; then
   curl "${curl_retry[@]}" --fail --silent --show-error \
+    --request PUT \
     --header 'Content-Type: application/json' \
-    --data-binary "@$rendered_request" \
-    "$connect_url/connectors" >/dev/null
+    --data-binary "@$rendered_config" \
+    "$connect_url/connectors/$connector_name/config" >/dev/null
   exit 0
 fi
 

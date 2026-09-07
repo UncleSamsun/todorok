@@ -20,3 +20,14 @@ test('smoke 계획은 격리 project와 volume cleanup을 고정한다', () => {
     'down', '--volumes', '--remove-orphans',
   ])
 })
+
+test('smoke 실패와 cleanup 실패를 모두 보존한다', () => {
+  const smokeError = new Error('smoke failed')
+  const cleanupError = new Error('cleanup failed')
+  const combined = smoke.combineSmokeErrors(smokeError, cleanupError)
+
+  assert.ok(combined instanceof AggregateError)
+  assert.deepEqual(combined.errors, [smokeError, cleanupError])
+  assert.equal(smoke.combineSmokeErrors(smokeError), smokeError)
+  assert.equal(smoke.combineSmokeErrors(undefined, cleanupError), cleanupError)
+})

@@ -66,10 +66,10 @@ export interface ActivityResponse {
     activityType: ActivityType;
     /**
      *
-     * @type {string}
+     * @type {Date}
      * @memberof ActivityResponse
      */
-    performedAt: string;
+    performedAt: Date;
     /**
      *
      * @type {{ [key: string]: any; }}
@@ -123,7 +123,7 @@ export function ActivityResponseFromJSONTyped(json: any, ignoreDiscriminator: bo
         'taskId': json['taskId'],
         'userId': json['userId'],
         'activityType': ActivityTypeFromJSON(json['activityType']),
-        'performedAt': json['performedAt'],
+        'performedAt': (new Date(json['performedAt'])),
         'detail': json['detail'],
         'status': ActivityStatusFromJSON(json['status']),
         'version': json['version'],
@@ -146,7 +146,7 @@ export function ActivityResponseToJSONTyped(value?: ActivityResponse | null, ign
         'taskId': value['taskId'],
         'userId': value['userId'],
         'activityType': ActivityTypeToJSON(value['activityType']),
-        'performedAt': value['performedAt'],
+        'performedAt': value['performedAt'].toISOString(),
         'detail': value['detail'],
         'status': ActivityStatusToJSON(value['status']),
         'version': value['version'],

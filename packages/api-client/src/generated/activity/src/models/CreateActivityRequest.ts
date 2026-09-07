@@ -60,10 +60,10 @@ export interface CreateActivityRequest {
     completionStatus: ActivityCompletionStatus;
     /**
      *
-     * @type {string}
+     * @type {Date}
      * @memberof CreateActivityRequest
      */
-    performedAt: string;
+    performedAt: Date;
     /**
      *
      * @type {{ [key: string]: any; }}
@@ -101,7 +101,7 @@ export function CreateActivityRequestFromJSONTyped(json: any, ignoreDiscriminato
         'taskId': json['taskId'],
         'activityType': ActivityTypeFromJSON(json['activityType']),
         'completionStatus': ActivityCompletionStatusFromJSON(json['completionStatus']),
-        'performedAt': json['performedAt'],
+        'performedAt': (new Date(json['performedAt'])),
         'detail': json['detail'],
     };
 }
@@ -121,7 +121,7 @@ export function CreateActivityRequestToJSONTyped(value?: CreateActivityRequest |
         'taskId': value['taskId'],
         'activityType': ActivityTypeToJSON(value['activityType']),
         'completionStatus': ActivityCompletionStatusToJSON(value['completionStatus']),
-        'performedAt': value['performedAt'],
+        'performedAt': value['performedAt'].toISOString(),
         'detail': value['detail'],
     };
 }

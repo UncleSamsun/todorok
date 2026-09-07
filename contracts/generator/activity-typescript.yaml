@@ -7,4 +7,4 @@ additionalProperties:
   npmName: '@todorok/api-client'
   withInterfaces: true
 typeMappings:
-  Date: string
+  date: string

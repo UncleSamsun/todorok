@@ -27,10 +27,10 @@ export interface SessionResponse {
     accessToken: string;
     /**
      *
-     * @type {string}
+     * @type {Date}
      * @memberof SessionResponse
      */
-    expiresAt: string;
+    expiresAt: Date;
     /**
      *
      * @type {string}
@@ -60,7 +60,7 @@ export function SessionResponseFromJSONTyped(json: any, ignoreDiscriminator: boo
     return {
 
         'accessToken': json['accessToken'],
-        'expiresAt': json['expiresAt'],
+        'expiresAt': (new Date(json['expiresAt'])),
         'userId': json['userId'],
     };
 }
@@ -77,7 +77,7 @@ export function SessionResponseToJSONTyped(value?: SessionResponse | null, ignor
     return {
 
         'accessToken': value['accessToken'],
-        'expiresAt': value['expiresAt'],
+        'expiresAt': value['expiresAt'].toISOString(),
         'userId': value['userId'],
     };
 }

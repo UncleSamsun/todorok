@@ -37,4 +37,14 @@ describe('생성 API client 계약', () => {
     expect(new Headers(capturedHeaders).get('Authorization'))
       .toBe('Bearer test-token')
   })
+
+  it('날짜·시간 값은 Date로 변환하고 ISO 시각으로 보낸다', () => {
+    const response = planner.SessionResponseFromJSON({
+      accessToken: 'token',
+      expiresAt: '2026-09-07T03:00:00Z',
+      userId: '00000000-0000-0000-0000-000000000001',
+    })
+    expect(response.expiresAt).toBeInstanceOf(Date)
+    expect(response.expiresAt.toISOString()).toBe('2026-09-07T03:00:00.000Z')
+  })
 })
