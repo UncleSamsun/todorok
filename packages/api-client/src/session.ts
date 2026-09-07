@@ -63,24 +63,27 @@ export class SessionClient {
     try { return await fn() } finally { release() }
   }
   private async issueRefresh() {
+    const generation = this.snapshot.generation
     const response = await this.auth.refreshSession()
+    if (generation !== this.snapshot.generation) throw new SessionError(401)
     const expiresAt = response.expiresAt.getTime()
     if (!response.accessToken || !response.userId || !Number.isFinite(expiresAt)) throw new SessionError()
     this.accept({ accessToken: response.accessToken, userId: response.userId, expiresAt })
   }
   private refresh = (failedToken: string | null) => {
     if (this.refreshing) return this.refreshing
-    const generation = this.snapshot.generation
+    let generation = this.snapshot.generation
     this.refreshing = this.exclusive(async () => {
       if (generation !== this.snapshot.generation) return
       const latest = await this.coordinator?.latest()
       if (latest !== undefined) this.accept(latest, false)
       if (latest === null) throw new SessionError(401)
       if (this.memory && this.memory.accessToken !== failedToken && this.memory.expiresAt > Date.now() + 30_000) return
+      generation = this.snapshot.generation
       await this.issueRefresh()
     }).catch(error => {
       const status = error instanceof ResponseError ? error.response.status : error instanceof SessionError ? error.status : 0
-      this.accept(null, true, status === 401 ? 'expired' : 'network')
+      if (generation === this.snapshot.generation) this.accept(null, true, status === 401 ? 'expired' : 'network')
       throw new SessionError(status)
     }).finally(() => { this.refreshing = null })
     return this.refreshing
@@ -107,8 +110,12 @@ export class SessionClient {
         try { await api.logout() }
         catch (error) {
           if (!(error instanceof ResponseError) || error.response.status !== 401) throw error
+          const generation = this.snapshot.generation
           try { await this.issueRefresh() }
-          catch { this.accept(null, true, 'expired'); throw new SessionError(401) }
+          catch {
+            if (generation === this.snapshot.generation) this.accept(null, true, 'expired')
+            throw new SessionError(401)
+          }
           await api.logout()
         }
         this.accept(null)

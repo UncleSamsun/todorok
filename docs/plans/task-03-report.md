@@ -41,3 +41,14 @@
 - Web Locks 미지원 환경에서는 여러 탭이 동시에 refresh를 보내면 서버 replay 방어에 따라 재로그인이 필요할 수 있다.
 - PWA는 정적 파일을 precache한다. lazy domain은 별도 코드 chunk이지만 service worker 설치 과정에서 정적 다운로드될 수 있다. 인증 응답은 cache에 넣지 않는다.
 - 서버 session 폐기 성공 후 메모리와 cache를 지운다. logout의 네트워크 실패는 오류를 보여주고 재시도를 허용한다. 이미 발급한 access JWT의 서버 만료 정책은 작업02와 같다.
+
+## 리뷰 1차 후속 수정: 늦은 refresh 응답 경합
+
+Web Locks가 없고 BroadcastChannel만 있는 두 탭에서, 탭 A의 refresh 응답을 보류한 뒤 탭 B를 로그아웃시키는 회귀 테스트를 추가했다. 실제 SessionClient 두 개와 웹 coordinator 두 개를 사용하고 외부 HTTP 응답만 지연했다.
+
+- RED: `pnpm --dir apps/web exec vitest run src/app/browser-session.test.ts` — 4개 중 2개 실패. 늦은 성공은 기대 anonymous/실제 authenticated로 세션을 되살렸다. B 로그아웃 후 다른 사용자로 로그인한 상태에서 늦은 401은 기대 authenticated/실제 anonymous로 새 세션을 지웠다.
+- 수정: refresh HTTP를 시작할 때 세대를 캡처하고 응답을 적용하기 전에 다시 비교한다. 이미 다른 세대라면 원래 요청을 실패시키되 현재 메모리와 다른 탭에는 쓰지 않는다. refresh 실패 정리와 logout 내부 refresh 실패 정리에도 같은 세대 조건을 적용했다.
+- GREEN: `pnpm test:web` — 4개 파일·20개 테스트 통과. 두 탭의 최종 상태와 새 사용자 ID가 보존되고 원래 요청은 실패함을 확인했다.
+- GREEN: `pnpm build:web` — TypeScript와 production/PWA build 통과.
+
+이번 후속 수정은 결정적으로 제어한 두 탭 경합 테스트로 검증했다. Docker·실제 브라우저 전체 흐름은 재실행하지 않았으며 앞 절의 브라우저 결과는 최초 구현 커밋 검증이다.
