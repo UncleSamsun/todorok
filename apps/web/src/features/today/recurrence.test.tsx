@@ -149,7 +149,7 @@ it('submits a weekly recurrence with explicit days and end date from quick add',
     target: { value: '2026-12-31' },
   })
   fireEvent.click(screen.getByRole('button', { name: '저장' }))
-  expect(save).toHaveBeenCalledWith('매주 읽기', '2026-09-07', {
+  expect(save).toHaveBeenCalledWith('매주 읽기', '2026-09-07', expect.any(String), undefined, {
     rule: {
       frequency: 'WEEKLY',
       interval: 2,
@@ -158,6 +158,17 @@ it('submits a weekly recurrence with explicit days and end date from quick add',
     },
     endDate: '2026-12-31',
   })
+})
+
+it('keeps the schedule draft but clears a category that disappears after management', () => {
+  const save = vi.fn(), category = { templateId: '10000000-0000-0000-0000-000000000001', domain: 'STUDY', kind: 'STUDY_CATEGORY', archived: false, revision: 0, currentVersion: { templateId: '10000000-0000-0000-0000-000000000001', templateVersion: 1, name: '알고리즘', fields: [] } } as any
+  const { rerender } = render(<QuickAdd date="2026-09-07" type={planner.TaskType.Study} busy={false} error="" templates={[category]} save={save} cancel={() => {}} />)
+  fireEvent.change(screen.getByLabelText('제목'), { target: { value: '초안 유지' } })
+  fireEvent.change(screen.getByLabelText('공부 카테고리'), { target: { value: category.templateId } })
+  rerender(<QuickAdd date="2026-09-07" type={planner.TaskType.Study} busy={false} error="" templates={[]} save={save} cancel={() => {}} />)
+  expect(screen.getByLabelText('제목')).toHaveValue('초안 유지')
+  expect(screen.getByLabelText('공부 카테고리')).toHaveValue('')
+  expect(screen.getByRole('button', { name: '저장' })).toBeDisabled()
 })
 
 it('waits for successful rollover before reading calendars and exposes failure with retry', async () => {

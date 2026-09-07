@@ -17,6 +17,7 @@ it('refreshes a previously visited domain after saving a past record', async () 
     if (path.includes('/calendar?')) return Response.json({ from: '2026-09-01', to: '2026-09-30', days: [] })
     if (path.includes('/calendar/')) return Response.json({ date: '2026-09-06', tasks: [task] })
     if (path.endsWith('/tasks/past-study')) return Response.json(task)
+    if (path.endsWith('/tasks/past-study/record-template')) return Response.json({ linked: false })
     if (path.endsWith('/activities') && init?.method === 'POST') { saved = true; return Response.json(record) }
     if (path.endsWith('/activities/new-record')) return Response.json(record)
     if (path.includes('/activities?')) return Response.json({ items: saved ? [record] : [] })

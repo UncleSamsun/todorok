@@ -20,7 +20,7 @@
 
 ### 공부 기록 흐름
 
-공부의 백엔드 흐름을 연결했다. 실제 공부 값 생성 → 상세·목록 → 정의 변경·보관 → 원래 정의로 수정·취소, HTTP → outbox/CDC/Kafka → APPLIED → 같은 binding의 다음 반복 회차까지 구현했다. **사용자 기능 전체 완료는 아니다.** 다음 작업은 `study-template-ui-brief.md`의 공부 관리·일정 선택·동적 기록·과거 수정 화면 연결이며, 자유 운동·클라이밍의 custom 값은 그 다음 사용자 흐름이다. 이 두 도메인의 기존 typed 세트·라운드는 유지하고 연결 custom 기록 경계는 아직 `TEMPLATE_RECORD_NOT_READY`다.
+공부의 백엔드와 UI 흐름을 연결했다. 카테고리 관리 → 일정 선택 → 다섯 형식 기록 → 정의 변경·보관 → 원래 정의로 과거 수정·취소, HTTP → outbox/CDC/Kafka → APPLIED → 같은 binding의 다음 반복 회차까지 구현했다. **공부 사용자 기능은 완료했지만 작업 09 전체 완료는 아니다.** 자유 운동·클라이밍의 custom 값은 다음 사용자 흐름이다. 이 두 도메인의 기존 typed 세트·라운드는 유지하고 연결 custom 기록 경계는 아직 `TEMPLATE_RECORD_NOT_READY`다.
 
 저장·보존 범위:
 
@@ -76,8 +76,10 @@ UI API 인계 — 원본은 `contracts/openapi/activity-v1.yaml`, 생성 모델�
 - `node --test --test-name-pattern='공부 기록' scripts/template-nginx.integration.test.mjs`: 실제 proxy의 413 HTML 실패를 공통 Problem JSON으로 수정 후 1개 통과. `node --test scripts/template-contract-roundtrip.test.mjs scripts/openapi-contract.test.mjs`와 TypeScript 신규 왕복 fixture 수정 후 focused 재실행으로 4개 모두 확인. 다섯 타입·TEMPLATE/LEGACY 응답 및 입력/응답 분리 직렬화를 확인했다.
 - `pnpm run contracts:check`, `pnpm run build:packages`, `pnpm run build:web` 통과. 생성 Java는 실제 HTTP/서비스에서 사용하며 TypeScript 생성기는 왕복 테스트를 통과했다.
 - 긴 소수 원문 보존 추가 fixture는 SQL `history.legacyStudyPayload.values = study_detail.values_json` 비교에서 RED였다. 최소 읽기 수정 뒤 `./gradlew.bat :services:activity-service:test --tests '*StudyTemplateRecordHttpTest.migrationAndLegacyCorrectionPreserveArbitraryJsonAndHistory' --tests '*StudyTemplateRecordHttpTest.fiveTypesRoundTripWithOriginalDefinitionAfterEditArchiveCorrectionAndVoid' :services:activity-service:assemble --no-daemon --no-configuration-cache`로 영향 HTTP 2개와 activity assemble 최종 통과를 확인했다.
+- UI는 `study-template-ui.test.tsx`와 영향 `recurrence.test.tsx`의 최종 집중 8/8, 앞선 관리·기록·기존 도메인 영향 묶음 14/14, `pnpm --filter @todorok/web build`를 통과했다. 실제 브라우저에서 관리 저장 전후 등록 0개 유지 → 다섯 형식 카테고리 선택 반복 일정 → 일부 항목과 NUMBER 0/CHECK false 저장 → APPLIED → 이름·단위·순서 변경 → 과거 snapshot 이름·단위 유지 수정 → 보관 후 새 선택 제외 → 기존 다음 회차 기록과 390px/44px를 확인했다. 후속 짧은 브라우저 왕복에서 QuickAdd 제목·선택을 유지한 채 카테고리를 생성하고 돌아오는 흐름도 확인했다.
+- UI 중요 검토에서 QuickAdd의 관리 왕복 진입점 누락과 관리 중 선택 항목이 사라질 때 stale selection이 남는 경계를 발견했다. 폼을 mount한 채 관리 화면을 열고 활성 목록 갱신 시 사라진 선택만 해제하도록 보완했으며, 일정 제목·날짜·반복 초안은 유지한다. 다른 중요 결함은 발견하지 않았고 비차단 목록 전체 pagination 개선은 후속 정리로 남긴다.
 
-남은 기능은 공부 UI 전체 연결·실제 브라우저 E2E, 이후 자유 운동·클라이밍 custom 관계형 값 저장/수정 및 UI, 그리고 원래 작업10–16이다. 숫자 정밀도가 중요한 legacy 원문을 브라우저에서 편집 가능한 새 입력으로 변환하지 않는다. 비차단 구조 정리(기존 미사용 detail read helper 등)는 이번 범위에 넣지 않았다.
+남은 기능은 자유 운동·클라이밍 custom 관계형 값 저장/수정 및 UI, 그리고 원래 작업10–16이다. 숫자 정밀도가 중요한 legacy 원문은 정확한 raw JSON 구간을 읽기 전용으로 표시하며 편집 가능한 새 입력으로 변환하지 않는다. 비차단 구조 정리(템플릿 목록 전체 pagination, 기존 미사용 detail read helper 등)는 이번 범위에 넣지 않았다.
 
 ### 실행 규칙 (2026-09-08)
 

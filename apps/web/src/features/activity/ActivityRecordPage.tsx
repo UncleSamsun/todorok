@@ -121,12 +121,14 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
   if (!baseline) return <p role="status">기록 상세를 불러오는 중…</p>
   if (baseline.activityType !== type) return <p role="alert">이 유형의 기록이 아닙니다.</p>
   const voided = baseline.status === 'VOIDED', locked = busy || mode !== 'ready'
-  return <section className="record-page"><header className="record-heading"><button aria-label="기록 목록" onClick={() => navigate(`/${type.toLowerCase()}`)}>‹</button><h1>{voided ? '취소된 기록' : '기록 수정'}</h1></header>
+  const template = baseline.templateSnapshot
+  return <section className="record-page"><header className="record-heading"><button aria-label="기록 목록" onClick={() => navigate(`/${type.toLowerCase()}`)}>‹</button><h1>{template?.name ?? (voided ? '취소된 기록' : '기록 수정')}</h1></header>
     <SyncStatus value={record.data ?? baseline} checking={busy || record.isFetching} check={() => void check()} />
     {record.isError && <p role="alert">상태를 불러오지 못했습니다. <button onClick={() => void check()}>상태 다시 확인</button></p>}
+    {baseline.detailFormat === activity.DetailFormat.Legacy && baseline.legacyStudyPayloadRaw && <section className="legacy-study"><h2>기존 공부 자료</h2><p>검증되지 않은 이전 형식의 원문이며 읽기 전용입니다.</p><pre>{baseline.legacyStudyPayloadRaw}</pre></section>}
     {voided ? <p>이 기록은 취소되었으며 이력은 보존됩니다.</p> : <form onSubmit={(event) => { event.preventDefault(); save() }}><fieldset className="record-inputs" disabled={locked}>
       <label>수행일<input type="date" value={date} onChange={(event) => update({ date: event.target.value, dateDirty: true })} required /></label>
-      {type === 'WORKOUT' ? <WorkoutFields sets={workout} change={(value) => update({ workout: value })} /> : type === 'STUDY' ? <StudyFields value={study} change={(value) => update({ study: value })} /> : <ClimbingFields detail={climbing} change={(value) => update({ climbing: value })} />}
+      {type === 'WORKOUT' ? <WorkoutFields sets={workout} change={(value) => update({ workout: value })} /> : type === 'STUDY' ? <StudyFields definitions={template?.fields} value={study} change={(value) => update({ study: value })} /> : <ClimbingFields detail={climbing} change={(value) => update({ climbing: value })} />}
       <RecordTimeFields start={start} end={end} setStart={(value) => update({ start: value, startDirty: true })} setEnd={(value) => update({ end: value, endDirty: true })} />
       <label>기록 메모<textarea value={note} onChange={(event) => update({ note: event.target.value })} /></label>
     </fieldset><div className="form-actions"><button type="button" disabled={locked} onClick={() => void perform({ kind: 'void', body: { reason: '사용자 취소', version: baseline.version } })}>기록 취소</button><button disabled={locked}>{busy ? '저장 중…' : '수정 저장'}</button></div></form>}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import { planner } from '@todorok/api-client'
+import { activity, planner } from '@todorok/api-client'
 import {
   addDays,
   addMonths,
@@ -34,6 +34,7 @@ export function TodayPage() {
       calendar: new planner.CalendarApi(config),
       series: new planner.SeriesApi(config),
       notes: new planner.NoteApi(config),
+      templates: new activity.TemplateApi(new activity.Configuration({ basePath: '/api/activity/v1', fetchApi: session.fetch })),
     }
   }, [session])
   const [selected, setSelected] = useState(() => new URLSearchParams(location.search).get('date') ?? seoulToday()),
@@ -46,12 +47,16 @@ export function TodayPage() {
         return 'week'
       }
     })
-  const [adding, setAdding] = useState<planner.TaskType | null>(null),
+  const [adding, setAdding] = useState<planner.TaskType | null>(() => {
+      const value = new URLSearchParams(location.search).get('add')
+      return Object.values(planner.TaskType).includes(value as planner.TaskType) ? value as planner.TaskType : null
+    }),
     [editing, setEditing] = useState<Readonly<Task> | null>(null),
     [editingSeries, setEditingSeries] =
       useState<Readonly<planner.SeriesResponse> | null>(null),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState('')
+    [error, setError] = useState(''),
+    [addUncertain, setAddUncertain] = useState(false)
   const [today, setToday] = useState(seoulToday)
   const [rolloverEpoch, setRolloverEpoch] = useState(0)
   const [rolloverState, setRolloverState] = useState<
@@ -106,6 +111,11 @@ export function TodayPage() {
     queryFn: ({ signal }) =>
       api.calendar.getDayDetail({ date: apiDate(selected) }, { signal }),
   })
+  const studyTemplates = useQuery({
+    queryKey: ['templates', state.userId, 'STUDY', 'STUDY_CATEGORY', 'active'],
+    enabled: adding === planner.TaskType.Study,
+    queryFn: ({ signal }) => api.templates.listTemplates({ domain: activity.TemplateDomain.Study, kind: activity.TemplateKind.StudyCategory }, { signal }),
+  })
   const summaries = new Map(range.data?.days?.map((d) => [d.date, d]))
   function select(date: string) {
     if (rolloverState === 'pending') return
@@ -140,6 +150,25 @@ export function TodayPage() {
       setError(
         '저장하지 못했습니다. 연결이나 변경된 내용을 확인한 뒤 다시 시도해 주세요.',
       )
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function createSchedule(action: () => Promise<unknown>) {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await action()
+      setAdding(null)
+      setAddUncertain(false)
+      await queries.invalidateQueries({ queryKey: ['calendar'] })
+      await queries.invalidateQueries({ queryKey: ['task'] })
+    } catch (reason) {
+      const response = reason && typeof reason === 'object' && 'response' in reason ? (reason as { response: Response }).response : null
+      const confirmed = response?.status === 400 || response?.status === 422
+      setAddUncertain(!confirmed)
+      setError(confirmed ? '일정 입력을 확인해 주세요. 작성 중인 내용은 보존됩니다.' : '저장 결과를 확인하지 못했습니다. 같은 요청을 다시 보내 주세요.')
     } finally {
       setBusy(false)
     }
@@ -304,6 +333,7 @@ export function TodayPage() {
           add={(type) => {
             if (!busy && ready) {
               setAdding(type)
+              setAddUncertain(false)
               setEditing(null)
               setError('')
             }
@@ -325,13 +355,17 @@ export function TodayPage() {
             date={selected}
             type={adding}
             busy={busy}
+            uncertain={addUncertain}
             error={error}
-            cancel={() => setAdding(null)}
-            save={(title, date, repeat) =>
-              void mutate(() =>
+            templates={studyTemplates.data?.items ?? []}
+            cancel={() => { setAdding(null); setAddUncertain(false) }}
+            save={(title, date, commandId, templateSelection, repeat) =>
+              void createSchedule(() =>
                 repeat
                   ? api.series.createSeries({
                       createSeriesRequest: {
+                        commandId,
+                        templateSelection,
                         title,
                         taskType: adding,
                         startDate: date,
@@ -340,6 +374,8 @@ export function TodayPage() {
                     })
                   : api.tasks.createTask({
                       createTaskRequest: {
+                        commandId,
+                        templateSelection,
                         title,
                         taskType: adding,
                         scheduledDate: apiDate(date),

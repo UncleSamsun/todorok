@@ -1,5 +1,7 @@
-import { useState, type SubmitEvent } from 'react'
-import type { planner } from '@todorok/api-client'
+import { useEffect, useRef, useState, type SubmitEvent } from 'react'
+import type { activity, planner } from '@todorok/api-client'
+import { studyFieldSummary } from '../activity/StudyTemplateFields'
+import { StudyTemplateManager } from '../study/StudyTemplateManager'
 import {
   RecurrenceFields,
   initialRule,
@@ -9,23 +11,34 @@ export function QuickAdd({
   date,
   type,
   busy,
+  uncertain = false,
   error,
+  templates = [],
   save,
   cancel,
 }: {
   date: string
   type: planner.TaskType
   busy: boolean
+  uncertain?: boolean
   error: string
-  save: (title: string, date: string, repeat?: RepeatOptions) => void
+  templates?: activity.TemplateResponse[]
+  save: (title: string, date: string, commandId: string, templateSelection?: planner.TemplateSelection, repeat?: RepeatOptions) => void
   cancel: () => void
 }) {
   const [title, setTitle] = useState(''),
     [scheduled, setScheduled] = useState(date)
   const [frequency, setFrequency] = useState('NONE')
+  const [templateId, setTemplateId] = useState('')
+  const [managingTemplates, setManagingTemplates] = useState(false)
+  const commandId = useRef(crypto.randomUUID())
   const [repeat, setRepeat] = useState<RepeatOptions>({
     rule: initialRule(date),
   })
+  const selectedTemplate = templates.find((template) => template.templateId === templateId)
+  useEffect(() => {
+    if (templateId && !selectedTemplate) setTemplateId('')
+  }, [templateId, selectedTemplate])
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (
@@ -33,10 +46,15 @@ export function QuickAdd({
       !busy &&
       (frequency !== 'WEEKLY' || repeat.rule.weekdays.size)
     )
-      save(title.trim(), scheduled, frequency === 'NONE' ? undefined : repeat)
+      save(title.trim(), scheduled, commandId.current, type === 'STUDY' && selectedTemplate ? {
+        templateId: selectedTemplate.templateId,
+        expectedTemplateVersion: selectedTemplate.currentVersion.templateVersion,
+      } : undefined, frequency === 'NONE' ? undefined : repeat)
   }
-  return (
-    <form className="task-form" onSubmit={submit}>
+  return (<>
+    <form className="task-form" hidden={managingTemplates} onSubmit={submit}>
+      <fieldset disabled={busy || uncertain}>
+      {type === 'STUDY' && <><label htmlFor="study-template">공부 카테고리</label><select id="study-template" required value={templateId} onChange={(event) => setTemplateId(event.target.value)}><option value="">선택해 주세요</option>{templates.filter((template) => !template.archived).map((template) => <option key={template.templateId} value={template.templateId}>{template.currentVersion.name}</option>)}</select><button type="button" onClick={() => setManagingTemplates(true)}>카테고리 관리</button>{selectedTemplate && <ul className="template-preview">{selectedTemplate.currentVersion.fields.map((field) => <li key={field.fieldId}>{studyFieldSummary(field)}</li>)}</ul>}</>}
       <label htmlFor="task-title">제목</label>
       <input
         autoFocus
@@ -91,15 +109,17 @@ export function QuickAdd({
       {type !== 'GENERAL' && (
         <p>완료 체크를 누르면 해당 기록 화면으로 이동합니다.</p>
       )}
+      </fieldset>
       {error && <p role="alert">{error}</p>}
       <div className="form-actions">
-        <button type="submit" disabled={busy || !title.trim()}>
-          {busy ? '저장 중…' : '저장'}
+        <button type="submit" disabled={busy || !title.trim() || (type === 'STUDY' && !selectedTemplate)}>
+          {busy ? '저장 중…' : uncertain ? '같은 요청 다시 보내기' : '저장'}
         </button>
         <button type="button" disabled={busy} onClick={cancel}>
           취소
         </button>
       </div>
     </form>
-  )
+    {managingTemplates && <StudyTemplateManager close={() => setManagingTemplates(false)} />}
+  </>)
 }

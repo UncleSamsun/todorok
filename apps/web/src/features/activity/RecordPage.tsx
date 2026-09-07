@@ -22,8 +22,10 @@ export function RecordPage({ type }: { type: RecordType }) {
   const apis = useMemo(() => ({
     tasks: new planner.TaskApi(new planner.Configuration({ basePath: '/api/planner/v1', fetchApi: session.fetch })),
     activities: new activity.ActivityApi(new activity.Configuration({ basePath: '/api/activity/v1', fetchApi: session.fetch })),
+    templates: new activity.TemplateApi(new activity.Configuration({ basePath: '/api/activity/v1', fetchApi: session.fetch })),
   }), [session])
   const task = useQuery({ queryKey: ['task', taskId], enabled: Boolean(taskId), queryFn: ({ signal }) => apis.tasks.getTask({ taskId }, { signal }) })
+  const recordTemplate = useQuery({ queryKey: ['record-template', state.userId, taskId], enabled: Boolean(taskId) && type === 'STUDY', staleTime: 0, queryFn: ({ signal }) => apis.templates.getTaskRecordTemplate({ taskId }, { signal }) })
   const { draft, update, clear } = useRecordDraft(`${type}:${taskId}`)
   const { date, note, workout, study, climbing, start, end, snapshot, uncertain, blocked, error } = draft
   const [saved, setSaved] = useState<activity.ActivityResponse | null>(null), [busy, setBusy] = useState(false)
@@ -37,7 +39,9 @@ export function RecordPage({ type }: { type: RecordType }) {
     const startedAt = toDate(performedDate, start), endedAt = toDate(performedDate, end)
     if (Boolean(startedAt) !== Boolean(endedAt)) throw new Error('시작과 종료 시간을 모두 선택해 주세요.')
     if (startedAt && endedAt && endedAt <= startedAt) throw new Error('종료 시간은 시작 시간보다 늦어야 합니다.')
-    return { commandId: crypto.randomUUID(), taskId, activityType: activity.ActivityType[type[0] + type.slice(1).toLowerCase() as 'Workout' | 'Study' | 'Climbing'], completionStatus: activity.ActivityCompletionStatus.Completed, performedAt: midnightSeoul(performedDate), ...(startedAt && endedAt ? { startedAt, endedAt } : {}), ...(note.trim() ? { note: note.trim() } : {}), detail: type === 'WORKOUT' ? { workout: workout.length ? { sets: workout } : {} } : type === 'STUDY' ? { study } : { climbing } }
+    const currentTemplate = recordTemplate.data?.linked ? recordTemplate.data.template?.currentVersion : undefined
+    const studyDetail = currentTemplate ? { ...study, fields: (study.fields ?? []).filter((input) => currentTemplate.fields.some((field) => field.fieldId === input.fieldId && field.type === input.type)) } : study
+    return { commandId: crypto.randomUUID(), taskId, activityType: activity.ActivityType[type[0] + type.slice(1).toLowerCase() as 'Workout' | 'Study' | 'Climbing'], completionStatus: activity.ActivityCompletionStatus.Completed, performedAt: midnightSeoul(performedDate), ...(currentTemplate ? { expectedTemplateVersion: currentTemplate.templateVersion } : {}), ...(startedAt && endedAt ? { startedAt, endedAt } : {}), ...(note.trim() ? { note: note.trim() } : {}), detail: type === 'WORKOUT' ? { workout: workout.length ? { sets: workout } : {} } : type === 'STUDY' ? { study: studyDetail } : { climbing } }
   }
   async function submit(retry = false) {
     if (busy || blocked) return
@@ -63,7 +67,10 @@ export function RecordPage({ type }: { type: RecordType }) {
       const code = problem?.code
       if (response && (response.status === 400 || response.status === 422) && problem?.retryable !== true && code && ['VALIDATION_FAILED', 'MALFORMED_JSON', 'INVALID_INTERVAL', 'INVALID_DETAIL_ITEM', 'DETAIL_TYPE_MISMATCH'].includes(code)) {
         update({ snapshot: null, uncertain: false, blocked: false, error: `기록을 저장하지 못했습니다. 입력을 수정해 주세요. (${code})` })
-      } else if (response?.status === 409 && code === 'TASK_REFERENCE_PENDING' && problem?.retryable === true) {
+      } else if (response?.status === 409 && code === 'TEMPLATE_VERSION_CONFLICT') {
+        update({ snapshot: null, uncertain: false, blocked: false, error: '카테고리 정의가 변경되었습니다. 입력은 보존했으며 최신 항목을 다시 불러왔습니다.' })
+        await recordTemplate.refetch()
+      } else if (response?.status === 409 && (code === 'TASK_REFERENCE_PENDING' || code === 'TASK_NOT_READY') && problem?.retryable === true) {
         update({ uncertain: true, blocked: false, error: '할 일 정보가 기록 서비스에 반영되는 중입니다. 잠시 뒤 같은 요청으로 다시 확인해 주세요. (TASK_REFERENCE_PENDING)' })
       } else if (response?.status === 409 && problem?.retryable === false) {
         update({ uncertain: true, blocked: true, error: `충돌로 저장이 거절되었습니다. 오늘 화면에서 할 일 상태를 확인해 주세요. (${code ?? 'CONFLICT'})` })
@@ -86,15 +93,19 @@ export function RecordPage({ type }: { type: RecordType }) {
   if (!taskId) return <p role="alert">기록할 할 일을 선택해 주세요.</p>
   if (task.isPending) return <p role="status">할 일을 불러오는 중…</p>
   if (task.isError || task.data.taskType !== type) return <p role="alert">이 기록 화면에 맞는 할 일을 불러오지 못했습니다.</p>
+  if (type === 'STUDY' && recordTemplate.isPending) return <p role="status">공부 카테고리를 불러오는 중…</p>
+  if (type === 'STUDY' && recordTemplate.isError) return <p role="alert">공부 카테고리가 일정에 반영되는 중이거나 불러오지 못했습니다. <button onClick={() => void recordTemplate.refetch()}>다시 불러오기</button></p>
+  if (type === 'STUDY' && recordTemplate.data?.linked && !recordTemplate.data.template) return <p role="alert">공부 카테고리 정보를 확인하지 못했습니다.</p>
   if (task.data.status === 'COMPLETED' && !snapshot && !saved) return <CompletedTaskRecord taskId={taskId} type={type} />
-  return <section className="record-page"><header className="record-heading"><button type="button" aria-label="기록 취소" onClick={leave}>‹</button><div><h1>{titles[type]}</h1><p>{task.data.title}</p></div></header>
+  const currentTemplate = recordTemplate.data?.linked ? recordTemplate.data.template?.currentVersion : undefined
+  return <section className="record-page"><header className="record-heading"><button type="button" aria-label="기록 취소" onClick={leave}>‹</button><div><h1>{currentTemplate ? `${currentTemplate.name} 기록` : titles[type]}</h1><p>{task.data.title}</p></div></header>
     {saved ? <SyncStatus value={saved} checking={busy} check={() => void check()}/> : <form onSubmit={(e) => { e.preventDefault(); void submit(Boolean(snapshot)) }}>
       <fieldset className="record-inputs" disabled={busy || uncertain}>
       <label>수행일<input type="date" value={performedDate} onChange={(e) => update({ date: e.target.value, snapshot: null })} required/></label>
       {type === 'WORKOUT' ? (
         <WorkoutFields sets={workout} change={(v) => update({ workout: v, snapshot: null })}/>
       ) : type === 'STUDY' ? (
-        <StudyFields value={study} change={(v) => update({ study: v, snapshot: null })}/>
+        <StudyFields definitions={currentTemplate?.fields} value={study} change={(v) => update({ study: v, snapshot: null })}/>
       ) : (
         <ClimbingFields detail={climbing} change={(v) => update({ climbing: v, snapshot: null })}/>
       )}

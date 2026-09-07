@@ -1,14 +1,38 @@
 import { ActivityApi, ActivityResponse, CorrectActivityRequest, CorrectActivityRequestFromJSON, ActivityResponseFromJSON } from './generated/activity/src'
 
 export type ActivityTimestamps = { performedAt: string; startedAt?: string; endedAt?: string }
-export type EditableActivity = ActivityResponse & { timestamps?: ActivityTimestamps }
+export type EditableActivity = ActivityResponse & { timestamps?: ActivityTimestamps; legacyStudyPayloadRaw?: string }
 export type ActivityCorrection = ActivityTimestamps & { expectedVersion: number; note?: string; detail: CorrectActivityRequest['detail'] }
 
 // Generated Date fields truncate precision beyond milliseconds. Keep the original
 // wire timestamps alongside the typed model at the API boundary for round trips.
+function rawJsonProperty(source: string, property: string) {
+  const match = new RegExp(`"${property}"\\s*:`).exec(source)
+  if (!match) return undefined
+  let start = match.index + match[0].length
+  while (/\s/.test(source[start] ?? '')) start++
+  if (source[start] !== '{' && source[start] !== '[') return undefined
+  let depth = 0, quoted = false, escaped = false
+  for (let index = start; index < source.length; index++) {
+    const char = source[index]!
+    if (quoted) {
+      if (escaped) escaped = false
+      else if (char === '\\') escaped = true
+      else if (char === '"') quoted = false
+      continue
+    }
+    if (char === '"') quoted = true
+    else if (char === '{' || char === '[') depth++
+    else if (char === '}' || char === ']') {
+      depth--
+      if (depth === 0) return source.slice(start, index + 1)
+    }
+  }
+  return undefined
+}
 async function editable(raw: Response): Promise<EditableActivity> {
-  const json = await raw.json()
-  return { ...ActivityResponseFromJSON(json), timestamps: { performedAt: json.performedAt, startedAt: json.startedAt ?? undefined, endedAt: json.endedAt ?? undefined } }
+  const text = await raw.text(), json = JSON.parse(text)
+  return { ...ActivityResponseFromJSON(json), timestamps: { performedAt: json.performedAt, startedAt: json.startedAt ?? undefined, endedAt: json.endedAt ?? undefined }, legacyStudyPayloadRaw: rawJsonProperty(text, 'legacyStudyPayload') }
 }
 export async function getEditableActivity(api: ActivityApi, activityId: string, signal?: AbortSignal) {
   return editable((await api.getActivityRaw({ activityId }, { signal })).raw)

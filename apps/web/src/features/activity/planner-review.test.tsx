@@ -40,6 +40,7 @@ it.each(['today', 'past'])('opens the exact completed activity beyond the first 
 it('refreshes visited registration totals after planner creation and deletion', async () => {
   let exists = false
   const task = { taskId: 'new-task', title: '등록 확인', userId: 'owner', taskType: 'STUDY', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0 }
+  const category = { templateId: '10000000-0000-0000-0000-000000000001', domain: 'STUDY', kind: 'STUDY_CATEGORY', archived: false, revision: 0, currentVersion: { templateId: '10000000-0000-0000-0000-000000000001', templateVersion: 1, name: '기본 공부', fields: [] } }
   const session = new SessionClient({ fetcher: async (url, init) => {
     const path = String(url)
     if (path.endsWith('/refresh')) return Response.json({ accessToken: 'token', userId: 'owner', expiresAt: '2099-01-01T00:00:00Z' })
@@ -50,6 +51,7 @@ it('refreshes visited registration totals after planner creation and deletion', 
     if (path.includes('/tasks/new-task')) { if (init?.method === 'DELETE') exists = false; return Response.json(task) }
     if (path.includes('/activities/summary')) return Response.json({ month: '2026-09', activityType: 'STUDY', completedCount: 0, durationSeconds: 0 })
     if (path.includes('/activities?')) return Response.json({ items: [] })
+    if (path.includes('/templates?')) return Response.json({ items: [category] })
     return Response.json({}, { status: 404 })
   } })
   await act(async () => { render(<App session={session} />) })
@@ -57,6 +59,8 @@ it('refreshes visited registration totals after planner creation and deletion', 
   expect(await screen.findByText('0개')).toBeVisible()
   fireEvent.click(screen.getByRole('link', { name: '오늘' }))
   fireEvent.click(await screen.findByRole('button', { name: '공부 추가' }))
+  await screen.findByRole('option', { name: '기본 공부' })
+  fireEvent.change(screen.getByLabelText('공부 카테고리'), { target: { value: category.templateId } })
   fireEvent.change(screen.getByLabelText('제목'), { target: { value: '등록 확인' } })
   fireEvent.click(screen.getByRole('button', { name: '저장' }))
   await screen.findByRole('button', { name: '등록 확인 기록' })
