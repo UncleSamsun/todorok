@@ -8,7 +8,7 @@ Name | Type
 ------------ | -------------
 `title` | string
 `taskType` | [TaskType](TaskType.md)
-`scheduledDate` | Date
+`scheduledDate` | string
 
 ## Example
 

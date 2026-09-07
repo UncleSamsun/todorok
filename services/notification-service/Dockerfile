@@ -1,8 +1,10 @@
+# syntax=docker/dockerfile:1.7
 FROM eclipse-temurin:25-jdk-noble AS builder
 WORKDIR /workspace
 COPY . .
-RUN chmod +x gradlew \
-    && ./gradlew :services:notification-service:bootJar :services:notification-service:migrationBootJar --no-daemon --max-workers=1 \
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
+    chmod +x gradlew \
+    && ./gradlew :services:notification-service:bootJar :services:notification-service:migrationBootJar --no-daemon --no-configuration-cache --max-workers=1 \
     && cp services/notification-service/build/libs/*-migration.jar /tmp/migration.jar \
     && find services/notification-service/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-migration.jar' -exec cp {} /tmp/app.jar \;
 

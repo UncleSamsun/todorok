@@ -52,6 +52,27 @@ services:
       retries: 20
     mem_limit: 512m
 
+  postgres-provision:
+    image: postgres:17.11-alpine
+    restart: "no"
+    entrypoint: ["bash", "/provision/001-create-service-roles.sh"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PLANNER_DB_PASSWORD: ${PLANNER_DB_PASSWORD}
+      ACTIVITY_DB_PASSWORD: ${ACTIVITY_DB_PASSWORD}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      DEBEZIUM_DB_PASSWORD: ${DEBEZIUM_DB_PASSWORD}
+      DATABASE_CREDENTIAL_UPDATE: ${DATABASE_CREDENTIAL_UPDATE:-false}
+    volumes:
+      - ./postgres/init:/provision:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: 128m
+
   kafka:
     image: apache/kafka:4.3.1
     restart: unless-stopped
@@ -84,11 +105,14 @@ services:
     image: apache/kafka:4.3.1
     restart: "no"
     entrypoint: ["bash", "/kafka-init/initialize-topics.sh"]
+    environment:
+      KAFKA_HEAP_OPTS: -Xms64m -Xmx128m
     volumes:
       - ./kafka:/kafka-init:ro
     depends_on:
       kafka:
         condition: service_healthy
+    mem_limit: 256m
 
   planner-migration:
     <<: *planner-image
@@ -98,9 +122,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=planner
       SPRING_DATASOURCE_USERNAME: planner_app
       SPRING_DATASOURCE_PASSWORD: ${PLANNER_DB_PASSWORD}
+      JAVA_TOOL_OPTIONS: -XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=60
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres-provision:
+        condition: service_completed_successfully
+    mem_limit: 384m
 
   activity-migration:
     <<: *activity-image
@@ -110,9 +136,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=activity
       SPRING_DATASOURCE_USERNAME: activity_app
       SPRING_DATASOURCE_PASSWORD: ${ACTIVITY_DB_PASSWORD}
+      JAVA_TOOL_OPTIONS: -XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=60
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres-provision:
+        condition: service_completed_successfully
+    mem_limit: 448m
 
   notification-migration:
     <<: *notification-image
@@ -122,9 +150,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=notification
       SPRING_DATASOURCE_USERNAME: notification_app
       SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      JAVA_TOOL_OPTIONS: -XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=60
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres-provision:
+        condition: service_completed_successfully
+    mem_limit: 320m
 
   replication-init:
     image: postgres:17.11-alpine
@@ -144,6 +174,7 @@ services:
         condition: service_completed_successfully
       activity-migration:
         condition: service_completed_successfully
+    mem_limit: 128m
 
   connect:
     image: quay.io/debezium/connect:3.6.2.Final
@@ -160,7 +191,7 @@ services:
       KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
-      KAFKA_HEAP_OPTS: -Xms512m -Xmx512m
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx384m
     ports:
       - "127.0.0.1:8084:8083"
     depends_on:
@@ -177,6 +208,7 @@ services:
     mem_limit: 768m
 
   connect-init:
+    image: todorok/connect-init:local
     build:
       context: ./connect
       dockerfile: Dockerfile
@@ -189,6 +221,7 @@ services:
     depends_on:
       connect:
         condition: service_healthy
+    mem_limit: 64m
 
   planner-service:
     <<: *planner-image
@@ -281,6 +314,7 @@ services:
     mem_limit: 384m
 
   nginx:
+    image: todorok/nginx:local
     build:
       context: ../..
       dockerfile: infra/nginx/Dockerfile

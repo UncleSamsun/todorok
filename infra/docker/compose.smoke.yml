@@ -1,0 +1,29 @@
+services:
+  postgres:
+    ports: !reset []
+  planner-service:
+    build:
+      network: host
+  planner-migration:
+    build:
+      network: host
+  activity-service:
+    build:
+      network: host
+  activity-migration:
+    build:
+      network: host
+  notification-service:
+    build:
+      network: host
+  notification-migration:
+    build:
+      network: host
+  kafka:
+    ports: !reset []
+  connect:
+    ports: !reset []
+  nginx:
+    ports: !reset []
+    build:
+      network: host

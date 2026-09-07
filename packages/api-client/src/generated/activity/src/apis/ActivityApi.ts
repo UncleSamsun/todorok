@@ -48,7 +48,7 @@ export interface GetActivityRequest {
 }
 
 export interface ListActivitiesRequest {
-    date?: Date;
+    date?: string;
     cursor?: string;
     limit?: number;
 }
@@ -109,7 +109,7 @@ export interface ActivityApiInterface {
 
     /**
      * Creates request options for listActivities without sending the request
-     * @param {Date} [date]
+     * @param {string} [date]
      * @param {string} [cursor]
      * @param {number} [limit]
      * @throws {RequiredError}
@@ -119,7 +119,7 @@ export interface ActivityApiInterface {
 
     /**
      *
-     * @param {Date} [date]
+     * @param {string} [date]
      * @param {string} [cursor]
      * @param {number} [limit]
      * @param {*} [options] Override http request option.
@@ -179,6 +179,14 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/activities`;
 
@@ -222,6 +230,14 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/activities/{activityId}`;
         urlPath = urlPath.replace('{activityId}', encodeURIComponent(String(requestParameters['activityId'])));
@@ -257,7 +273,7 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
         const queryParameters: any = {};
 
         if (requestParameters['date'] != null) {
-            queryParameters['date'] = (requestParameters['date'] as any).toISOString().substring(0,10);
+            queryParameters['date'] = requestParameters['date'];
         }
 
         if (requestParameters['cursor'] != null) {
@@ -270,6 +286,14 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/activities`;
 
@@ -321,6 +345,14 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/activities/{activityId}/void`;
         urlPath = urlPath.replace('{activityId}', encodeURIComponent(String(requestParameters['activityId'])));

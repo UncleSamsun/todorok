@@ -214,6 +214,14 @@ export class TaskApi extends runtime.BaseAPI implements TaskApiInterface {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/tasks/{taskId}/complete`;
         urlPath = urlPath.replace('{taskId}', encodeURIComponent(String(requestParameters['taskId'])));
@@ -260,6 +268,14 @@ export class TaskApi extends runtime.BaseAPI implements TaskApiInterface {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/tasks`;
 
@@ -314,6 +330,14 @@ export class TaskApi extends runtime.BaseAPI implements TaskApiInterface {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/tasks/{taskId}`;
         urlPath = urlPath.replace('{taskId}', encodeURIComponent(String(requestParameters['taskId'])));
@@ -365,6 +389,14 @@ export class TaskApi extends runtime.BaseAPI implements TaskApiInterface {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/tasks/{taskId}/reopen`;
         urlPath = urlPath.replace('{taskId}', encodeURIComponent(String(requestParameters['taskId'])));
@@ -418,6 +450,14 @@ export class TaskApi extends runtime.BaseAPI implements TaskApiInterface {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/tasks/{taskId}`;
         urlPath = urlPath.replace('{taskId}', encodeURIComponent(String(requestParameters['taskId'])));

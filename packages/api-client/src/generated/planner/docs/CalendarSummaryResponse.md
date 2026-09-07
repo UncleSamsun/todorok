@@ -6,8 +6,8 @@
 
 Name | Type
 ------------ | -------------
-`from` | Date
-`to` | Date
+`from` | string
+`to` | string
 `days` | [Array&lt;CalendarDaySummary&gt;](CalendarDaySummary.md)
 
 ## Example

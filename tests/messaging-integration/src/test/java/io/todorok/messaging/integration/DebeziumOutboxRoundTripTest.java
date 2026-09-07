@@ -73,7 +73,7 @@ class DebeziumOutboxRoundTripTest {
     }
 
     @Test
-    void publishesEventInsertedWhileConnectIsStopped() throws Exception {
+    void publishesEventInsertedWhileConnectIsPaused() throws Exception {
         var eventId = UUID.fromString("00000000-0000-0000-0000-000000000421");
         var envelope = withEventId(
                 fixtureJson("fixtures/events/task-changed/v1-valid.json"), eventId);
@@ -85,6 +85,22 @@ class DebeziumOutboxRoundTripTest {
         fixture.startConnect();
 
         assertThat(fixture.consume("todorok.task.v1", eventId, Duration.ofSeconds(30)).value())
+                .isEqualTo(envelope);
+    }
+
+    @Test
+    void publishesEventAfterConnectWorkerIsReplaced() throws Exception {
+        var eventId = UUID.fromString("00000000-0000-0000-0000-000000000424");
+        var envelope = withEventId(
+                fixtureJson("fixtures/events/task-changed/v1-valid.json"), eventId);
+
+        fixture.stopConnectWorker();
+        fixture.insertOutbox(
+                "planner", eventId, "task", "task-worker-recovery",
+                "TASK_CHANGED", MAPPER.writeValueAsString(envelope));
+        fixture.startReplacementConnectWorker();
+
+        assertThat(fixture.consume("todorok.task.v1", eventId, Duration.ofSeconds(45)).value())
                 .isEqualTo(envelope);
     }
 
@@ -112,14 +128,17 @@ class DebeziumOutboxRoundTripTest {
                 fixtureJson("fixtures/events/task-changed/v1-valid.json"), eventId);
 
         fixture.stopConnector();
-        fixture.recreateReplicationSlot();
+        fixture.dropReplicationSlot();
         fixture.insertOutbox(
                 "planner", eventId, "task", "task-slot-recovery",
                 "TASK_CHANGED", MAPPER.writeValueAsString(envelope));
+        fixture.createReplicationSlot();
         fixture.startConnector();
 
         assertThat(fixture.consume("todorok.task.v1", eventId, Duration.ofSeconds(45)).value())
                 .isEqualTo(envelope);
+        assertThat(fixture.claimEventTwice("activity", eventId, "TASK_CHANGED"))
+                .containsExactly(true, false);
     }
 
     private JsonNode fixtureJson(String path) throws Exception {

@@ -29,16 +29,16 @@ import {
 export interface CalendarSummaryResponse {
     /**
      *
-     * @type {Date}
+     * @type {string}
      * @memberof CalendarSummaryResponse
      */
-    from: Date;
+    from: string;
     /**
      *
-     * @type {Date}
+     * @type {string}
      * @memberof CalendarSummaryResponse
      */
-    to: Date;
+    to: string;
     /**
      *
      * @type {Array<CalendarDaySummary>}
@@ -67,8 +67,8 @@ export function CalendarSummaryResponseFromJSONTyped(json: any, ignoreDiscrimina
     }
     return {
 
-        'from': (new Date(json['from'])),
-        'to': (new Date(json['to'])),
+        'from': json['from'],
+        'to': json['to'],
         'days': ((json['days'] as Array<any>).map(CalendarDaySummaryFromJSON)),
     };
 }
@@ -84,8 +84,8 @@ export function CalendarSummaryResponseToJSONTyped(value?: CalendarSummaryRespon
 
     return {
 
-        'from': value['from'].toISOString().substring(0,10),
-        'to': value['to'].toISOString().substring(0,10),
+        'from': value['from'],
+        'to': value['to'],
         'days': ((value['days'] as Array<any>).map(CalendarDaySummaryToJSON)),
     };
 }

@@ -6,7 +6,7 @@
 
 Name | Type
 ------------ | -------------
-`date` | Date
+`date` | string
 `totalCount` | number
 `completedCount` | number
 `categoryProgress` | [Array&lt;CategoryProgress&gt;](CategoryProgress.md)

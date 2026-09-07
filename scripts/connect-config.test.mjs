@@ -16,7 +16,7 @@ test('Connect와 topic 초기화 순서가 고정된다', () => {
   const services = composeServices()
   assert.equal(services.connect.image, 'quay.io/debezium/connect:3.6.2.Final')
   assert.equal(services.connect.mem_limit, '805306368')
-  assert.match(services.connect.environment.KAFKA_HEAP_OPTS, /-Xmx512m/)
+  assert.match(services.connect.environment.KAFKA_HEAP_OPTS, /-Xmx384m/)
   assert.equal(
     services.connect.depends_on['kafka-init'].condition,
     'service_completed_successfully',

@@ -29,10 +29,10 @@ import {
 export interface DayDetailResponse {
     /**
      *
-     * @type {Date}
+     * @type {string}
      * @memberof DayDetailResponse
      */
-    date: Date;
+    date: string;
     /**
      *
      * @type {Array<TaskResponse>}
@@ -60,7 +60,7 @@ export function DayDetailResponseFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
 
-        'date': (new Date(json['date'])),
+        'date': json['date'],
         'tasks': ((json['tasks'] as Array<any>).map(TaskResponseFromJSON)),
     };
 }
@@ -76,7 +76,7 @@ export function DayDetailResponseToJSONTyped(value?: DayDetailResponse | null, i
 
     return {
 
-        'date': value['date'].toISOString().substring(0,10),
+        'date': value['date'],
         'tasks': ((value['tasks'] as Array<any>).map(TaskResponseToJSON)),
     };
 }

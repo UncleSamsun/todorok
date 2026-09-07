@@ -3,6 +3,13 @@ set -euo pipefail
 
 connect_url="${CONNECT_URL:-http://connect:8083}"
 connector_name=todorok-postgres-outbox
+curl_retry=(
+  --retry 5
+  --retry-all-errors
+  --retry-delay 1
+  --connect-timeout 5
+  --max-time 30
+)
 rendered_request="$(mktemp)"
 current_config="$(mktemp)"
 rendered_config="$(mktemp)"
@@ -18,15 +25,16 @@ jq --arg database "$POSTGRES_DB" --arg password "$DEBEZIUM_DB_PASSWORD" \
   /connect/connector-template.json > "$rendered_request"
 jq '.config' "$rendered_request" > "$rendered_config"
 
-http_code="$(curl --silent --show-error \
+http_code="$(curl "${curl_retry[@]}" --silent --show-error \
   --output "$current_config" --write-out '%{http_code}' \
   "$connect_url/connectors/$connector_name/config")"
 
 if [[ "$http_code" == "404" ]]; then
-  curl --fail --silent --show-error \
+  curl "${curl_retry[@]}" --fail --silent --show-error \
+    --request PUT \
     --header 'Content-Type: application/json' \
-    --data-binary "@$rendered_request" \
-    "$connect_url/connectors" >/dev/null
+    --data-binary "@$rendered_config" \
+    "$connect_url/connectors/$connector_name/config" >/dev/null
   exit 0
 fi
 
@@ -52,7 +60,7 @@ if [[ "$config_mismatch" == "true" && "$connector_config_update" != "true" ]]; t
 fi
 
 if [[ "$connector_config_update" == "true" ]]; then
-  curl --fail --silent --show-error \
+  curl "${curl_retry[@]}" --fail --silent --show-error \
     --request PUT \
     --header 'Content-Type: application/json' \
     --data-binary "@$rendered_config" \

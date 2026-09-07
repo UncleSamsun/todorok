@@ -7,7 +7,7 @@
 Name | Type
 ------------ | -------------
 `title` | string
-`scheduledDate` | Date
+`scheduledDate` | string
 `version` | number
 
 ## Example

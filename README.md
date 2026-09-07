@@ -19,7 +19,7 @@ GitHub: https://github.com/UncleSamsun/todorok
 - Persistence: Spring Data JPA·Flyway
 - 이벤트 전달: Kafka Connect·Debezium outbox와 consumer inbox
 - 배포: AWS Lightsail 4GB + Docker Compose + Nginx
-- 상태: PRD 1.4.1, 디자인 시스템 1.2.18과 전체 MVP 구현 계획 승인 완료
+- 상태: PRD 1.4.2, 디자인 시스템 1.2.19와 전체 MVP 구현 계획 승인 완료
 
 ## 개발 원칙
 
@@ -46,8 +46,13 @@ GitHub: https://github.com/UncleSamsun/todorok
 
 ## 메시징 운영 점검
 
-- `node scripts/messaging-health.mjs`는 Connect와 task 상태, replication slot·WAL, topic 보존 설정, consumer lag, outbox·inbox 적체를 JSON으로 출력합니다. 기본 Compose 환경 파일은 `.env`이며 다른 파일은 `MESSAGING_ENV_FILE`로 지정합니다.
+- `node scripts/messaging-health.mjs`는 Connect와 task 상태, replication slot·WAL, topic 보존 설정, consumer lag, outbox·inbox 건수와 가장 오래된 record 나이를 JSON으로 출력합니다. 수치나 출력 형식을 읽을 수 없으면 정상으로 간주하지 않고 exit code 1로 끝납니다. 기본 Compose 환경 파일은 `.env`이며 다른 파일은 `MESSAGING_ENV_FILE`로 지정합니다.
 - outbox·inbox는 자동 삭제하지 않습니다. `infra/docker/postgres/maintenance/inspect-messaging-retention.sql`은 schema별 건수와 가장 오래된 record만 조회합니다. CDC snapshot과 dead-letter 재처리 범위를 증명하는 watermark를 도입하기 전에는 데이터를 지우지 않습니다.
 - 기존 connector 설정이나 비밀번호를 재적용할 때만 `CONNECTOR_CONFIG_UPDATE=true`로 `connect-init`을 한 번 실행합니다. 플래그가 없으면 connector 설정 drift를 보고하고 변경하지 않습니다.
+- `postgres-provision`은 새 DB와 기존 volume 모두에서 역할·schema·최소 권한을 idempotent하게 조정합니다. 기존 비밀번호는 기본적으로 바꾸지 않습니다.
+- DB 비밀번호를 회전할 때는 `.env`의 새 값을 저장하고 `DATABASE_CREDENTIAL_UPDATE=true`와 `CONNECTOR_CONFIG_UPDATE=true`를 함께 설정한 상태에서 Compose를 기동합니다. provision과 connector 갱신이 모두 성공한 뒤 두 플래그를 `false`로 되돌립니다. connector 갱신만 실패했다면 DB 비밀번호를 다시 바꾸지 않고 같은 새 값으로 `connect-init`을 재실행합니다.
 - Kafka 장애 복구는 broker 정상 응답을 먼저 확인한 뒤 connector와 task를 재시작하고, health 결과가 `healthy` 또는 원인이 확인된 `warning`인지 검증합니다.
-- replication slot을 재생성한 경우 connector를 resume하고 `snapshot.mode=when_needed`가 남아 있는 outbox를 다시 발행했는지 event ID로 확인합니다. consumer inbox가 중복 반영을 막으므로 inbox 기록을 먼저 정리하지 않습니다.
+- Connect worker를 교체해도 Kafka internal topic의 config·offset과 PostgreSQL slot에서 이어서 처리합니다. 통합 테스트는 기존 worker container를 제거하고 새 worker로 이벤트 수신을 확인합니다.
+- replication slot을 재생성한 경우 connector를 중지하고 slot이 없는 동안 저장된 outbox까지 `snapshot.mode=when_needed`로 다시 발행됐는지 event ID로 확인합니다. consumer inbox가 중복 반영을 막으므로 inbox 기록을 먼저 정리하지 않습니다.
+- `node scripts/compose-smoke.mjs`는 고유 project와 volume으로 이미지를 build한 뒤 새 DB 기동, Nginx·서비스·Connect health, marker 저장, 같은 volume 재기동을 검증하고 자원을 정리합니다. 이미 검증한 local image만 다시 확인할 때는 `--skip-build`를 사용합니다.
+- Connect worker는 768MB container 안에서 heap을 384MB로 제한해 connector 초기화 중 native memory 여유를 둡니다.

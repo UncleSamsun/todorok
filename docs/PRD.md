@@ -2,7 +2,7 @@
 title: TODOROK MVP PRD
 product: TODOROK
 status: approved
-version: 1.4.1
+version: 1.4.2
 created: 2026-08-31
 updated: 2026-09-07
 owner: 김민준
@@ -118,14 +118,14 @@ owner: 김민준
 ### 9.1 Task
 
 - 유형: `GENERAL`, `WORKOUT`, `STUDY`, `CLIMBING`
-- 상태: `PLANNED`, `COMPLETED`, `SKIPPED`
+- 상태: `PLANNED`, `COMPLETED`, `SKIPPED`, `DELETED`
 - `task_series`는 반복 제목, 유형, 메모와 반복 규칙을 보관한다.
 - `task`는 달력에 표시되는 개별 회차이며 일회성 Task는 series 없이 저장한다.
 - 시리즈별 활성 `PLANNED` Task는 DB partial unique index로 하나만 허용한다.
 - 일반 반복은 `DAILY`, `WEEKLY`, `MONTHLY`와 간격·요일 또는 일자·시작·종료 조건만 지원한다.
 - 운동 프로그램 세션 생성은 일반 반복 규칙과 별도 엔진에서 처리한다.
 - `MISSED`는 영구 이력이 아니라 날짜 이월 처리 중 사용하는 전이 상태다.
-- 계획 Task 삭제는 soft delete, series·category·template 삭제는 archive로 처리한다.
+- 계획 Task 삭제는 `DELETED` 상태의 soft delete로 처리하며 일반 달력·상세 조회에서는 제외한다. series·category·template 삭제는 archive로 처리한다.
 
 ### 9.2 Activity Record
 
@@ -180,8 +180,17 @@ owner: 김민준
 - 운동·공부·클라이밍 탭 상단에 `지난 기록 추가`를 제공한다.
 - 사용자는 과거 수행 날짜와 해당 날짜의 할 일 또는 루틴을 선택한 뒤 기존 기록 화면으로 진입한다.
 - 저장 시 선택한 과거 날짜에 Activity Record를 생성하고 해당 Task를 완료한다.
-- 반복 일정이면 오늘 날짜의 새 활성 Task를 즉시 생성한다.
-- 사용자가 오늘 일정을 다시 등록할 필요가 없어야 한다.
+- `PARTIAL` 기록은 Task를 완료하지 않고 다음 회차도 만들지 않는다.
+- 반복 일정의 `COMPLETED` 기록은 다음 규칙으로 활성 회차를 결정한다.
+
+| 조건 | 처리 |
+|---|---|
+| 같은 series에 기존 `PLANNED` 회차가 있음 | 새 회차를 만들거나 기존 날짜를 바꾸지 않음 |
+| series가 종료됐거나 종료 조건을 넘음 | 새 회차를 만들지 않음 |
+| 다음 반복 날짜가 오늘보다 과거 | 다음 회차 하나를 만든 뒤 멱등 이월로 오늘로 이동 |
+| 다음 반복 날짜가 오늘 또는 미래 | 반복 규칙으로 계산한 날짜를 유지 |
+
+- 예를 들어 월요일 주간 반복의 지난 기록을 수요일에 완료하면 다음 월요일 회차를 만든다. 이미 다음 월요일 `PLANNED` 회차가 있으면 기존 회차를 유지한다.
 - 저장 후 오늘 탭으로 이동해 방금 기록한 과거 날짜를 선택한 상태로 보여주고, 날짜 헤더의 `오늘` 버튼으로 실제 오늘에 복귀한다.
 
 ## 11. 메모
@@ -429,6 +438,7 @@ PostgreSQL
 - refresh token 재사용을 탐지하면 해당 session chain을 폐기한다.
 - planner가 비대칭 키로 서명하고 activity·notification은 Spring Security Resource Server로 공개키를 독립 검증한다.
 - REST의 기준 파일은 `contracts/openapi/*-v1.yaml`이며 Spring Boot 4 API interface·DTO와 TypeScript Fetch client를 생성한다.
+- planner의 login·refresh를 제외한 planner·activity API는 bearer access token을 요구한다.
 - 외부 경로는 `/api/planner/v1/**`, `/api/activity/v1/**`를 사용한다.
 - 이벤트 기준 파일은 버전별 JSON Schema이며 fixture 계약 테스트로 Java record 직렬화를 검증한다.
 - Schema Registry는 사용하지 않는다.

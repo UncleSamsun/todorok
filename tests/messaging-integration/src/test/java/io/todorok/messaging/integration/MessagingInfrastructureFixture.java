@@ -1,5 +1,6 @@
 package io.todorok.messaging.integration;
 
+import io.todorok.messaging.JdbcInboxEventGuard;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -15,6 +16,7 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.GenericContainer;
@@ -32,7 +34,7 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
     private final Network network;
     private final PostgreSQLContainer postgres;
     private final KafkaContainer kafka;
-    private final GenericContainer<?> connect;
+    private GenericContainer<?> connect;
     private final JdbcTemplate jdbc;
     private final JsonMapper mapper = JsonMapper.builder().build();
 
@@ -75,7 +77,18 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
         initializeDatabase(jdbc);
         initializeTopics(kafka.getBootstrapServers());
 
-        var connect = new GenericContainer<>("quay.io/debezium/connect:3.6.2.Final")
+        var connect = createConnectContainer(network);
+        connect.start();
+
+        var fixture = new MessagingInfrastructureFixture(
+                network, postgres, kafka, connect, jdbc);
+        fixture.registerConnector();
+        fixture.awaitConnectorRunning();
+        return fixture;
+    }
+
+    private static GenericContainer<?> createConnectContainer(Network network) {
+        return new GenericContainer<>("quay.io/debezium/connect:3.6.2.Final")
                 .withNetwork(network)
                 .withNetworkAliases("connect")
                 .withExposedPorts(CONNECT_PORT)
@@ -93,13 +106,6 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
                 .waitingFor(Wait.forHttp("/connectors")
                         .forStatusCode(200)
                         .withStartupTimeout(Duration.ofMinutes(2)));
-        connect.start();
-
-        var fixture = new MessagingInfrastructureFixture(
-                network, postgres, kafka, connect, jdbc);
-        fixture.registerConnector();
-        fixture.awaitConnectorRunning();
-        return fixture;
     }
 
     void insertOutbox(
@@ -192,6 +198,19 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
         awaitConnectorRunning();
     }
 
+    void stopConnectWorker() {
+        connect.stop();
+        awaitCondition(() -> !slotIsActive(), Duration.ofSeconds(30),
+                "replication slot remained active after Connect worker stopped");
+    }
+
+    void startReplacementConnectWorker() {
+        connect = createConnectContainer(network);
+        connect.start();
+        awaitConnectApi();
+        awaitConnectorRunning();
+    }
+
     void stopConnector() {
         try {
             var response = httpClient().send(
@@ -233,10 +252,26 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
         }
     }
 
-    void recreateReplicationSlot() {
+    void dropReplicationSlot() {
         jdbc.execute("select pg_drop_replication_slot('todorok_outbox_slot')");
+    }
+
+    void createReplicationSlot() {
         jdbc.queryForList("select * from pg_create_logical_replication_slot("
                 + "'todorok_outbox_slot', 'pgoutput')");
+    }
+
+    List<Boolean> claimEventTwice(String schema, UUID eventId, String eventType) {
+        if (!schema.equals("planner") && !schema.equals("activity")) {
+            throw new IllegalArgumentException("unsupported schema: " + schema);
+        }
+        var dataSource = new PGSimpleDataSource();
+        dataSource.setUrl(postgres.getJdbcUrl());
+        dataSource.setUser(postgres.getUsername());
+        dataSource.setPassword(postgres.getPassword());
+        dataSource.setCurrentSchema(schema);
+        var guard = new JdbcInboxEventGuard(new JdbcTemplate(dataSource));
+        return List.of(guard.claim(eventId, eventType), guard.claim(eventId, eventType));
     }
 
     void stopKafka() {
@@ -417,6 +452,9 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
                     + "aggregateid varchar(255) not null, type varchar(100) not null, "
                     + "payload jsonb not null, occurred_at timestamptz not null, "
                     + "created_at timestamptz not null default now())");
+            jdbc.execute("create table " + schema + ".processed_event ("
+                    + "event_id uuid primary key, event_type varchar(100) not null, "
+                    + "processed_at timestamptz not null default now())");
             jdbc.execute("grant usage on schema " + schema + " to debezium_app");
             jdbc.execute("grant select on " + schema + ".outbox_event to debezium_app");
         }
