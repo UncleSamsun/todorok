@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-07-foundation-remediation-design.md`
 
+**Status:** 2026-09-07 구현·검증 완료
+
 ## Global Constraints
 
 - date-only는 `YYYY-MM-DD` 문자열이고 timezone 변환을 금지한다.

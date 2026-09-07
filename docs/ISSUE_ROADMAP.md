@@ -31,3 +31,8 @@
 - 각 이슈에는 표의 PRD 섹션과 수용 기준을 그대로 연결한다.
 - 의존 이슈가 완료되기 전에는 후속 이슈를 구현 시작 상태로 옮기지 않는다.
 - 구현 중 요구사항이 바뀌면 해당 기능 이슈의 첫 커밋에서 PRD를 먼저 변경한다.
+
+## 기반 재검토 보완
+
+- 2026-09-07 재검토에서 확인한 날짜 계약, 메시징 복구, health, PostgreSQL 권한, 디자인·반복 규칙, 기존 volume과 전체 조립 검증은 [설계](superpowers/specs/2026-09-07-foundation-remediation-design.md)와 [실행 계획](superpowers/plans/2026-09-07-foundation-remediation.md)에서 관리한다.
+- 완료 후 다음 구현 순서는 공통 오류·trace ID(T2), 인증(T5), Task·반복·이월(T6), 달력·메모(T7)다.
