@@ -29,6 +29,10 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     )
     boolean hasActive(UUID series);
 
+    /** Terminal and deleted occurrences reserve their original date permanently. */
+    @Query("select max(t.occurrenceDate) from Task t where t.seriesId=:series")
+    Optional<LocalDate> latestOccurrence(UUID series);
+
     @Query(
         "select t.id from Task t where t.userId=:owner and t.status=io.todorok.planner.api.model.TaskStatus.PLANNED and t.scheduledDate<:today order by t.id"
     )

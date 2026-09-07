@@ -251,6 +251,154 @@ class TaskHttpIntegrationTest {
 
     static final String DAILY =
         "{\"frequency\":\"DAILY\",\"interval\":2,\"weekdays\":[],\"monthDay\":1}";
+    @Test
+    void historicalFiniteOccurrencesStayReservedAfterGeneralRecompletion()
+        throws Exception {
+        for (String terminal : List.of("complete", "skip", "delete")) {
+            UUID owner = UUID.randomUUID();
+            String s = series(
+                owner,
+                "GENERAL",
+                "2026-09-07",
+                "2026-09-09",
+                DAILY
+            );
+            String first = active(s);
+            assertThat(
+                call(
+                    owner,
+                    "POST",
+                    "/tasks/" + first + "/complete",
+                    "{\"version\":0}"
+                ).statusCode()
+            ).isEqualTo(200);
+            String second = active(s);
+            if (terminal.equals("delete")) assertThat(
+                call(
+                    owner,
+                    "DELETE",
+                    "/tasks/" + second + "?version=0",
+                    null
+                ).statusCode()
+            ).isEqualTo(204);
+            else assertThat(
+                call(
+                    owner,
+                    "POST",
+                    "/tasks/" + second + "/" + terminal,
+                    "{\"version\":0}"
+                ).statusCode()
+            ).isEqualTo(200);
+            assertThat(
+                call(
+                    owner,
+                    "POST",
+                    "/tasks/" + first + "/reopen",
+                    "{\"version\":1}"
+                ).statusCode()
+            ).isEqualTo(200);
+            assertThat(
+                call(
+                    owner,
+                    "POST",
+                    "/tasks/" + first + "/complete",
+                    "{\"version\":2}"
+                ).statusCode()
+            ).isEqualTo(200);
+            assertThat(
+                jdbc.queryForObject(
+                    "select count(*) from planner.task where series_id=?::uuid",
+                    Integer.class,
+                    s
+                )
+            ).isEqualTo(2);
+            assertThat(activeCount(s)).isZero();
+            assertThat(
+                jdbc.queryForObject(
+                    "select status from planner.task where id=?::uuid",
+                    String.class,
+                    second
+                )
+            ).isEqualTo(
+                switch (terminal) {
+                    case "complete" -> "COMPLETED";
+                    case "skip" -> "SKIPPED";
+                    default -> "DELETED";
+                }
+            );
+        }
+    }
+
+    @Test
+    void ongoingSeriesContinuesAfterLatestReservedDeletedOccurrence()
+        throws Exception {
+        UUID owner = UUID.randomUUID();
+        String s = series(owner, "GENERAL", "2026-09-07", null, DAILY),
+            first = active(s);
+        assertThat(
+            call(
+                owner,
+                "POST",
+                "/tasks/" + first + "/complete",
+                "{\"version\":0}"
+            ).statusCode()
+        ).isEqualTo(200);
+        String second = active(s);
+        assertThat(
+            call(
+                owner,
+                "DELETE",
+                "/tasks/" + second + "?version=0",
+                null
+            ).statusCode()
+        ).isEqualTo(204);
+        assertThat(
+            call(
+                owner,
+                "POST",
+                "/tasks/" + first + "/reopen",
+                "{\"version\":1}"
+            ).statusCode()
+        ).isEqualTo(200);
+        assertThat(
+            call(
+                owner,
+                "POST",
+                "/tasks/" + first + "/complete",
+                "{\"version\":2}"
+            ).statusCode()
+        ).isEqualTo(200);
+        assertThat(
+            body(call(owner, "GET", "/tasks/" + active(s), null))
+                .get("occurrenceDate")
+                .asText()
+        ).isEqualTo("2026-09-11");
+        assertThat(
+            jdbc.queryForObject(
+                "select count(*) from planner.task where series_id=?::uuid",
+                Integer.class,
+                s
+            )
+        ).isEqualTo(3);
+        assertThat(
+            jdbc.queryForObject(
+                "select status from planner.task where id=?::uuid",
+                String.class,
+                second
+            )
+        ).isEqualTo("DELETED");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+            jdbc.update(
+                "insert into planner.task(id,user_id,title,task_type,scheduled_date,status,version,series_id,occurrence_date) select gen_random_uuid(),user_id,title,task_type,scheduled_date,'DELETED',0,series_id,occurrence_date from planner.task where id=?::uuid",
+                second
+            )
+        )
+            .isInstanceOf(
+                org.springframework.dao.DataIntegrityViolationException.class
+            )
+            .hasMessageContaining("task_series_occurrence_unique");
+    }
+
     static final String MONDAY =
         "{\"frequency\":\"WEEKLY\",\"interval\":1,\"weekdays\":[1],\"monthDay\":1}";
 

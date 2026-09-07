@@ -26,6 +26,139 @@ import tools.jackson.databind.json.JsonMapper;
 /** Actual HTTP -> service DB -> Debezium -> Kafka -> service listener -> ack -> HTTP. */
 class ActivityServiceRoundTripTest {
 
+    @Test
+    void finiteSeriesActivityVoidAndRecompletionCannotDuplicateCompletedSuccessor()
+        throws Exception {
+        UUID owner = UUID.randomUUID();
+        String series = ok(
+            call(
+                "planner",
+                owner,
+                "POST",
+                "/series",
+                "{\"title\":\"유한 반복\",\"taskType\":\"STUDY\",\"startDate\":\"2026-09-07\",\"endDate\":\"2026-09-08\",\"rule\":{\"frequency\":\"DAILY\",\"interval\":1,\"weekdays\":[],\"monthDay\":1}}"
+            ),
+            201
+        )
+            .get("seriesId")
+            .asText();
+        String first = infra
+            .database()
+            .queryForObject(
+                "select id::text from planner.task where series_id=? and status='PLANNED'",
+                String.class,
+                UUID.fromString(series)
+            );
+        await(
+            () ->
+                infra
+                    .database()
+                    .queryForObject(
+                        "select count(*) from activity.task_reference where task_id=?",
+                        Integer.class,
+                        UUID.fromString(first)
+                    ) == 1
+        );
+        String original = ok(
+            call(
+                "activity",
+                owner,
+                "POST",
+                "/activities",
+                request(first, "STUDY", "COMPLETED", UUID.randomUUID(), "{}")
+            ),
+            201
+        )
+            .get("activityId")
+            .asText();
+        applied(owner, original);
+        String second = infra
+            .database()
+            .queryForObject(
+                "select id::text from planner.task where series_id=? and status='PLANNED'",
+                String.class,
+                UUID.fromString(series)
+            );
+        await(
+            () ->
+                infra
+                    .database()
+                    .queryForObject(
+                        "select count(*) from activity.task_reference where task_id=?",
+                        Integer.class,
+                        UUID.fromString(second)
+                    ) == 1
+        );
+        String successor = ok(
+            call(
+                "activity",
+                owner,
+                "POST",
+                "/activities",
+                request(second, "STUDY", "COMPLETED", UUID.randomUUID(), "{}")
+            ),
+            201
+        )
+            .get("activityId")
+            .asText();
+        applied(owner, successor);
+        ok(
+            call(
+                "activity",
+                owner,
+                "POST",
+                "/activities/" + original + "/void",
+                "{\"reason\":\"수정 기록\",\"version\":0}"
+            ),
+            200
+        );
+        applied(owner, original);
+        String revised = ok(
+            call(
+                "activity",
+                owner,
+                "POST",
+                "/activities",
+                request(first, "STUDY", "COMPLETED", UUID.randomUUID(), "{}")
+            ),
+            201
+        )
+            .get("activityId")
+            .asText();
+        applied(owner, revised);
+        assertThat(
+            infra
+                .database()
+                .queryForObject(
+                    "select count(*) from planner.task where series_id=?",
+                    Integer.class,
+                    UUID.fromString(series)
+                )
+        ).isEqualTo(2);
+        assertThat(
+            infra
+                .database()
+                .queryForObject(
+                    "select count(*) from planner.task where series_id=? and status='PLANNED'",
+                    Integer.class,
+                    UUID.fromString(series)
+                )
+        ).isZero();
+        assertThat(
+            ok(call("planner", owner, "GET", "/tasks/" + second, null), 200)
+                .get("activityId")
+                .asText()
+        ).isEqualTo(successor);
+        assertThat(
+            ok(
+                call("activity", owner, "GET", "/activities/" + original, null),
+                200
+            )
+                .get("status")
+                .asText()
+        ).isEqualTo("VOIDED");
+    }
+
     static MessagingInfrastructureFixture infra;
     static ConfigurableApplicationContext planner, activity;
     static final JsonMapper JSON = JsonMapper.builder()

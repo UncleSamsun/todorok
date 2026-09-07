@@ -95,7 +95,10 @@ public class SeriesService {
 
     private void generate(TaskSeries item, LocalDate after, String completion) {
         if (!policy.shouldGenerate(tasks.hasActive(item.id), item.archived, completion)) return;
-        policy.next(item.rule(), item.startDate, item.endDate, after).ifPresent(date -> {
+        // Under the series lock, history (including DELETED) reserves all emitted dates.
+        LocalDate cursor = tasks.latestOccurrence(item.id)
+            .filter(latest -> latest.isAfter(after)).orElse(after);
+        policy.next(item.rule(), item.startDate, item.endDate, cursor).ifPresent(date -> {
             var task = Task.occurrence(
                 item.userId,
                 item.id,

@@ -61,7 +61,7 @@ planner `TaskResponse` 추가 필드: `activityId`, `performedAt`, `startedAt`, 
 - TaskScheduled/TaskChanged/TaskRolledOver는 activity-reference-v1 그룹이 `todorok.task.v1`에서 수신한다. 삭제 tombstone은 이후 이벤트로 복구하지 않는다.
 - planner-activity-v1 그룹은 `todorok.activity.v1`에서 완료/취소를 수신한다. inbox, 완료 결과, Task/series 변경, ack outbox를 같은 transaction에 저장한다.
 - Compose의 planner/activity는 `MESSAGING_ENABLED=true`를 설정했다. 기본 false는 Kafka 없는 테스트/로컬 비동기 비활성 기동용이다. 실제 UI 연결용 서버를 직접 기동하면 두 서비스에 MESSAGING_ENABLED=true, KAFKA_BOOTSTRAP_SERVERS와 각 schema datasource를 함께 설정해야 한다. DB migration을 먼저 적용하고 기존 Debezium connector가 RUNNING이어야 한다.
-- migration: activity V3, planner V7. 개인/운영계정이나 외부 schema join을 사용하지 않는다.
+- migration: activity V3, planner V8까지 적용한다(V7 완료 연결, V8 이력 회차 예약). 개인/운영계정이나 외부 schema join을 사용하지 않는다.
 
 새 UI fixture는 기존 `docs/authentication.md`의 키 생성/최초 계정 절차와 `infra/docker/compose.yml`을 사용하되 기존 운영 Compose project를 재사용하지 않는다. 테스트 전용 env 파일·RSA 키·계정·volume과 `-p todorok-task07` project를 사용하고 HTTP Origin/포트를 일치시킨다. 기존 작업06 image를 재사용하면 V3/V7과 listener가 없으므로 **현재 source의 planner/activity image를 새로 build**한다. 기동 순서는 PG/Kafka → migration → 두 HTTP 서비스 → Debezium Connect RUNNING → bootstrap 계정 → 프런트다. 새 Compose에는 두 서비스의 MESSAGING_ENABLED=true가 포함돼 있다. 브라우저에 연결하기 전에 Task 생성 후 Activity 저장이 TASK_REFERENCE_PENDING을 벗어나는지, GET syncState가 실제 APPLIED가 되는지 확인한다. 테스트가 끝나면 그 전용 project만 정리한다.
 
@@ -82,3 +82,14 @@ planner `TaskResponse` 추가 필드: `activityId`, `performedAt`, `startedAt`, 
 초기 실행 실패: 테스트 의존성/Boot 클래스 import 컴파일 2건과 fixture Origin allowlist 누락은 행동검증 전 초기화 문제였다. 이후 실제 기동에서 기존 plain spring-kafka 의존성으로 Boot4 Kafka 자동설정이 없는 것을 확인하여 두 서비스를 starter-kafka로 교체했다. 이에 따라 migration에서 KafkaAdmin이 생긴 영향 회귀를 발견해 두 migration entrypoint에서 KafkaAutoConfiguration을 명시 제외했고 재검증했다. 같은 auto-configuration을 사용하는 BootstrapCommand도 제외를 추가했으며 단독 격리 테스트를 통과했다.
 
 미검증: UI/브라우저 연결은 후속 단계다. 이번 왕복 테스트의 restart는 실제 listener stop/start이며 서비스 JVM 교체·DLT 운영 재처리·broker/Connect 장애 복구를 새로 반복하지 않았다(기존 messaging fixture 범위). 완료 취소 시 활성 다음회차 충돌은 구현되어 있지만 전용 UI 조정 기능은 없다. correction/template/program 진행은 이번 서버 단계의 생성·완료 동기화 범위에 추가하지 않았다.
+
+## P2 리뷰 수정: 과거 회차 날짜 예약
+
+유한 반복의 첫 회차를 재완료하면 원래 occurrenceDate부터 다음 회차를 찾으므로 이미 COMPLETED/SKIPPED/DELETED인 후속 회차를 다시 만드는 문제가 있었다. 기존 `hasActive` 검사로는 terminal 이력을 보호하지 못했다.
+
+- 수정 전 실제 PostgreSQL/HTTP 회귀 2개 실패: 유한 2회 반복의 Task 수가 기대 2/실제 3, 삭제된 후속 회차 뒤 재개 날짜가 기대 2026-09-11/실제 2026-09-09.
+- 기존 series lock 안에서 생성 cursor를 `max(original occurrenceDate, latest persisted occurrenceDate)`로 정한다. latest 조회는 상태를 필터링하지 않으므로 삭제된 회차도 예약한다. Activity 완료와 GENERAL 재완료가 사용하는 공통 `SeriesService.generate`를 수정했으며 활성 회차·archive·endDate 정책은 유지한다.
+- 신규 planner **V8**은 `(series_id, occurrence_date)` unique index를 series_id가 있는 전체 이력에 적용한다. 기존 중복을 발견하면 명확한 예외로 migration을 중단한다. 기존 기록을 자동 삭제·수정하지 않으므로 해당 환경은 명시적으로 이력을 조정한 뒤 migration을 다시 실행해야 한다.
+- 집중 검증: GENERAL 유한 반복의 완료/skip/삭제 후속 회차 예약, 무기한 반복에서 삭제된 최신 회차 다음 날짜로 재개, 삭제 이력 중복 DB insert 거부, 실제 PostgreSQL→Debezium→Kafka로 유한 2회 모두 완료→첫 Activity VOIDED→첫 회차 새 기록 완료 후 Task 수 2 유지 및 기존 후속 Activity 연결 보존.
+
+GREEN: `:services:planner-service:test`에서 새 HTTP/DB 회귀 2개만 선택하고 `:tests:messaging-integration:test`에서 새 finite Activity 왕복 1개만 선택하여 **3/3 통과, skipped 0**. 2026-09-07 실행 2분31초. V8을 실제 PostgreSQL에 적용한 상태에서 검사했으며 `git diff --check`도 통과했다. 앞 절의 전체 서버 검증은 반복하지 않았다.

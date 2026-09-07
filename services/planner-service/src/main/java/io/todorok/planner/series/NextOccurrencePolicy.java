@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
-/** Pure civil-date rules. The original occurrence, never its rolled date, is the cursor. */
+/** Pure civil-date rules. Callers supply a reserved occurrence cursor, never a rolled date. */
 @Component
 public class NextOccurrencePolicy {
 
