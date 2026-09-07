@@ -505,7 +505,7 @@ select {
 .domain-summary span { color: var(--muted); font-size: 13px; }
 .domain-summary strong { font-size: 22px; }
 .domain-summary p { margin: 0; font-size: 11px; }
-.domain-summary button { min-height: 32px; padding: 4px 8px; font-size: 12px; }
+.domain-summary button { min-height: 44px; padding: 4px 8px; font-size: 12px; }
 .past-record { display: grid; gap: 8px; padding: 16px; margin-bottom: 24px; border-radius: 12px; background: var(--selected); }
 .past-record label { display: grid; gap: 6px; }
 .domain-history { display: grid; gap: 8px; }

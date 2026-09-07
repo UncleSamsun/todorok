@@ -14,6 +14,7 @@ import { TodayPage } from '../features/today/TodayPage'
 import { RecordPage } from '../features/activity/RecordPage'
 import { RecordDraftProvider } from '../features/activity/RecordDrafts'
 import { ActivityMonthProvider } from '../features/activity/ActivityMonth'
+import { CompletedTaskRecord } from '../features/activity/CompletedTaskRecord'
 export { seoulToday } from '@todorok/client-domain'
 const Workout = lazy(() => import('../features/workout/WorkoutPage'))
 const Study = lazy(() => import('../features/study/StudyPage'))
@@ -117,8 +118,8 @@ function EnterSession({
   return <p role="status">오늘을 여는 중…</p>
 }
 function DomainOrRecord({ type, fallback }: { type: 'WORKOUT' | 'STUDY' | 'CLIMBING'; fallback: ReactNode }) {
-  const [params] = useSearchParams(), taskId = params.get('taskId'), activityId = params.get('activityId')
-  return taskId ? <RecordPage key={taskId} type={type} /> : activityId ? <ActivityRecord key={activityId} type={type} activityId={activityId} /> : fallback
+  const [params] = useSearchParams(), taskId = params.get('taskId'), activityId = params.get('activityId'), completedTaskId = params.get('completedTaskId')
+  return completedTaskId ? <CompletedTaskRecord key={completedTaskId} taskId={completedTaskId} type={type} /> : taskId ? <RecordPage key={taskId} type={type} /> : activityId ? <ActivityRecord key={activityId} type={type} activityId={activityId} /> : fallback
 }
 export function AppRouter() {
   return (

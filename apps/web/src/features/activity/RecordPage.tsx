@@ -10,6 +10,7 @@ import { RecordTimeFields, toDate } from './RecordTimeFields'
 import { SyncStatus } from './SyncStatus'
 import { useRecordDraft } from './RecordDrafts'
 import { refreshActivity } from './refreshActivity'
+import { CompletedTaskRecord } from './CompletedTaskRecord'
 
 const titles = { WORKOUT: '운동 기록', STUDY: '공부 기록', CLIMBING: '클라이밍 기록' } as const
 const midnightSeoul = (date: string) => new Date(`${date}T00:00:00+09:00`)
@@ -85,6 +86,7 @@ export function RecordPage({ type }: { type: RecordType }) {
   if (!taskId) return <p role="alert">기록할 할 일을 선택해 주세요.</p>
   if (task.isPending) return <p role="status">할 일을 불러오는 중…</p>
   if (task.isError || task.data.taskType !== type) return <p role="alert">이 기록 화면에 맞는 할 일을 불러오지 못했습니다.</p>
+  if (task.data.status === 'COMPLETED' && !snapshot && !saved) return <CompletedTaskRecord taskId={taskId} type={type} />
   return <section className="record-page"><header className="record-heading"><button type="button" aria-label="기록 취소" onClick={leave}>‹</button><div><h1>{titles[type]}</h1><p>{task.data.title}</p></div></header>
     {saved ? <SyncStatus value={saved} checking={busy} check={() => void check()}/> : <form onSubmit={(e) => { e.preventDefault(); void submit(Boolean(snapshot)) }}>
       <fieldset className="record-inputs" disabled={busy || uncertain}>

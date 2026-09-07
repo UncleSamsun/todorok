@@ -146,7 +146,7 @@ export function TodayPage() {
   }
   function check(task: Task) {
     if (task.taskType !== 'GENERAL' && task.status !== 'SKIPPED') {
-      void navigate(`/${task.taskType.toLowerCase()}?taskId=${task.taskId}`)
+      void navigate(`/${task.taskType.toLowerCase()}?${task.status === 'COMPLETED' ? 'completedTaskId' : 'taskId'}=${task.taskId}`)
       return
     }
     void mutate(() =>

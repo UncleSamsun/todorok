@@ -13,7 +13,7 @@ function TimeSelects({ label, value, change }: { label: string; value: TimeValue
   return <fieldset className="time-selects"><legend>{label}</legend>
     <select aria-label={`${label} 오전 오후`} value={value.period} onChange={(e) => change({ ...value, period: e.target.value as TimeValue['period'] })}><option value="AM">오전</option><option value="PM">오후</option></select>
     <select aria-label={`${label} 시`} value={value.hour} onChange={(e) => change({ ...value, hour: e.target.value })}><option value="">시</option>{Array.from({ length: 12 }, (_, i) => <option key={i + 1}>{i + 1}</option>)}</select>
-    <select aria-label={`${label} 분`} value={value.minute} onChange={(e) => change({ ...value, minute: e.target.value })}><option value="">분</option>{Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')).map((m) => <option key={m}>{m}</option>)}</select>
+    <select aria-label={`${label} 분`} value={value.minute} onChange={(e) => change({ ...value, minute: e.target.value })}><option value="">분</option>{Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map((m) => <option key={m}>{m}</option>)}</select>
   </fieldset>
 }
 
