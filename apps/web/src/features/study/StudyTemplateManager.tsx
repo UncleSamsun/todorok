@@ -25,6 +25,7 @@ export function StudyTemplateManager({ close }: { close: () => void }) {
   const command = useRef('')
   const request = useRef<(() => Promise<unknown>) | null>(null)
   const [conflict, setConflict] = useState(false), [latest, setLatest] = useState<activity.TemplateResponse | null>(null)
+  const latestTarget = useRef<string | null>(null)
   const [archiveConflict, setArchiveConflict] = useState<activity.TemplateResponse | null>(null)
   const archiveCommands = useRef(new Map<string, activity.ArchiveTemplateRequest>())
   function begin(value: activity.TemplateResponse | 'new') {
@@ -33,7 +34,7 @@ export function StudyTemplateManager({ close }: { close: () => void }) {
     setFields(value === 'new' ? [] : value.currentVersion.fields.map(({ fieldId, name, type, unit }) => ({ fieldId, name, type, ...(unit ? { unit } : {}) })))
     setError('')
     setUncertain(false)
-    setConflict(false); setLatest(null); request.current = null
+    setConflict(false); setLatest(null); latestTarget.current = null; request.current = null
     command.current = crypto.randomUUID()
   }
   function update(index: number, patch: Partial<DraftField>) { setFields((current) => current.map((field, position) => position === index ? { ...field, ...patch, ...(patch.type && patch.type !== field.type ? { fieldId: editing && editing !== 'new' && editing.currentVersion.fields.some((saved) => saved.fieldId === field.fieldId) ? crypto.randomUUID() : field.fieldId, unit: patch.type === 'TIME' ? '초' : undefined } : {}) } : field)) }
@@ -60,10 +61,18 @@ export function StudyTemplateManager({ close }: { close: () => void }) {
     finally { setBusy(false) }
   }
   async function loadLatest(templateId: string) {
-    try { setLatest(await api.getTemplate({ templateId })) } catch { setError('최신 정의를 불러오지 못했습니다. 초안은 보존됩니다.') }
+    latestTarget.current = templateId
+    setLatest(null)
+    try {
+      const value = await api.getTemplate({ templateId })
+      if (latestTarget.current === templateId && value.templateId === templateId) setLatest(value)
+    } catch {
+      if (latestTarget.current === templateId) setLatest(null)
+      setError('최신 정의를 불러오지 못했습니다. 초안은 보존됩니다.')
+    }
   }
   function rebase() {
-    if (!latest || latest.archived) return
+    if (!latest || latest.archived || editing === 'new' || !editing || latestTarget.current !== editing.templateId || latest.templateId !== editing.templateId) return
     setFields((current) => current.map((field) => ({ ...field, fieldId: latest.currentVersion.fields.some((item) => item.fieldId === field.fieldId && item.type === field.type) ? field.fieldId : crypto.randomUUID() })))
     setEditing(latest); setConflict(false); setLatest(null); setError(''); command.current = crypto.randomUUID()
   }
@@ -75,7 +84,7 @@ export function StudyTemplateManager({ close }: { close: () => void }) {
       archiveCommands.current.set(value.templateId, archiveTemplateRequest)
       await api.archiveTemplate({ templateId: value.templateId, archiveTemplateRequest })
       archiveCommands.current.delete(value.templateId)
-      setArchiveConflict(null)
+      setArchiveConflict(null); setLatest(null); latestTarget.current = null
       await queries.invalidateQueries({ queryKey: ['templates', state.userId] })
     } catch (reason) { const failure = await requestFailure(reason); if (failure.rejected) archiveCommands.current.delete(value.templateId); if (failure.status === 409) { setArchiveConflict(value); await loadLatest(value.templateId) }; setError(failure.rejected ? '보관이 거절되었습니다. 최신 정의를 확인해 주세요.' : '보관 결과를 확인하지 못했습니다. 같은 보관 요청으로 다시 확인해 주세요.') }
     finally { setBusy(false) }
@@ -90,6 +99,6 @@ export function StudyTemplateManager({ close }: { close: () => void }) {
   return <section className="template-manager"><header className="record-heading"><button aria-label="공부로 돌아가기" onClick={close}>‹</button><h1>공부 카테고리 관리</h1></header><button onClick={() => begin('new')}>새 카테고리</button>
     {list.isPending && <p role="status">카테고리를 불러오는 중…</p>}{list.isError && <p role="alert">카테고리를 불러오지 못했습니다. <button onClick={() => void list.refetch()}>다시 불러오기</button></p>}
     <div className="template-list">{list.data?.pages.flatMap((page) => page.items).map((value) => <article key={value.templateId}><div><strong>{value.currentVersion.name}</strong><small>버전 {value.currentVersion.templateVersion}{value.archived ? ' · 보관됨' : ''}</small><p>{value.currentVersion.fields.map(studyFieldSummary).join(', ') || '항목 없음'}</p></div>{!value.archived && <div className="form-actions"><button aria-label={`${value.currentVersion.name} 수정`} onClick={() => begin(value)}>수정</button><button aria-label={`${value.currentVersion.name} 보관`} disabled={busy || archiveConflict?.templateId === value.templateId} onClick={() => void archive(value)}>보관</button></div>}</article>)}</div>{list.hasNextPage && <button disabled={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>카테고리 더 보기</button>}{error && <p role="alert">{error}</p>}
-    {archiveConflict && <section><h2>보관 전 정의 비교</h2><p>이전: {archiveConflict.currentVersion.name} · 버전 {archiveConflict.currentVersion.templateVersion}</p><p>{archiveConflict.currentVersion.fields.map(studyFieldSummary).join(', ')}</p>{latest ? <><p>최신: {latest.currentVersion.name} · 버전 {latest.currentVersion.templateVersion}{latest.archived ? ' · 보관됨' : ''}</p><p>{latest.currentVersion.fields.map(studyFieldSummary).join(', ')}</p>{!latest.archived && <button disabled={busy} onClick={() => void archive(latest)}>최신 정의 확인 후 보관</button>}</> : <button onClick={() => void loadLatest(archiveConflict.templateId)}>최신 정의 다시 불러오기</button>}</section>}
+    {archiveConflict && <section><h2>보관 전 정의 비교</h2><p>이전: {archiveConflict.currentVersion.name} · 버전 {archiveConflict.currentVersion.templateVersion}</p><p>{archiveConflict.currentVersion.fields.map(studyFieldSummary).join(', ')}</p>{latest && latestTarget.current === archiveConflict.templateId && latest.templateId === archiveConflict.templateId ? <><p>최신: {latest.currentVersion.name} · 버전 {latest.currentVersion.templateVersion}{latest.archived ? ' · 보관됨' : ''}</p><p>{latest.currentVersion.fields.map(studyFieldSummary).join(', ')}</p>{!latest.archived && <button disabled={busy} onClick={() => void archive(latest)}>최신 정의 확인 후 보관</button>}</> : <button onClick={() => void loadLatest(archiveConflict.templateId)}>최신 정의 다시 불러오기</button>}</section>}
   </section>
 }

@@ -335,6 +335,37 @@ it('creates, versions, and archives study categories without creating a task', a
   expect(writes.some((write) => /\/tasks$|\/series$/.test(write.path))).toBe(false)
 })
 
+it('review: archive conflict never reuses another category latest definition', async () => {
+  const first = template()
+  const second = template({
+    templateId: '20000000-0000-0000-0000-000000000002',
+    currentVersion: { ...template().currentVersion, templateId: '20000000-0000-0000-0000-000000000002', name: '영어' },
+  }) as activity.TemplateResponse
+  const archiveTargets: string[] = []
+  const session = new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url), fallback = common(path)
+    if (path.includes('/templates?')) return Response.json({ items: [first, second] })
+    if (path.endsWith('/archive') && init?.method === 'POST') {
+      archiveTargets.push(path)
+      return Response.json({ code: 'TEMPLATE_REVISION_CONFLICT', retryable: false }, { status: 409 })
+    }
+    if (path.endsWith(`/templates/${first.templateId}`)) return Response.json({ ...first, revision: 1 })
+    if (path.endsWith(`/templates/${second.templateId}`)) return Response.json({ code: 'UPSTREAM_UNAVAILABLE' }, { status: 503 })
+    return fallback ?? Response.json({}, { status: 404 })
+  } })
+  render(<App session={session} />)
+  await waitFor(() => expect(location.pathname).toBe('/today'))
+  fireEvent.click(await screen.findByRole('link', { name: '공부' }))
+  fireEvent.click(await screen.findByRole('button', { name: '카테고리 관리' }))
+  fireEvent.click(await screen.findByRole('button', { name: '알고리즘 보관' }))
+  expect(await screen.findByRole('button', { name: '최신 정의 확인 후 보관' })).toBeVisible()
+  fireEvent.click(screen.getByRole('button', { name: '영어 보관' }))
+  expect(await screen.findByRole('button', { name: '최신 정의 다시 불러오기' })).toBeVisible()
+  expect(screen.queryByRole('button', { name: '최신 정의 확인 후 보관' })).not.toBeInTheDocument()
+  expect(archiveTargets).toHaveLength(2)
+  expect(archiveTargets[1]).toContain(second.templateId)
+})
+
 it('keeps the study quick-add draft and command when a save result is uncertain', async () => {
   const writes: any[] = []
   let attempts = 0
