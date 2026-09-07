@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
 import { activity, planner } from '@todorok/api-client'
@@ -19,6 +19,8 @@ import { SeriesEditor } from './SeriesEditor'
 import { StickyNote } from './StickyNote'
 import { ActivityReturnStatus } from '../activity/ActivityReturnStatus'
 import type { Task } from './model'
+import { useStudyTemplates } from '../study/useStudyTemplates'
+import { requestFailure } from '../activity/requestFailure'
 const apiDate = (value: string) => value
 export function TodayPage() {
   const { session, state } = useAuth(),
@@ -57,6 +59,9 @@ export function TodayPage() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [addUncertain, setAddUncertain] = useState(false)
+  const [templateConflict, setTemplateConflict] = useState(false)
+  const [addRejection, setAddRejection] = useState(0)
+  const addRequest = useRef<(() => Promise<unknown>) | null>(null)
   const [today, setToday] = useState(seoulToday)
   const [rolloverEpoch, setRolloverEpoch] = useState(0)
   const [rolloverState, setRolloverState] = useState<
@@ -111,11 +116,7 @@ export function TodayPage() {
     queryFn: ({ signal }) =>
       api.calendar.getDayDetail({ date: apiDate(selected) }, { signal }),
   })
-  const studyTemplates = useQuery({
-    queryKey: ['templates', state.userId, 'STUDY', 'STUDY_CATEGORY', 'active'],
-    enabled: adding === planner.TaskType.Study,
-    queryFn: ({ signal }) => api.templates.listTemplates({ domain: activity.TemplateDomain.Study, kind: activity.TemplateKind.StudyCategory }, { signal }),
-  })
+  const studyTemplates = useStudyTemplates(api.templates, state.userId, false, adding === planner.TaskType.Study)
   const summaries = new Map(range.data?.days?.map((d) => [d.date, d]))
   function select(date: string) {
     if (rolloverState === 'pending') return
@@ -159,15 +160,19 @@ export function TodayPage() {
     setBusy(true)
     setError('')
     try {
-      await action()
+      const request = addUncertain && addRequest.current ? addRequest.current : action
+      addRequest.current = request
+      await request()
       setAdding(null)
       setAddUncertain(false)
+      addRequest.current = null
       await queries.invalidateQueries({ queryKey: ['calendar'] })
       await queries.invalidateQueries({ queryKey: ['task'] })
     } catch (reason) {
-      const response = reason && typeof reason === 'object' && 'response' in reason ? (reason as { response: Response }).response : null
-      const confirmed = response?.status === 400 || response?.status === 422
+      const failure = await requestFailure(reason), confirmed = failure.rejected
       setAddUncertain(!confirmed)
+      if (confirmed) { addRequest.current = null; setAddRejection((value) => value + 1) }
+      if (failure.status === 409 && adding === 'STUDY') { setTemplateConflict(true); await studyTemplates.refetch() }
       setError(confirmed ? '일정 입력을 확인해 주세요. 작성 중인 내용은 보존됩니다.' : '저장 결과를 확인하지 못했습니다. 같은 요청을 다시 보내 주세요.')
     } finally {
       setBusy(false)
@@ -334,6 +339,8 @@ export function TodayPage() {
             if (!busy && ready) {
               setAdding(type)
               setAddUncertain(false)
+              setTemplateConflict(false)
+              addRequest.current = null
               setEditing(null)
               setError('')
             }
@@ -357,8 +364,13 @@ export function TodayPage() {
             busy={busy}
             uncertain={addUncertain}
             error={error}
-            templates={studyTemplates.data?.items ?? []}
-            cancel={() => { setAdding(null); setAddUncertain(false) }}
+            templates={studyTemplates.data?.pages.flatMap((page) => page.items) ?? []}
+            loadMore={studyTemplates.hasNextPage ? () => void studyTemplates.fetchNextPage() : undefined}
+            loadingMore={studyTemplates.isFetchingNextPage}
+            templateConflict={templateConflict}
+            rejectedAttempt={addRejection}
+            confirmTemplate={() => { setTemplateConflict(false); setError('') }}
+            cancel={() => { setAdding(null); setAddUncertain(false); setTemplateConflict(false); addRequest.current = null }}
             save={(title, date, commandId, templateSelection, repeat) =>
               void createSchedule(() =>
                 repeat

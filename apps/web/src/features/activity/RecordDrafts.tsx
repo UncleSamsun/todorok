@@ -7,6 +7,8 @@ type Draft = {
   date: string; note: string; workout: activity.WorkoutSet[]; study: activity.StudyDetail; climbing: activity.ClimbingDetail
   start: TimeValue; end: TimeValue; snapshot: activity.CreateActivityRequest | null
   uncertain: boolean; blocked: boolean; error: string
+  template?: activity.TemplateVersion
+  previousInputs?: { template: activity.TemplateVersion; study: activity.StudyDetail }[]
 }
 const Drafts = createContext<Map<string, Draft> | null>(null)
 export function RecordDraftProvider({ children }: { children: ReactNode }) {
@@ -28,5 +30,12 @@ export function useRecordDraft(key: string) {
     drafts!.set(key, next)
     setDraft(next)
   }
-  return { draft, update, clear: () => drafts.delete(key) }
+  return { draft, update, clear: (activityId?: string) => {
+    if (activityId && latest.current.previousInputs?.length) drafts.set(`saved:${activityId}`, { ...latest.current, snapshot: null, uncertain: false })
+    drafts.delete(key)
+  } }
+}
+
+export function usePreviousStudyInputs(activityId: string) {
+  return useContext(Drafts)?.get(`saved:${activityId}`)?.previousInputs ?? []
 }

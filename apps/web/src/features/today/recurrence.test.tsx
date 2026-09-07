@@ -160,14 +160,16 @@ it('submits a weekly recurrence with explicit days and end date from quick add',
   })
 })
 
-it('keeps the schedule draft but clears a category that disappears after management', () => {
+it('keeps a selected category across partial refresh and blocks a confirmed archived category', () => {
   const save = vi.fn(), category = { templateId: '10000000-0000-0000-0000-000000000001', domain: 'STUDY', kind: 'STUDY_CATEGORY', archived: false, revision: 0, currentVersion: { templateId: '10000000-0000-0000-0000-000000000001', templateVersion: 1, name: '알고리즘', fields: [] } } as any
   const { rerender } = render(<QuickAdd date="2026-09-07" type={planner.TaskType.Study} busy={false} error="" templates={[category]} save={save} cancel={() => {}} />)
   fireEvent.change(screen.getByLabelText('제목'), { target: { value: '초안 유지' } })
   fireEvent.change(screen.getByLabelText('공부 카테고리'), { target: { value: category.templateId } })
   rerender(<QuickAdd date="2026-09-07" type={planner.TaskType.Study} busy={false} error="" templates={[]} save={save} cancel={() => {}} />)
   expect(screen.getByLabelText('제목')).toHaveValue('초안 유지')
-  expect(screen.getByLabelText('공부 카테고리')).toHaveValue('')
+  expect(screen.getByLabelText('공부 카테고리')).toHaveValue(category.templateId)
+  expect(screen.getByRole('button', { name: '저장' })).toBeEnabled()
+  rerender(<QuickAdd date="2026-09-07" type={planner.TaskType.Study} busy={false} error="" templates={[{ ...category, archived: true }]} save={save} cancel={() => {}} />)
   expect(screen.getByRole('button', { name: '저장' })).toBeDisabled()
 })
 

@@ -1,6 +1,9 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, expect, it } from 'vitest'
-import { SessionClient } from '@todorok/api-client'
+import { afterEach, expect, it, vi } from 'vitest'
+import { activity, planner, SessionClient } from '@todorok/api-client'
+import { QuickAdd } from '../today/QuickAdd'
+import { StudyTemplateFields } from './StudyTemplateFields'
+import { QueryClient } from '@tanstack/react-query'
 import { App } from '../../App'
 
 afterEach(() => {
@@ -28,6 +31,259 @@ const template = (overrides: Record<string, unknown> = {}) => ({
     ],
   },
   ...overrides,
+})
+
+it('review: NUMBER accepts negative decimals and TIME displays minutes while sending seconds', () => {
+  const change = vi.fn()
+  render(<StudyTemplateFields definitions={template().currentVersion.fields as activity.FieldDefinition[]} value={{ fields: [{ fieldId: template().currentVersion.fields[0]!.fieldId, type: activity.TemplateFieldType.Number, numberValue: -1.5 }, { fieldId: template().currentVersion.fields[1]!.fieldId, type: activity.TemplateFieldType.Time, timeSeconds: 90 }] }} change={change} />)
+  const number = screen.getByLabelText('문제 수 (개)') as HTMLInputElement
+  fireEvent.change(number, { target: { value: '-1.5' } })
+  expect(number.checkValidity()).toBe(true)
+  const time = screen.getByLabelText('복습 시간 (분)')
+  expect(time).toHaveValue(1.5)
+  fireEvent.change(time, { target: { value: '2.5' } })
+  expect(change.mock.lastCall?.[0].fields).toContainEqual({ fieldId: template().currentVersion.fields[1]!.fieldId, type: 'TIME', timeSeconds: 150 })
+})
+
+it('review: manager revision conflict compares latest without overwriting the draft', async () => {
+  const writes: any[] = [], original = template(), latest = template({ revision: 2, currentVersion: { ...template().currentVersion, templateVersion: 3, name: '다른 사용 창의 정의' } })
+  render(<App session={new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url)
+    if (path.includes('/templates?')) return Response.json({ items: [original] })
+    if (path.endsWith(`/templates/${original.templateId}`)) return Response.json(latest)
+    if (path.endsWith('/versions') && init?.method === 'POST') { writes.push(JSON.parse(String(init.body))); return Response.json({ code: 'TEMPLATE_VERSION_CONFLICT', retryable: false }, { status: 409 }) }
+    return common(path) ?? Response.json({}, { status: 404 })
+  } })} />)
+  await waitFor(() => expect(location.pathname).toBe('/today'))
+  fireEvent.click(await screen.findByRole('link', { name: '공부' }))
+  fireEvent.click(await screen.findByRole('button', { name: '카테고리 관리' }))
+  fireEvent.click(await screen.findByRole('button', { name: '알고리즘 수정' }))
+  fireEvent.change(screen.getByLabelText('카테고리 이름'), { target: { value: '보존할 초안 이름' } })
+  fireEvent.click(screen.getByRole('button', { name: '변경 저장' }))
+  fireEvent.click(await screen.findByRole('button', { name: '최신 정의 확인 후 초안 유지' }))
+  expect(screen.getByLabelText('카테고리 이름')).toHaveValue('보존할 초안 이름')
+  expect(screen.getByLabelText('카테고리 이름')).toBeEnabled()
+  fireEvent.click(screen.getByRole('button', { name: '변경 저장' }))
+  await waitFor(() => expect(writes).toHaveLength(2))
+  expect(writes[1].expectedRevision).toBe(2)
+  expect(writes[1].name).toBe('보존할 초안 이름')
+  expect(writes[1].commandId).not.toBe(writes[0].commandId)
+})
+
+it('review: uncertain record retries its original version and all values after a template refresh', async () => {
+  const writes: any[] = [], queries = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const session = new SessionClient({ fetcher: async (url, init) => {
+    if (String(url).endsWith('/activities') && init?.method === 'POST') { writes.push(JSON.parse(String(init.body))); return Response.json({ code: 'UPSTREAM_UNAVAILABLE', retryable: true }, { status: 503 }) }
+    return recordRead(String(url))
+  } })
+  render(<App session={session} queryClient={queries} />)
+  await waitFor(() => expect(location.pathname).toBe('/today'))
+  await waitFor(() => expect(screen.getByRole('button', { name: '공부 추가' })).toBeEnabled())
+  await act(async () => { history.pushState({}, '', '/study?taskId=task-1'); dispatchEvent(new PopStateEvent('popstate')) })
+  fireEvent.change(await screen.findByLabelText('정리'), { target: { value: '원래 메모' } })
+  fireEvent.click(screen.getByRole('button', { name: '기록 저장' }))
+  await screen.findByRole('button', { name: '같은 요청 다시 보내기' })
+  await act(async () => { queries.setQueryData(['record-template', 'owner', 'task-1'], { linked: true, template: template({ currentVersion: { ...template().currentVersion, templateVersion: 2, fields: [] } }) }) })
+  expect(screen.getByLabelText('정리')).toHaveValue('원래 메모')
+  expect(await screen.findByRole('button', { name: '변경 확인 후 최신 항목 적용' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: '같은 요청 다시 보내기' }))
+  await waitFor(() => expect(writes).toHaveLength(2))
+  expect(writes[1]).toEqual(writes[0])
+  expect(writes[1].expectedTemplateVersion).toBe(1)
+})
+
+it('review: uncertain management response keeps the exact version request frozen', async () => {
+  const writes: any[] = []
+  render(<App session={new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url)
+    if (path.includes('/templates?')) return Response.json({ items: [template()] })
+    if (path.endsWith('/versions') && init?.method === 'POST') { writes.push(JSON.parse(String(init.body))); return Response.json({ code: 'UPSTREAM_UNAVAILABLE', retryable: true }, { status: 503 }) }
+    return common(path) ?? Response.json({}, { status: 404 })
+  } })} />)
+  await waitFor(() => expect(location.pathname).toBe('/today'))
+  fireEvent.click(await screen.findByRole('link', { name: '공부' }))
+  fireEvent.click(await screen.findByRole('button', { name: '카테고리 관리' }))
+  fireEvent.click(await screen.findByRole('button', { name: '알고리즘 수정' }))
+  fireEvent.change(screen.getByLabelText('카테고리 이름'), { target: { value: '결과 미확인 이름' } })
+  fireEvent.click(screen.getByRole('button', { name: '변경 저장' }))
+  await screen.findByRole('button', { name: '같은 요청 다시 보내기' })
+  expect(screen.getByLabelText('카테고리 이름')).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: '같은 요청 다시 보내기' }))
+  await waitFor(() => expect(writes).toHaveLength(2))
+  expect(writes[1]).toEqual(writes[0])
+  expect(writes[0].expectedRevision).toBe(0)
+})
+
+it.each([false, true])('review: picker cursor and confirmed template conflict use a new Task/series command (series=%s)', async (series) => {
+  let version = 1
+  const writes: any[] = []
+  const later = () => template({ templateId: 'later', currentVersion: { ...template().currentVersion, templateVersion: version, name: '21번째' } })
+  render(<App session={new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url)
+    if (path.includes('/templates?')) return Response.json(path.includes('cursor=page2') ? { items: [later()] } : { items: [template()], nextCursor: 'page2' })
+    if (/\/(tasks|series)$/.test(path) && init?.method === 'POST') { writes.push(JSON.parse(String(init.body))); version = 2; return Response.json({ code: 'TEMPLATE_VERSION_CONFLICT', retryable: false }, { status: 409 }) }
+    return common(path) ?? Response.json({}, { status: 404 })
+  } })} />)
+  const add = await screen.findByRole('button', { name: '공부 추가' }); await waitFor(() => expect(add).toBeEnabled()); fireEvent.click(add)
+  fireEvent.click(await screen.findByRole('button', { name: '카테고리 더 보기' }))
+  await screen.findByRole('option', { name: '21번째' })
+  fireEvent.change(screen.getByLabelText('공부 카테고리'), { target: { value: 'later' } })
+  fireEvent.change(screen.getByLabelText('제목'), { target: { value: '그대로인 일정 초안' } })
+  if (series) fireEvent.change(screen.getByLabelText('반복'), { target: { value: 'DAILY' } })
+  fireEvent.click(screen.getByRole('button', { name: '저장' }))
+  const confirm = await screen.findByRole('button', { name: '최신 카테고리 확인' }); await waitFor(() => expect(confirm).toBeEnabled())
+  expect(screen.getByLabelText('제목')).toBeEnabled()
+  fireEvent.click(confirm)
+  fireEvent.click(screen.getByRole('button', { name: '저장' }))
+  await waitFor(() => expect(writes).toHaveLength(2))
+  expect(writes[1].templateSelection.expectedTemplateVersion).toBe(2)
+  expect(writes[1].commandId).not.toBe(writes[0].commandId)
+  expect(writes[1].title).toBe(writes[0].title)
+  if (series) expect(writes[1].rule).toEqual(writes[0].rule)
+})
+
+it.each([400, 413])('review: correction rejection %s unlocks fields and uses the edited content', async (status) => {
+  const writes: any[] = []
+  const base = { activityId: 'activity-1', commandId: 'command-1', taskId: 'task-1', userId: 'owner', activityType: 'STUDY', performedAt: '2026-09-06T01:00:00.123456Z', detail: { study: { fields: [] } }, detailFormat: 'TEMPLATE', templateSnapshot: { ...template().currentVersion, domain: 'STUDY', kind: 'STUDY_CATEGORY', schemaVersion: 1 }, status: 'COMPLETED', version: 4, syncState: 'APPLIED' }
+  render(<App session={new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url)
+    if (path.endsWith('/activities/activity-1')) {
+      if (init?.method === 'PATCH') { writes.push(JSON.parse(String(init.body))); return Response.json({ code: status === 400 ? 'FIELD_VALUE_INVALID' : 'PAYLOAD_TOO_LARGE', retryable: false }, { status }) }
+      return Response.json(base)
+    }
+    return common(path) ?? Response.json({}, { status: 404 })
+  } })} />)
+  await waitFor(() => expect(location.pathname).toBe('/today'))
+  await waitFor(() => expect(screen.getByRole('button', { name: '공부 추가' })).toBeEnabled())
+  await act(async () => { history.pushState({}, '', '/study?activityId=activity-1'); dispatchEvent(new PopStateEvent('popstate')) })
+  fireEvent.change(await screen.findByLabelText('문제 수 (개)'), { target: { value: '-1.5' } })
+  fireEvent.click(screen.getByRole('button', { name: '수정 저장' }))
+  await screen.findByRole('alert')
+  expect(screen.getByLabelText('문제 수 (개)')).toBeEnabled()
+  fireEvent.change(screen.getByLabelText('문제 수 (개)'), { target: { value: '2.5' } })
+  fireEvent.click(screen.getByRole('button', { name: '수정 저장' }))
+  await waitFor(() => expect(writes).toHaveLength(2))
+  expect(writes[1].detail.study.fields[0].numberValue).toBe(2.5)
+  expect(writes[1].performedAt).toBe(base.performedAt)
+})
+
+it.each([false, true])('review: QuickAdd freezes the request across refresh and archive (series=%s)', (series) => {
+  const save = vi.fn(), original = template() as activity.TemplateResponse
+  const props = { date: '2026-09-07', type: planner.TaskType.Study, busy: false, error: '', save, cancel: vi.fn() }
+  const view = render(<QuickAdd {...props} templates={[original]} />)
+  fireEvent.change(screen.getByLabelText('제목'), { target: { value: '고정 요청' } })
+  fireEvent.change(screen.getByLabelText('공부 카테고리'), { target: { value: original.templateId } })
+  if (series) fireEvent.change(screen.getByLabelText('반복'), { target: { value: 'DAILY' } })
+  fireEvent.click(screen.getByRole('button', { name: '저장' }))
+  const first = structuredClone(save.mock.calls[0])
+  fireEvent.click(screen.getByRole('button', { name: '저장' }))
+  expect(save.mock.calls[1]).toEqual(first)
+  view.rerender(<QuickAdd {...props} uncertain templates={[{ ...original, currentVersion: { ...original.currentVersion, templateVersion: 2 } }]} />)
+  fireEvent.click(screen.getByRole('button', { name: '같은 요청 다시 보내기' }))
+  expect(save.mock.calls[2]).toEqual(first)
+  view.rerender(<QuickAdd {...props} uncertain templates={[]} />)
+  expect(screen.getByRole('button', { name: '같은 요청 다시 보내기' })).toBeEnabled()
+  fireEvent.click(screen.getByRole('button', { name: '같은 요청 다시 보내기' }))
+  expect(save.mock.calls[3]).toEqual(first)
+})
+
+async function openStudyRecord(fetcher: typeof fetch) {
+  render(<App session={new SessionClient({ fetcher })} />)
+  await waitFor(() => expect(location.pathname).toBe('/today'))
+  await waitFor(() => expect(screen.getByRole('button', { name: '공부 추가' })).toBeEnabled())
+  await act(async () => { history.pushState({}, '', '/study?taskId=task-1'); dispatchEvent(new PopStateEvent('popstate')) })
+  await screen.findByLabelText('문제 수 (개)')
+}
+const studyTask = { taskId: 'task-1', userId: 'owner', title: 'DP 연습', taskType: 'STUDY', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0 }
+function recordRead(path: string, current = template()) {
+  if (path.endsWith('/tasks/task-1')) return Response.json(studyTask)
+  if (path.endsWith('/record-template')) return Response.json({ linked: true, template: current })
+  return common(path) ?? Response.json({}, { status: 404 })
+}
+
+it('review: definition conflict preserves removed and unit-changed inputs until explicit comparison', async () => {
+  const writes: any[] = []; let current = template()
+  let saved: Record<string, unknown> | null = null
+  await openStudyRecord(async (url, init) => {
+    const path = String(url)
+    if (path.endsWith('/activities/retained-record')) return Response.json(saved)
+    if (path.endsWith('/activities') && init?.method === 'POST') {
+      writes.push(JSON.parse(String(init.body)))
+      if (writes.length === 2) {
+        saved = { activityId: 'retained-record', commandId: writes[1].commandId, taskId: 'task-1', userId: 'owner', activityType: 'STUDY', performedAt: writes[1].performedAt, detail: writes[1].detail, detailFormat: 'TEMPLATE', templateSnapshot: { ...current.currentVersion, schemaVersion: 1, domain: 'STUDY', kind: 'STUDY_CATEGORY' }, status: 'COMPLETED', version: 0, syncState: 'APPLIED' }
+        return Response.json(saved, { status: 201 })
+      }
+      current = template({ currentVersion: { ...current.currentVersion, templateVersion: 2, fields: current.currentVersion.fields.filter((field) => field.type !== 'MEMO').map((field) => field.type === 'NUMBER' ? { ...field, unit: '문항' } : field) } })
+      return Response.json({ code: 'TEMPLATE_VERSION_CONFLICT', retryable: false }, { status: 409 })
+    }
+    return recordRead(path, current)
+  })
+  fireEvent.change(screen.getByLabelText('문제 수 (개)'), { target: { value: '7' } })
+  fireEvent.change(screen.getByLabelText('정리'), { target: { value: '없애면 안 되는 메모' } })
+  fireEvent.change(screen.getByLabelText('복습 완료'), { target: { value: 'false' } })
+  fireEvent.click(screen.getByRole('button', { name: '기록 저장' }))
+  await screen.findByRole('button', { name: '변경 확인 후 최신 항목 적용' })
+  expect(screen.getByLabelText('정리')).toHaveValue('없애면 안 되는 메모')
+  expect(screen.getByLabelText('문제 수 (개)')).toHaveValue(7)
+  expect(screen.getByRole('button', { name: '기록 저장' })).toBeDisabled()
+  fireEvent.click(await screen.findByRole('button', { name: '변경 확인 후 최신 항목 적용' }))
+  expect(screen.getByLabelText('문제 수 (문항)')).toHaveValue(null)
+  expect(screen.getByLabelText('복습 완료')).toHaveValue('false')
+  expect(screen.getAllByText(/없애면 안 되는 메모/).length).toBeGreaterThan(0)
+  fireEvent.change(screen.getByLabelText('주제'), { target: { value: 'BFS' } })
+  expect(screen.getByText('없애면 안 되는 메모')).toBeVisible()
+  fireEvent.change(screen.getByLabelText('주제'), { target: { value: '' } })
+  fireEvent.click(screen.getByRole('button', { name: '기록 저장' }))
+  await waitFor(() => expect(writes).toHaveLength(2))
+  expect(writes[1].commandId).not.toBe(writes[0].commandId)
+  expect(writes[1].expectedTemplateVersion).toBe(2)
+  expect(writes[1].detail.study.fields).toEqual([{ fieldId: template().currentVersion.fields[3]!.fieldId, type: 'CHECK', checked: false }])
+  await waitFor(() => expect(location.pathname).toBe('/today'))
+  await act(async () => { history.pushState({}, '', '/study?activityId=retained-record'); dispatchEvent(new PopStateEvent('popstate')) })
+  await screen.findByRole('button', { name: '수정 저장' })
+  expect(screen.getByText('없애면 안 되는 메모')).toBeVisible()
+  expect(screen.getByText('문제 수 · 숫자 · 개')).toBeVisible()
+})
+
+it.each([[400, 'FIELD_VALUE_INVALID'], [413, 'PAYLOAD_TOO_LARGE']])('review: confirmed record error %s preserves editable draft', async (status, code) => {
+  const writes: any[] = []
+  await openStudyRecord(async (url, init) => {
+    if (String(url).endsWith('/activities') && init?.method === 'POST') { writes.push(JSON.parse(String(init.body))); return Response.json({ code, retryable: false }, { status: Number(status) }) }
+    return recordRead(String(url))
+  })
+  fireEvent.change(screen.getByLabelText('문제 수 (개)'), { target: { value: '1' } })
+  fireEvent.click(screen.getByRole('button', { name: '기록 저장' }))
+  await screen.findByRole('alert')
+  expect(screen.getByLabelText('문제 수 (개)')).toBeEnabled()
+  fireEvent.change(screen.getByLabelText('문제 수 (개)'), { target: { value: '2' } })
+  fireEvent.click(screen.getByRole('button', { name: '기록 저장' }))
+  await waitFor(() => expect(writes).toHaveLength(2))
+  expect(writes[1].commandId).not.toBe(writes[0].commandId)
+  expect(writes[1].detail.study.fields[0].numberValue).toBe(2)
+})
+
+it('review: manager follows cursor and creates a new identity when changing saved field type', async () => {
+  const writes: any[] = [], cursors: string[] = []
+  const later = template({ templateId: 'later', currentVersion: { ...template().currentVersion, name: '21번째 카테고리' } })
+  history.replaceState({}, '', '/study')
+  render(<App session={new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url)
+    if (path.includes('/templates?')) { cursors.push(path); return Response.json(path.includes('cursor=page2') ? { items: [later] } : { items: [template()], nextCursor: 'page2' }) }
+    if (path.endsWith('/versions') && init?.method === 'POST') { writes.push(JSON.parse(String(init.body))); return Response.json({ code: 'VALIDATION_FAILED', retryable: false }, { status: 400 }) }
+    return common(path) ?? Response.json({}, { status: 404 })
+  } })} />)
+  await waitFor(() => expect(location.pathname).toBe('/today'))
+  fireEvent.click(await screen.findByRole('link', { name: '공부' }))
+  fireEvent.click(await screen.findByRole('button', { name: '카테고리 관리' }))
+  fireEvent.click(await screen.findByRole('button', { name: '카테고리 더 보기' }))
+  fireEvent.click(await screen.findByRole('button', { name: '21번째 카테고리 수정' }))
+  fireEvent.change(screen.getAllByLabelText('형식')[0]!, { target: { value: 'TIME' } })
+  fireEvent.click(screen.getByRole('button', { name: '변경 저장' }))
+  await screen.findByRole('alert')
+  expect(writes[0].fields[0].fieldId).not.toBe(template().currentVersion.fields[0]!.fieldId)
+  expect(writes[0].fields[0].unit).toBe('초')
+  expect(screen.getByLabelText('카테고리 이름')).toBeEnabled()
+  expect(cursors.some((url) => url.includes('cursor=page2'))).toBe(true)
 })
 
 function common(path: string) {

@@ -51,7 +51,7 @@ it('submits successfully after StrictMode mounts, cleans up, and replays effects
   expect(post).toHaveBeenCalledTimes(1)
 })
 
-it.each([400, 502, 504])('preserves an uncertain HTTP %s snapshot across leaving and reentering', async (status) => {
+it.each([502, 504])('preserves an uncertain HTTP %s snapshot across leaving and reentering', async (status) => {
   const writes: unknown[] = []
   await setup({ post: async (body) => { writes.push(body); return writes.length === 1 ? new Response('proxy timeout', { status }) : activityResponse() } })
   fireEvent.click(screen.getByRole('button', { name: 'task-1 기록' }))
@@ -102,7 +102,8 @@ it.each([true, false])('distinguishes retryable reference lag from a permanent c
   fireEvent.click(screen.getByRole('button', { name: 'task-1 기록' }))
   fireEvent.click(await screen.findByRole('button', { name: '기록 저장' }))
   await screen.findByText(retryable ? /할 일 정보가 기록 서비스/ : /충돌로 저장이 거절/)
-  expect(screen.getByLabelText('기록 메모')).toBeDisabled()
+  if (retryable) expect(screen.getByLabelText('기록 메모')).toBeDisabled()
+  else expect(screen.getByLabelText('기록 메모')).toBeEnabled()
   if (retryable) expect(screen.getByRole('button', { name: '같은 요청 다시 보내기' })).toBeEnabled()
   else {
     expect(screen.getByRole('button', { name: '충돌 상태 확인 필요' })).toBeDisabled()

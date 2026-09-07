@@ -11,6 +11,9 @@ import { SyncStatus } from './SyncStatus'
 import { useCorrectionDraft, type CorrectionOperation } from './CorrectionDrafts'
 import { useAppliedActivity } from './useAppliedActivity'
 import { refreshActivity } from './refreshActivity'
+import { validateStudyFields } from './StudyTemplateFields'
+import { usePreviousStudyInputs } from './RecordDrafts'
+import { PreviousStudyInput } from './TemplateChange'
 
 type RecordType = 'WORKOUT' | 'STUDY' | 'CLIMBING'
 const dateInSeoul = (value: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(value)
@@ -39,6 +42,7 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
   const record = useQuery({ queryKey: key, queryFn: ({ signal }) => getEditableActivity(api, activityId, signal), structuralSharing: retainRevision, refetchInterval: (query) => query.state.data?.syncState === 'PENDING' ? 1500 : false })
   useAppliedActivity(record.data, activityId)
   const { draft, update } = useCorrectionDraft(activityId)
+  const previousInputs = usePreviousStudyInputs(activityId)
   const { baseline, date, note, workout, study, climbing, start, end, operation, mode, error } = draft
   const [busy, setBusy] = useState(false), mounted = useRef(true), attempt = useRef(0)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; attempt.current++ } }, [])
@@ -49,6 +53,7 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
   useEffect(() => { if (!baseline && record.data) initialize(record.data) }, [record.data, baseline])
   function build(): ActivityCorrection {
     if (!baseline) throw new Error('원본 기록을 불러오는 중입니다.')
+    if (type === 'STUDY') validateStudyFields(study)
     const original = activityTimestamps(baseline), originalDate = dateInSeoul(baseline.performedAt)
     const startedAt = draft.startDirty ? toDate(date, start)?.toISOString() : shiftDate(original.startedAt, originalDate, date)
     const endedAt = draft.endDirty ? toDate(date, end)?.toISOString() : shiftDate(original.endedAt, originalDate, date)
@@ -87,7 +92,7 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
       let problem: { code?: string; retryable?: boolean } | null = null
       try { problem = response ? await response.clone().json() : null } catch { /* proxy responses can be non-JSON */ }
       if (!current(id)) return
-      if (response && [400, 422].includes(response.status) && problem?.code && problem.retryable !== true && ['VALIDATION_FAILED', 'MALFORMED_JSON', 'INVALID_INTERVAL', 'INVALID_DETAIL_ITEM', 'DETAIL_TYPE_MISMATCH'].includes(problem.code)) update({ operation: null, mode: 'ready', error: `입력을 수정해 주세요. (${problem.code})` })
+      if (response && [400, 413, 415, 422].includes(response.status)) update({ operation: null, mode: 'ready', error: `입력을 수정해 주세요. (${problem?.code ?? response.status})` })
       else if (response?.status === 409) update({ mode: 'conflict', error: '다른 변경과 충돌했습니다. 작성 중인 내용은 보존했습니다. 현재 기록을 확인한 뒤 다시 열어 주세요.' })
       else {
         update({ error: '수정 결과를 확인하지 못했습니다. 원 요청과 초안을 보존했습니다.' })
@@ -133,6 +138,7 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
       <label>기록 메모<textarea value={note} onChange={(event) => update({ note: event.target.value })} /></label>
     </fieldset><div className="form-actions"><button type="button" disabled={locked} onClick={() => void perform({ kind: 'void', body: { reason: '사용자 취소', version: baseline.version } })}>기록 취소</button><button disabled={locked}>{busy ? '저장 중…' : '수정 저장'}</button></div></form>}
     {error && <p role="alert">{error}</p>}
+    {previousInputs.map((previous, index) => <PreviousStudyInput key={index} {...previous} />)}
     {operation && <div className="form-actions"><button disabled={busy} onClick={() => void check()}>결과 다시 확인</button>{mode === 'uncertain' && <button disabled={busy} onClick={() => void perform(operation)}>같은 요청 다시 보내기</button>}<button disabled={busy} onClick={() => void reopen()}>초안을 버리고 현재 기록으로 다시 열기</button></div>}
   </section>
 }
