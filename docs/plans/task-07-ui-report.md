@@ -37,3 +37,12 @@
 - 기존 RecordPage의 응답 유실 commandId 재전송, 로컬 시간 오류, 명확한 validation 거절 후 편집 회귀를 유지했다. 첫 build는 테스트의 지원하지 않는 `getByRole` 옵션 `exact` 때문에 실패했고 제거 후 `pnpm --filter @todorok/web build`와 `git diff --check`를 통과했다.
 - 초기 탐색 실행은 StrictMode로 모든 fixture를 감싸 취소된 GET도 횟수에 넣는 mock 때문에 추가 실패가 있었다. StrictMode 제출 검증은 유지하고 나머지 상태 전이 fixture는 일반 mount로 분리한 뒤 위 RED를 재확인했다. 초기 `test -- ...`는 전체 suite를 실행했으므로 최종 집중 실행은 `exec vitest run`을 사용했다.
 - 이 후속 작업에서 backend/runtime을 다시 만들거나 브라우저 검증을 재실행하지 않았다. 상위의 실제 브라우저 증거와 이번 개발 effect replay·지연응답 회귀 증거는 별개다. 작업07 전체 완료 여부는 부모 검토에 남긴다.
+
+## 리뷰 1차 수정: 불확실 응답과 초안 보존
+
+- 502/504 및 ProblemDetails로 validation 거절을 확인할 수 없는 응답은 저장 결과 불확실 상태로 유지한다. 입력을 잠그고 원래 commandId와 요청 전체를 다시 전송한다. 400/422의 알려진 validation code는 새 입력을 허용한다. `TASK_REFERENCE_PENDING` + `retryable: true`는 같은 요청 재확인을 안내하고, 재시도 불가 409는 충돌 코드와 오늘 화면 확인 동작을 표시한다.
+- 인증된 화면 수명 동안 유지되는 메모리 전용 `RecordDraftProvider`를 추가했다. 유형/Task별 초안과 제출 snapshot은 취소·메뉴·뒤로 이동 후 복원된다. 제출 시 실제 수행일을 고정해 Task 일정이 변경되어도 표시·재전송·복귀일이 일치한다. logout/generation 변경은 provider를 교체하며 이전 요청 callback은 현재 화면이나 새 세션 초안을 갱신하지 않는다. localStorage나 오프라인 queue는 사용하지 않는다.
+- 시/분이 모두 비었을 때만 시간을 생략한다. 일부만 선택한 시작/종료는 POST 전에 오류를 표시한다.
+- 검증 과정: 리뷰 지적을 바탕으로 수정과 새 회귀를 추가했다. 수정 전 새 테스트의 RED 실행은 하지 않았으므로 별도 RED로 주장하지 않는다. 첫 실행은 28건 중 27건 통과, 1건은 logout 재로그인 후 이월 중인 비활성 Task 버튼을 fixture가 먼저 클릭해 실패했다. 활성화 대기를 추가했다. 이어 수행일 보존 회귀를 추가한 집중 실행은 3 files / 29 tests 통과했다. 최종 실행 수치는 아래에 기록한다.
+- 최종 GREEN: `pnpm --filter @todorok/web exec vitest run src/features/activity/lifecycle.test.tsx src/features/activity/RecordPage.test.tsx src/App.test.tsx` — 3 files / 30 tests 통과. 새 13건은 불확실 400/502/504 이후 이탈·복귀·요청 전체 동일 재전송, 미제출 초안의 취소/메뉴/뒤로 복원, 확인된 400/422 validation 수정 후 새 commandId, 두 409 분기, 양쪽 부분 시간, logout·재로그인 후 늦은 성공과 초안 폐기, 제출 중 이탈 뒤 일정 변경에도 원래 수행일/commandId 보존을 포함한다. 앞선 StrictMode·지연 응답·자동 APPLIED 회귀도 유지했다.
+- 최종 production source에서 `pnpm --filter @todorok/web build`, `git diff --check` 통과. backend와 실제 브라우저 재실행은 하지 않았다. 전체 작업07 완료 판정은 부모 리뷰에 남긴다.

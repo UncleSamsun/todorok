@@ -2,7 +2,8 @@ export type TimeValue = { period: 'AM' | 'PM'; hour: string; minute: string }
 export const emptyTime = (): TimeValue => ({ period: 'AM', hour: '', minute: '' })
 
 export function toDate(date: string, value: TimeValue) {
-  if (!value.hour || !value.minute) return undefined
+  if (!value.hour && !value.minute) return undefined
+  if (!value.hour || !value.minute) throw new Error('시간의 시와 분을 모두 선택해 주세요.')
   let hour = Number(value.hour) % 12
   if (value.period === 'PM') hour += 12
   return new Date(`${date}T${String(hour).padStart(2, '0')}:${value.minute}:00+09:00`)

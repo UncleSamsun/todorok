@@ -12,6 +12,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { LoginPage } from '../features/auth/LoginPage'
 import { TodayPage } from '../features/today/TodayPage'
 import { RecordPage } from '../features/activity/RecordPage'
+import { RecordDraftProvider } from '../features/activity/RecordDrafts'
 export { seoulToday } from '@todorok/client-domain'
 const Workout = lazy(() => import('../features/workout/WorkoutPage'))
 const Study = lazy(() => import('../features/study/StudyPage'))
@@ -95,7 +96,7 @@ function SessionRoutes() {
     )
   if (entered !== state.generation)
     return <EnterSession generation={state.generation} onEnter={setEntered} />
-  return <ProtectedShell key={state.generation} />
+  return <RecordDraftProvider key={state.generation}><ProtectedShell /></RecordDraftProvider>
 }
 function EnterSession({
   generation,
