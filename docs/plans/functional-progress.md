@@ -65,6 +65,23 @@
 - 09A 리뷰반증:제품무수정실제HTTP13/13(부모XML확인)에서누락/null/비배열은이미거절됐다. 실제누락응답은VALIDATION_FAILED/fields NOT_NULL,주입mapper결과도fields=null로확인했다. 초기[]소스만으로판단한Important는오탐이므로제품수정없이정확한회귀assert와증거로재판정한다.
 - 09A 반증회귀 `9fe9fe6`:최종15/15(부모XML15/0/0/0)·assemble통과. 제품변경없는test/report2파일을커밋하고scoped재판정요청했다. 기존Important는누락필드400의정확한오류/mapper/DB불변증거로평가하며최종판정전완료보류.
 - 09A 완료:독립재리뷰가fields지적을오탐으로철회하고요구·품질승인. 원래28/28·proxy4/계약6/drift/client검증과최종15회귀/assemble증거를합쳐기반관리만완료판정한다. 전체09는B1선택/일정연결→B2기록/legacy→C UI가남는다. B1은실제context경로·서비스인증/외부차단을명시한별도brief로진행한다.
+- 09B1 착수:서비스전용private/public key파일과base URL 설정을분리한다. 미설정내부승인은fail-closed,일반서비스/bootstrap시작은유지한다. 제안포트8080은실제nginx/compose/application의8082와달라부모가대조해8082로수정요청했다. 내부계약/생성·DB/HTTP회귀부터진행한다.
+- 09B1 첫RED:실제PG/HTTP신규2개에서승인201대비401·사용자JWT내부401대비404로미연결을확인했다. internal계약생성ref/의존성compile보완과서비스JWT·binding구현중이며backend는아직frozen아니다. compile실패는동작검증통과로계산하지않는다.
+- 09B1 중간:내부생성의존성보완후승인/JWT2개GREEN. planner는연결command누락400대비201로RED확인후command/링크구현중이다. 복수Gradletask의--tests범위로activity43개가실행돼41통과/마이그레이션기대치2실패였으며전체통과로표시하지않는다. projectionv2/실제두서비스·Kafka검증이남는다.
+- 09B1 부모실제왕복RED83921:2개중outage/승인응답유실복구통과,최초Task의template_binding_id projection대기에서실패(90→626행),XML2/1/0/0·exit1·3m16s. 승인후planner실패/동시재전달까지통과한뒤v2미발행경계를재현했다. 실행종료후freeze해제해발행/소비와selection제거command우회회귀를담당에인계했다.
+- 09B1 왕복후속44212: v2발행추가후에도최초Taskprojection.await90→677에서timeout,두fixture중outage/응답유실만통과(XML2/1/0/0·exit1·3m3s). 성공으로처리하지않고freeze해제후consumer/schema/발행경계원인확인을담당에인계했다. selection제거우회는별도focused47575통과보고가있다.
+- 09B1 진단19916:outbox1건/version2/bindingId와동일eventIdKafka수신·Connect전송정상확인후projectionawait96실패. CDC까지는정상이며수신payload/소비검증경계로범위를좁혔다. JSON동등비교·직접예외확인으로원인확정중이다.
+- 09B1 원인75703:같은eventId의outbox seriesId:null이Kafka에서키누락으로변환됨을확인했다. Debezium공식문서의기본null ignore와일치한다. 소비schema를약화하지않고planner source에만optional_bytes를적용한다. activity와planner각원본topic명시predicate로재변환을피하며v1Activity왕복회귀를포함한다.
+- 09B1 Ruling: planner outbox만 null 보존 변환으로 분리한다 — v2 명시 null 계약을 지키면서 기존 Activity v1의 생략 정책을 유지하기 위함 — connector 설정 변경·검증·운영 업데이트 절차가 추가로 필요하다.
+- 09B1 부모전체왕복94568:16개중15통과/1실패(XML16/1/0/0·3m45s). 신규binding/장애복구2개모두통과해null보존수정효과와기존v1흐름을확인했다. 유일실패는기존rollback검사의global climbing_round<=1이타테스트행2개를세는격리결함이다. 원시나리오에서해당owner의climbing은전부rollback이므로owner범위0/불변검증으로보완후focused재실행한다.
+- 09B1 suite55530:planner46통과,activity47중46통과/기존정의생성global task_reference0가타owner projection행을세는1실패보고. owner범위미생성검증으로격리보완후94026focused/libs/build진행중. 승인/archive Lock·JWT행렬과Nginx실제경로·Node계약9/clientbuild통과보고. 부모rollbackfocused는동시heavy를피해대기한다.
+- 09B1 후속94026:activity격리회귀1·planner check/coverage·event/messaging/web libs·main/migration/bootstrap assemble통과보고. 부모56424rollback단일왕복PASS(exit0/2m3s·XML1/0/0/0직접확인)로기존16개실행의유일격리실패를해소했다. freeze해제후drift/키/등록script·보고/commit을마무리한다.
+- 09B1 파일키Compose smoke준비:부모전용projecttodorok-task09b-smoke/localhost5189와독립user/service키2쌍을.local에준비(.dockerignore제외확인). imagebuild91059는JDKbuilder에Node가없어새generateEventV2Java에서실패했다. 기동전빌드의존성누락을발견해담당에게수정인계했으며생성skip으로우회하지않는다. 아직up/probe미실행.
+- 09B1 파일키실제기동:builder-onlyNode24보완후2869 3서비스/connect-init build exit0,69243 up/health/bootstrap exit0. localhost5189에서파일키승인·Task/replay·Kafka projection·archive·기록준비409흐름통과. 유효service JWT201/aud누락401도확인해추측null수정은하지않는다. 공개expectedTemplateVersion의소수1.5/문자열1이각201로수락돼계약위반을확정했고실제probe exit1. 담당에CreateTask/Series입력경계·부분저장없는400회귀를인계,전용runtime유지중이다.
+- 09B1 입력보완:97573 영향HTTP22/0/0/0·assemble통과보고후부모60677 plannerimage재빌드성공. 실제probe에서Task/Series소수·문자열각400,정수생성/replay·파일키승인/Kafka/archive/recordguard모두통과했다. helper의일회성connect-init --wait오인을분리하고47985 up exit0로재기동확인. 82560 down exit0·전용컨테이너/volume/network0·임시키/credential6파일삭제확인. 스크립트는보존하고보고/commit/중요리뷰로진행한다.
+- 09B1 구현ca9e0de·보고명령정정8ed2d4a:119개본인파일커밋/부모ledger제외확인. ce1cfb1..8ed2d4a의원본·제품·테스트·생성소스를5개패키지로분리해독립중요리뷰착수. B1완료판정은리뷰후이며B2/C는계속남아있다.
+- 09B1 리뷰진행:planner 중복templateSelection키(앞소수/뒤null)의tree/DTO해석차이로사전검증우회가가능함을읽기전용probe로확인했다. 내부activity의숫자coercion은기존strict설정으로배제했다. projection target/series 불변경계와함께최종지적정리중이다. B2기록값/legacy 인계문서는준비했으나B1열린중요지적전에는실행하지않는다.
+- 09B1 리뷰최종Important2건:중복키정수검사우회와TASK binding/null series에잘못된v2seriesId를채우는identity훼손을확정했다. `task-09-template-binding-review.md` 기준으로HTTP/DB회귀와최소수정을원담당라운드1에전달했다. 전체B1완료판정보류.
 - 09 Ruling: Task/series identity는 유지하고 새 기록 최초 저장 시 현재 정의 버전을 고정한다 — PRD의 이후 기록 적용과 과거 수정 보존을 함께 지키기 위함 — 다르게 요구되면 버전 선택 UI와 계약 재작업이 필요하다.
 - 09 Ruling: 보관은 신규 선택만 막고 기존 승인된 일정·반복은 계속 사용한다 — 일정 자체의 보관과 템플릿 보관을 분리하기 위함 — 잘못 해석했다면 반복 중단 정책과 사용자 안내를 수정해야 한다.
 - 09 Ruling: 서비스 선택 승인의 잔존은 허용하되 대상·소유자·command에 고정한다 — 분산 원자성을 가장하지 않고 실패 재시도를 보존하기 위함 — 향후 안전한 정리 정책을 따로 마련해야 한다.
