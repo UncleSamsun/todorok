@@ -39,7 +39,7 @@ class NotificationPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from notification.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(2);
+                Integer.class)).isEqualTo(3);
         assertThat(jdbc.queryForList(
                 "select schema_name from information_schema.schemata "
                         + "where schema_name in ('planner','activity','notification') "
@@ -53,7 +53,22 @@ class NotificationPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from notification.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(2);
+                Integer.class)).isEqualTo(3);
+    }
+
+    @Test
+    void createsOnlyInboxConstraints() {
+        assertThat(jdbc.queryForList(
+                "select column_name from information_schema.columns "
+                        + "where table_schema = 'notification' "
+                        + "and table_name = 'processed_event' "
+                        + "order by ordinal_position",
+                String.class)).containsExactly("event_id", "event_type", "processed_at");
+        assertThat(jdbc.queryForObject(
+                "select count(*) from information_schema.tables "
+                        + "where table_schema = 'notification' "
+                        + "and table_name = 'outbox_event'",
+                Integer.class)).isZero();
     }
 
     @Test

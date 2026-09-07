@@ -515,7 +515,8 @@ PostgreSQL
 - Spring Boot의 Hikari·Tomcat·Kafka consumer 기본 동시성 값으로 시작하고 metric에서 포화가 확인될 때 조정한다.
 - PostgreSQL replication slot WAL은 2GB로 제한하고 slot 비활성·safe WAL·디스크 사용률을 감시한다.
 - Kafka domain topic은 7일 또는 partition당 1GB, dead-letter는 30일 또는 1GB를 보존한다.
-- 발행 완료 outbox는 7일, consumer inbox는 30일 후 정리한다.
+- MVP에서는 outbox와 consumer inbox를 자동 삭제하지 않는다. CDC·snapshot·dead-letter 재처리 범위를 증명하는 안전한 watermark를 도입한 뒤에만 보존 기간을 적용한다.
+- outbox·inbox의 가장 오래된 record 나이와 전체 건수를 상태 점검에 포함해 장기 적체를 경고한다.
 
 ### 19.3 신뢰성
 

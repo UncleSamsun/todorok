@@ -39,7 +39,7 @@ class PlannerPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from planner.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(2);
+                Integer.class)).isEqualTo(3);
         assertThat(jdbc.queryForList(
                 "select schema_name from information_schema.schemata "
                         + "where schema_name in ('planner','activity','notification') "
@@ -53,7 +53,23 @@ class PlannerPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from planner.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(2);
+                Integer.class)).isEqualTo(3);
+    }
+
+    @Test
+    void createsOutboxAndInboxConstraints() {
+        assertThat(jdbc.queryForList(
+                "select column_name from information_schema.columns "
+                        + "where table_schema = 'planner' and table_name = 'outbox_event' "
+                        + "order by ordinal_position",
+                String.class)).containsExactly(
+                        "id", "aggregatetype", "aggregateid", "type",
+                        "payload", "occurred_at", "created_at");
+        assertThat(jdbc.queryForObject(
+                "select count(*) from information_schema.table_constraints "
+                        + "where table_schema = 'planner' and table_name = 'processed_event' "
+                        + "and constraint_type = 'PRIMARY KEY'",
+                Integer.class)).isEqualTo(1);
     }
 
     @Test
