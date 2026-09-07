@@ -4,7 +4,11 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import io.todorok.planner.api.model.CategoryProgress;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.lang.Nullable;
 import java.time.OffsetDateTime;
@@ -29,6 +33,8 @@ public class CalendarDaySummary {
 
   private Integer completedCount;
 
+  private List<@Valid CategoryProgress> categoryProgress = new ArrayList<>();
+
   public CalendarDaySummary() {
     super();
   }
@@ -36,10 +42,11 @@ public class CalendarDaySummary {
   /**
    * Constructor with only required parameters
    */
-  public CalendarDaySummary(LocalDate date, Integer totalCount, Integer completedCount) {
+  public CalendarDaySummary(LocalDate date, Integer totalCount, Integer completedCount, List<@Valid CategoryProgress> categoryProgress) {
     this.date = date;
     this.totalCount = totalCount;
     this.completedCount = completedCount;
+    this.categoryProgress = categoryProgress;
   }
 
   public CalendarDaySummary date(LocalDate date) {
@@ -51,7 +58,7 @@ public class CalendarDaySummary {
    * Get date
    * @return date
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("date")
   public LocalDate getDate() {
     return date;
@@ -72,7 +79,7 @@ public class CalendarDaySummary {
    * minimum: 0
    * @return totalCount
    */
-  @NotNull @Min(value = 0) 
+  @NotNull @Min(value = 0)
   @JsonProperty("totalCount")
   public Integer getTotalCount() {
     return totalCount;
@@ -93,7 +100,7 @@ public class CalendarDaySummary {
    * minimum: 0
    * @return completedCount
    */
-  @NotNull @Min(value = 0) 
+  @NotNull @Min(value = 0)
   @JsonProperty("completedCount")
   public Integer getCompletedCount() {
     return completedCount;
@@ -102,6 +109,34 @@ public class CalendarDaySummary {
   @JsonProperty("completedCount")
   public void setCompletedCount(Integer completedCount) {
     this.completedCount = completedCount;
+  }
+
+  public CalendarDaySummary categoryProgress(List<@Valid CategoryProgress> categoryProgress) {
+    this.categoryProgress = categoryProgress;
+    return this;
+  }
+
+  public CalendarDaySummary addCategoryProgressItem(CategoryProgress categoryProgressItem) {
+    if (this.categoryProgress == null) {
+      this.categoryProgress = new ArrayList<>();
+    }
+    this.categoryProgress.add(categoryProgressItem);
+    return this;
+  }
+
+  /**
+   * GENERAL, WORKOUT, STUDY, CLIMBING을 각각 한 번씩 포함한다.
+   * @return categoryProgress
+   */
+  @NotNull @Valid @Size(min = 4, max = 4)
+  @JsonProperty("categoryProgress")
+  public List<@Valid CategoryProgress> getCategoryProgress() {
+    return categoryProgress;
+  }
+
+  @JsonProperty("categoryProgress")
+  public void setCategoryProgress(List<@Valid CategoryProgress> categoryProgress) {
+    this.categoryProgress = categoryProgress;
   }
 
   @Override
@@ -115,12 +150,13 @@ public class CalendarDaySummary {
     CalendarDaySummary calendarDaySummary = (CalendarDaySummary) o;
     return Objects.equals(this.date, calendarDaySummary.date) &&
         Objects.equals(this.totalCount, calendarDaySummary.totalCount) &&
-        Objects.equals(this.completedCount, calendarDaySummary.completedCount);
+        Objects.equals(this.completedCount, calendarDaySummary.completedCount) &&
+        Objects.equals(this.categoryProgress, calendarDaySummary.categoryProgress);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(date, totalCount, completedCount);
+    return Objects.hash(date, totalCount, completedCount, categoryProgress);
   }
 
   @Override
@@ -130,6 +166,7 @@ public class CalendarDaySummary {
     sb.append("    date: ").append(toIndentedString(date)).append("\n");
     sb.append("    totalCount: ").append(toIndentedString(totalCount)).append("\n");
     sb.append("    completedCount: ").append(toIndentedString(completedCount)).append("\n");
+    sb.append("    categoryProgress: ").append(toIndentedString(categoryProgress)).append("\n");
     sb.append("}");
     return sb.toString();
   }

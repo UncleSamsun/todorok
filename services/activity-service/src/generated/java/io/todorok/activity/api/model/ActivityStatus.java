@@ -20,9 +20,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 public enum ActivityStatus {
-  
-  RECORDED("RECORDED"),
-  
+
+  COMPLETED("COMPLETED"),
+
+  PARTIAL("PARTIAL"),
+
   VOIDED("VOIDED");
 
   private final String value;

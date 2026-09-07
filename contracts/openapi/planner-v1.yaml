@@ -226,7 +226,7 @@ components:
         userId: { type: string, format: uuid }
     TaskType:
       type: string
-      enum: [TODO, WORKOUT, STUDY, CLIMBING]
+      enum: [GENERAL, WORKOUT, STUDY, CLIMBING]
     TaskStatus:
       type: string
       enum: [PLANNED, COMPLETED, SKIPPED, DELETED]
@@ -267,9 +267,23 @@ components:
     CalendarDaySummary:
       type: object
       additionalProperties: false
-      required: [date, totalCount, completedCount]
+      required: [date, totalCount, completedCount, categoryProgress]
       properties:
         date: { type: string, format: date }
+        totalCount: { type: integer, minimum: 0 }
+        completedCount: { type: integer, minimum: 0 }
+        categoryProgress:
+          type: array
+          minItems: 4
+          maxItems: 4
+          description: GENERAL, WORKOUT, STUDY, CLIMBING을 각각 한 번씩 포함한다.
+          items: { $ref: '#/components/schemas/CategoryProgress' }
+    CategoryProgress:
+      type: object
+      additionalProperties: false
+      required: [taskType, totalCount, completedCount]
+      properties:
+        taskType: { $ref: '#/components/schemas/TaskType' }
         totalCount: { type: integer, minimum: 0 }
         completedCount: { type: integer, minimum: 0 }
     CalendarSummaryResponse:

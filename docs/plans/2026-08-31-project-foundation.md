@@ -651,7 +651,7 @@ git commit -m "feat(web): 설치형 React PWA 셸 구성"
 - Modify: `infra/docker/compose.yml`
 
 **Interfaces:**
-- Produces: `/api/planner/actuator/health`, `/api/activity/actuator/health`, 내부 notification health.
+- Produces: `/api/planner/v1/actuator/health`, `/api/activity/v1/actuator/health`, 내부 notification health.
 
 - [ ] **Step 1: Nginx smoke test 스크립트를 작성한다**
 - [ ] **Step 2: 세 서비스 멀티스테이지 Dockerfile을 작성하고 JVM 메모리 상한을 설정한다**

@@ -1,5 +1,6 @@
 java/io/todorok/activity/api/ActivityApi.java
 java/io/todorok/activity/api/ApiUtil.java
+java/io/todorok/activity/api/model/ActivityCompletionStatus.java
 java/io/todorok/activity/api/model/ActivityPageResponse.java
 java/io/todorok/activity/api/model/ActivityResponse.java
 java/io/todorok/activity/api/model/ActivityStatus.java

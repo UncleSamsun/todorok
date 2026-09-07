@@ -18,7 +18,7 @@
 - 생성 TypeScript client는 `typescript-fetch`와 `dateLibrary=string`을 사용한다.
 - 생성 시각과 문서·예제 테스트 출력을 끄고 Windows·Linux에서 같은 결과를 만든다.
 - 오류는 RFC 9457 기본 필드와 `code`, `traceId`, `retryable`, `fieldErrors`를 사용한다.
-- 이벤트 envelope는 `eventId`, `type`, `version`, `occurredAt`, `userId`, `payload`를 가진다.
+- 이벤트 envelope는 `eventId`, `type`, `version`, `aggregateVersion`, `occurredAt`, `userId`, `payload`를 가진다.
 - 생성 파일을 직접 수정하지 않는다.
 - 저장소와 Git 기록에 금지된 작성 주체·도구 이름을 남기지 않는다.
 

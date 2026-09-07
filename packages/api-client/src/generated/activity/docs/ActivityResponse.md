@@ -7,6 +7,7 @@
 Name | Type
 ------------ | -------------
 `activityId` | string
+`commandId` | string
 `taskId` | string
 `userId` | string
 `activityType` | [ActivityType](ActivityType.md)
@@ -23,6 +24,7 @@ import type { ActivityResponse } from '@todorok/api-client'
 // TODO: Update the object below with actual values
 const example = {
   "activityId": null,
+  "commandId": null,
   "taskId": null,
   "userId": null,
   "activityType": null,

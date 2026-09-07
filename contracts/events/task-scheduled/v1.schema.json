@@ -3,7 +3,7 @@
   "$id": "https://todorok.app/schemas/events/task-scheduled/v1",
   "title": "Task scheduled event v1",
   "type": "object",
-  "required": ["eventId", "type", "version", "occurredAt", "userId", "payload"],
+  "required": ["eventId", "type", "version", "aggregateVersion", "occurredAt", "userId", "payload"],
   "allOf": [
     { "$ref": "https://todorok.app/schemas/events/envelope/v1" },
     {
@@ -15,7 +15,7 @@
           "required": ["taskId", "taskType", "scheduledDate", "status"],
           "properties": {
             "taskId": { "type": "string", "format": "uuid" },
-            "taskType": { "enum": ["TODO", "WORKOUT", "STUDY", "CLIMBING"] },
+            "taskType": { "enum": ["GENERAL", "WORKOUT", "STUDY", "CLIMBING"] },
             "scheduledDate": { "type": "string", "format": "date" },
             "status": { "enum": ["PLANNED", "COMPLETED", "SKIPPED", "DELETED"] }
           }

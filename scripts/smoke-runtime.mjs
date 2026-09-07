@@ -4,8 +4,8 @@ const baseUrl = process.env.TODOROK_BASE_URL ?? 'http://localhost'
 const endpoints = [
   '/',
   '/health',
-  '/api/planner/actuator/health',
-  '/api/activity/actuator/health',
+  '/api/planner/v1/actuator/health',
+  '/api/activity/v1/actuator/health',
 ]
 
 for (const endpoint of endpoints) {

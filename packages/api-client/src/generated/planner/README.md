@@ -50,22 +50,23 @@ All URIs are relative to */api/planner/v1*
 
 | Class | Method | HTTP request | Description
 | ----- | ------ | ------------ | -------------
-*AuthApi* | [**login**](docs/AuthApi.md#loginoperation) | **POST** /auth/login | 
-*AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout | 
-*AuthApi* | [**refreshSession**](docs/AuthApi.md#refreshsession) | **POST** /auth/refresh | 
-*CalendarApi* | [**getCalendarSummary**](docs/CalendarApi.md#getcalendarsummary) | **GET** /calendar | 
-*CalendarApi* | [**getDayDetail**](docs/CalendarApi.md#getdaydetail) | **GET** /calendar/{date} | 
-*TaskApi* | [**completeTask**](docs/TaskApi.md#completetask) | **POST** /tasks/{taskId}/complete | 
-*TaskApi* | [**createTask**](docs/TaskApi.md#createtaskoperation) | **POST** /tasks | 
-*TaskApi* | [**deleteTask**](docs/TaskApi.md#deletetask) | **DELETE** /tasks/{taskId} | 
-*TaskApi* | [**reopenTask**](docs/TaskApi.md#reopentask) | **POST** /tasks/{taskId}/reopen | 
-*TaskApi* | [**updateTask**](docs/TaskApi.md#updatetaskoperation) | **PATCH** /tasks/{taskId} | 
+*AuthApi* | [**login**](docs/AuthApi.md#loginoperation) | **POST** /auth/login |
+*AuthApi* | [**logout**](docs/AuthApi.md#logout) | **POST** /auth/logout |
+*AuthApi* | [**refreshSession**](docs/AuthApi.md#refreshsession) | **POST** /auth/refresh |
+*CalendarApi* | [**getCalendarSummary**](docs/CalendarApi.md#getcalendarsummary) | **GET** /calendar |
+*CalendarApi* | [**getDayDetail**](docs/CalendarApi.md#getdaydetail) | **GET** /calendar/{date} |
+*TaskApi* | [**completeTask**](docs/TaskApi.md#completetask) | **POST** /tasks/{taskId}/complete |
+*TaskApi* | [**createTask**](docs/TaskApi.md#createtaskoperation) | **POST** /tasks |
+*TaskApi* | [**deleteTask**](docs/TaskApi.md#deletetask) | **DELETE** /tasks/{taskId} |
+*TaskApi* | [**reopenTask**](docs/TaskApi.md#reopentask) | **POST** /tasks/{taskId}/reopen |
+*TaskApi* | [**updateTask**](docs/TaskApi.md#updatetaskoperation) | **PATCH** /tasks/{taskId} |
 
 
 ### Models
 
 - [CalendarDaySummary](docs/CalendarDaySummary.md)
 - [CalendarSummaryResponse](docs/CalendarSummaryResponse.md)
+- [CategoryProgress](docs/CategoryProgress.md)
 - [CreateTaskRequest](docs/CreateTaskRequest.md)
 - [DayDetailResponse](docs/DayDetailResponse.md)
 - [LoginRequest](docs/LoginRequest.md)

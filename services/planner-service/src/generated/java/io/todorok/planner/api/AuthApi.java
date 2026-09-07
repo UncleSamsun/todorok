@@ -57,7 +57,7 @@ public interface AuthApi {
         produces = { "application/problem+json" }
     )
     ResponseEntity<Void> logout(
-        
+
     );
 
 
@@ -74,7 +74,7 @@ public interface AuthApi {
         produces = { "application/json", "application/problem+json" }
     )
     ResponseEntity<SessionResponse> refreshSession(
-        
+
     );
 
 }

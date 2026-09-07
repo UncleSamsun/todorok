@@ -6,8 +6,10 @@
 
 Name | Type
 ------------ | -------------
+`commandId` | string
 `taskId` | string
 `activityType` | [ActivityType](ActivityType.md)
+`completionStatus` | [ActivityCompletionStatus](ActivityCompletionStatus.md)
 `performedAt` | Date
 `detail` | { [key: string]: any; }
 
@@ -18,8 +20,10 @@ import type { CreateActivityRequest } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "commandId": null,
   "taskId": null,
   "activityType": null,
+  "completionStatus": null,
   "performedAt": null,
   "detail": null,
 } satisfies CreateActivityRequest

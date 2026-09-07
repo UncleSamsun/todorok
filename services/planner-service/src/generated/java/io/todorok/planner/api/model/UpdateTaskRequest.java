@@ -51,7 +51,7 @@ public class UpdateTaskRequest {
    * Get title
    * @return title
    */
-  @NotNull @Size(min = 1, max = 120) 
+  @NotNull @Size(min = 1, max = 120)
   @JsonProperty("title")
   public String getTitle() {
     return title;
@@ -71,7 +71,7 @@ public class UpdateTaskRequest {
    * Get scheduledDate
    * @return scheduledDate
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("scheduledDate")
   public LocalDate getScheduledDate() {
     return scheduledDate;
@@ -92,7 +92,7 @@ public class UpdateTaskRequest {
    * minimum: 0
    * @return version
    */
-  @NotNull @Min(value = 0L) 
+  @NotNull @Min(value = 0L)
   @JsonProperty("version")
   public Long getVersion() {
     return version;

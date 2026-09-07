@@ -28,7 +28,7 @@
 1. `contracts/` 아래 원본 계약을 단일 기준으로 사용한다.
 2. 생성 코드는 직접 수정하지 않고 원본 계약이나 생성 설정을 변경한 뒤 다시 생성한다.
 3. 생성 결과는 저장소에 포함해 Pull Request에서 계약 변화가 보이게 한다.
-4. 기존 v1 계약의 파괴적 변경 대신 새 API 또는 이벤트 version을 추가한다.
+4. 아직 실제 도메인 producer·consumer가 없는 v1 기반 단계에서는 PRD와 불일치를 즉시 고친다. 출시 후 파괴적 변경은 새 API 또는 이벤트 version으로 추가한다.
 5. 업무 로직은 생성 interface를 구현하고 생성 DTO를 경계에서만 사용한다.
 6. 날짜는 `YYYY-MM-DD`, 시각은 UTC RFC 3339, 식별자는 UUID 문자열로 고정한다.
 
@@ -99,7 +99,7 @@ fieldErrors: 필드별 code·message 목록
 - `POST /api/planner/v1/auth/refresh`
 - `POST /api/planner/v1/auth/logout`
 - `GET /api/planner/v1/calendar`
-- `GET /api/planner/v1/days/{date}`
+- `GET /api/planner/v1/calendar/{date}`
 - `POST /api/planner/v1/tasks`
 - `PATCH /api/planner/v1/tasks/{taskId}`
 - `DELETE /api/planner/v1/tasks/{taskId}`
@@ -117,7 +117,7 @@ fieldErrors: 필드별 code·message 목록
 - `GET /api/activity/v1/activities`
 - `POST /api/activity/v1/activities/{activityId}/void`
 
-운동·공부·클라이밍 세부 값은 `activityType`과 JSON object `detail`로 표현한다. 초기 생성 client에서 지원이 제한된 `oneOf` union은 사용하지 않고, #6에서 서비스별 record와 validation으로 구체화한다. 프로그램 catalog와 템플릿 관리 API는 후속 계약 확장으로 남긴다.
+운동·공부·클라이밍 세부 값은 `activityType`과 JSON object `detail`로 표현한다. 생성 요청은 UUID `commandId`와 `COMPLETED`·`PARTIAL` 중 하나인 `completionStatus`를 포함한다. 초기 생성 client에서 지원이 제한된 `oneOf` union은 사용하지 않고, #6에서 서비스별 record와 validation으로 구체화한다. 프로그램 catalog와 템플릿 관리 API는 후속 계약 확장으로 남긴다.
 
 ## 코드 생성
 
@@ -143,8 +143,10 @@ Windows와 Linux에서 같은 Gradle wrapper를 호출하며 경로 구분자 �
 공통 envelope v1 필드는 다음과 같다.
 
 ```text
-eventId, type, version, occurredAt, userId, payload
+eventId, type, version, aggregateVersion, occurredAt, userId, payload
 ```
+
+`version`은 event schema version이고 `aggregateVersion`은 같은 aggregate 변경의 단조 증가 순서다. consumer는 aggregate version을 projection과 함께 저장하고 더 낮거나 같은 version의 재전달을 무시한다.
 
 핵심 이벤트는 다음 네 개로 제한한다.
 

@@ -52,7 +52,7 @@ public class DayDetailResponse {
    * Get date
    * @return date
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("date")
   public LocalDate getDate() {
     return date;
@@ -80,7 +80,7 @@ public class DayDetailResponse {
    * Get tasks
    * @return tasks
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("tasks")
   public List<@Valid TaskResponse> getTasks() {
     return tasks;

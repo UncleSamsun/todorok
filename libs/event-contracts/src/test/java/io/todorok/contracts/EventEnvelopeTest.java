@@ -19,6 +19,7 @@ class EventEnvelopeTest {
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
                 EventType.TASK_SCHEDULED,
                 1,
+                3,
                 Instant.parse("2026-08-31T00:00:00Z"),
                 UUID.fromString("00000000-0000-0000-0000-000000000002"),
                 Map.of("taskId", "00000000-0000-0000-0000-000000000003"));
@@ -29,6 +30,7 @@ class EventEnvelopeTest {
         assertThat(restored.path("eventId").asText()).isEqualTo(envelope.eventId().toString());
         assertThat(restored.path("type").asText()).isEqualTo("TASK_SCHEDULED");
         assertThat(restored.path("version").asInt()).isEqualTo(1);
+        assertThat(restored.path("aggregateVersion").asLong()).isEqualTo(3L);
         assertThat(restored.path("occurredAt").asText()).isEqualTo("2026-08-31T00:00:00Z");
         assertThat(restored.path("userId").asText()).isEqualTo(envelope.userId().toString());
     }
@@ -48,11 +50,26 @@ class EventEnvelopeTest {
                 .hasMessage("eventId must not be null");
     }
 
+    @Test
+    void rejectsNegativeAggregateVersion() {
+        assertThatThrownBy(() -> new EventEnvelope<>(
+                        UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                        EventType.TASK_SCHEDULED,
+                        1,
+                        -1,
+                        Instant.parse("2026-08-31T00:00:00Z"),
+                        UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                        Map.of("taskId", "00000000-0000-0000-0000-000000000003")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("aggregateVersion must not be negative");
+    }
+
     private EventEnvelope<Map<String, String>> envelopeWith(UUID eventId, int version) {
         return new EventEnvelope<>(
                 eventId,
                 EventType.TASK_SCHEDULED,
                 version,
+                1,
                 Instant.parse("2026-08-31T00:00:00Z"),
                 UUID.fromString("00000000-0000-0000-0000-000000000002"),
                 Map.of("taskId", "00000000-0000-0000-0000-000000000003"));

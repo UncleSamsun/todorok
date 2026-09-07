@@ -111,17 +111,22 @@ components:
       enum: [WORKOUT, STUDY, CLIMBING]
     ActivityStatus:
       type: string
-      enum: [RECORDED, VOIDED]
+      enum: [COMPLETED, PARTIAL, VOIDED]
+    ActivityCompletionStatus:
+      type: string
+      enum: [COMPLETED, PARTIAL]
     ActivityDetail:
       type: object
       additionalProperties: true
     CreateActivityRequest:
       type: object
       additionalProperties: false
-      required: [taskId, activityType, performedAt, detail]
+      required: [commandId, taskId, activityType, completionStatus, performedAt, detail]
       properties:
+        commandId: { type: string, format: uuid }
         taskId: { type: string, format: uuid }
         activityType: { $ref: '#/components/schemas/ActivityType' }
+        completionStatus: { $ref: '#/components/schemas/ActivityCompletionStatus' }
         performedAt: { type: string, format: date-time }
         detail: { $ref: '#/components/schemas/ActivityDetail' }
     VoidActivityRequest:
@@ -134,9 +139,10 @@ components:
     ActivityResponse:
       type: object
       additionalProperties: false
-      required: [activityId, taskId, userId, activityType, performedAt, detail, status, version]
+      required: [activityId, commandId, taskId, userId, activityType, performedAt, detail, status, version]
       properties:
         activityId: { type: string, format: uuid }
+        commandId: { type: string, format: uuid }
         taskId: { type: string, format: uuid }
         userId: { type: string, format: uuid }
         activityType: { $ref: '#/components/schemas/ActivityType' }

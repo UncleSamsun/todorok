@@ -5,6 +5,7 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.todorok.activity.api.model.ActivityCompletionStatus;
 import io.todorok.activity.api.model.ActivityType;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -27,9 +28,13 @@ import jakarta.annotation.Generated;
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 public class CreateActivityRequest {
 
+  private UUID commandId;
+
   private UUID taskId;
 
   private ActivityType activityType;
+
+  private ActivityCompletionStatus completionStatus;
 
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private OffsetDateTime performedAt;
@@ -43,11 +48,33 @@ public class CreateActivityRequest {
   /**
    * Constructor with only required parameters
    */
-  public CreateActivityRequest(UUID taskId, ActivityType activityType, OffsetDateTime performedAt, Map<String, Object> detail) {
+  public CreateActivityRequest(UUID commandId, UUID taskId, ActivityType activityType, ActivityCompletionStatus completionStatus, OffsetDateTime performedAt, Map<String, Object> detail) {
+    this.commandId = commandId;
     this.taskId = taskId;
     this.activityType = activityType;
+    this.completionStatus = completionStatus;
     this.performedAt = performedAt;
     this.detail = detail;
+  }
+
+  public CreateActivityRequest commandId(UUID commandId) {
+    this.commandId = commandId;
+    return this;
+  }
+
+  /**
+   * Get commandId
+   * @return commandId
+   */
+  @NotNull @Valid
+  @JsonProperty("commandId")
+  public UUID getCommandId() {
+    return commandId;
+  }
+
+  @JsonProperty("commandId")
+  public void setCommandId(UUID commandId) {
+    this.commandId = commandId;
   }
 
   public CreateActivityRequest taskId(UUID taskId) {
@@ -59,7 +86,7 @@ public class CreateActivityRequest {
    * Get taskId
    * @return taskId
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("taskId")
   public UUID getTaskId() {
     return taskId;
@@ -79,7 +106,7 @@ public class CreateActivityRequest {
    * Get activityType
    * @return activityType
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("activityType")
   public ActivityType getActivityType() {
     return activityType;
@@ -88,6 +115,26 @@ public class CreateActivityRequest {
   @JsonProperty("activityType")
   public void setActivityType(ActivityType activityType) {
     this.activityType = activityType;
+  }
+
+  public CreateActivityRequest completionStatus(ActivityCompletionStatus completionStatus) {
+    this.completionStatus = completionStatus;
+    return this;
+  }
+
+  /**
+   * Get completionStatus
+   * @return completionStatus
+   */
+  @NotNull @Valid
+  @JsonProperty("completionStatus")
+  public ActivityCompletionStatus getCompletionStatus() {
+    return completionStatus;
+  }
+
+  @JsonProperty("completionStatus")
+  public void setCompletionStatus(ActivityCompletionStatus completionStatus) {
+    this.completionStatus = completionStatus;
   }
 
   public CreateActivityRequest performedAt(OffsetDateTime performedAt) {
@@ -99,7 +146,7 @@ public class CreateActivityRequest {
    * Get performedAt
    * @return performedAt
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("performedAt")
   public OffsetDateTime getPerformedAt() {
     return performedAt;
@@ -127,7 +174,7 @@ public class CreateActivityRequest {
    * Get detail
    * @return detail
    */
-  @NotNull 
+  @NotNull
   @JsonProperty("detail")
   public Map<String, Object> getDetail() {
     return detail;
@@ -147,23 +194,27 @@ public class CreateActivityRequest {
       return false;
     }
     CreateActivityRequest createActivityRequest = (CreateActivityRequest) o;
-    return Objects.equals(this.taskId, createActivityRequest.taskId) &&
+    return Objects.equals(this.commandId, createActivityRequest.commandId) &&
+        Objects.equals(this.taskId, createActivityRequest.taskId) &&
         Objects.equals(this.activityType, createActivityRequest.activityType) &&
+        Objects.equals(this.completionStatus, createActivityRequest.completionStatus) &&
         Objects.equals(this.performedAt, createActivityRequest.performedAt) &&
         Objects.equals(this.detail, createActivityRequest.detail);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(taskId, activityType, performedAt, detail);
+    return Objects.hash(commandId, taskId, activityType, completionStatus, performedAt, detail);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class CreateActivityRequest {\n");
+    sb.append("    commandId: ").append(toIndentedString(commandId)).append("\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
     sb.append("    activityType: ").append(toIndentedString(activityType)).append("\n");
+    sb.append("    completionStatus: ").append(toIndentedString(completionStatus)).append("\n");
     sb.append("    performedAt: ").append(toIndentedString(performedAt)).append("\n");
     sb.append("    detail: ").append(toIndentedString(detail)).append("\n");
     sb.append("}");

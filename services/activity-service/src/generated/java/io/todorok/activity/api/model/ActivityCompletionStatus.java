@@ -1,4 +1,4 @@
-package io.todorok.planner.api.model;
+package io.todorok.activity.api.model;
 
 import java.net.URI;
 import java.util.Objects;
@@ -15,23 +15,19 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets TaskType
+ * Gets or Sets ActivityCompletionStatus
  */
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
-public enum TaskType {
+public enum ActivityCompletionStatus {
 
-  GENERAL("GENERAL"),
+  COMPLETED("COMPLETED"),
 
-  WORKOUT("WORKOUT"),
-
-  STUDY("STUDY"),
-
-  CLIMBING("CLIMBING");
+  PARTIAL("PARTIAL");
 
   private final String value;
 
-  TaskType(String value) {
+  ActivityCompletionStatus(String value) {
     this.value = value;
   }
 
@@ -46,8 +42,8 @@ public enum TaskType {
   }
 
   @JsonCreator
-  public static TaskType fromValue(String value) {
-    for (TaskType b : TaskType.values()) {
+  public static ActivityCompletionStatus fromValue(String value) {
+    for (ActivityCompletionStatus b : ActivityCompletionStatus.values()) {
       if (b.value.equals(value)) {
         return b;
       }

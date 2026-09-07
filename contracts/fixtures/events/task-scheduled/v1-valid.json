@@ -2,11 +2,12 @@
   "eventId": "00000000-0000-0000-0000-000000000001",
   "type": "TASK_SCHEDULED",
   "version": 1,
+  "aggregateVersion": 1,
   "occurredAt": "2026-09-02T00:00:00Z",
   "userId": "00000000-0000-0000-0000-000000000002",
   "payload": {
     "taskId": "00000000-0000-0000-0000-000000000003",
-    "taskType": "WORKOUT",
+    "taskType": "GENERAL",
     "scheduledDate": "2026-09-02",
     "status": "PLANNED"
   }
