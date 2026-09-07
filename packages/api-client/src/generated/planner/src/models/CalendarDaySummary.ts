@@ -29,10 +29,10 @@ import {
 export interface CalendarDaySummary {
     /**
      *
-     * @type {Date}
+     * @type {string}
      * @memberof CalendarDaySummary
      */
-    date: Date;
+    date: string;
     /**
      *
      * @type {number}
@@ -74,7 +74,7 @@ export function CalendarDaySummaryFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
 
-        'date': (new Date(json['date'])),
+        'date': json['date'],
         'totalCount': json['totalCount'],
         'completedCount': json['completedCount'],
         'categoryProgress': ((json['categoryProgress'] as Array<any>).map(CategoryProgressFromJSON)),
@@ -92,7 +92,7 @@ export function CalendarDaySummaryToJSONTyped(value?: CalendarDaySummary | null,
 
     return {
 
-        'date': value['date'].toISOString().substring(0,10),
+        'date': value['date'],
         'totalCount': value['totalCount'],
         'completedCount': value['completedCount'],
         'categoryProgress': ((value['categoryProgress'] as Array<any>).map(CategoryProgressToJSON)),

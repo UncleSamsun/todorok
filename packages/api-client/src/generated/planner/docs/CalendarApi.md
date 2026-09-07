@@ -28,12 +28,16 @@ import type { GetCalendarSummaryRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new CalendarApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new CalendarApi(config);
 
   const body = {
-    // Date
+    // string
     from: 2013-10-20,
-    // Date | from부터 최대 42일 범위의 종료일
+    // string | from부터 최대 42일 범위의 종료일
     to: 2013-10-20,
   } satisfies GetCalendarSummaryRequest;
 
@@ -54,8 +58,8 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **from** | `Date` |  | [Defaults to `undefined`] |
-| **to** | `Date` | from부터 최대 42일 범위의 종료일 | [Defaults to `undefined`] |
+| **from** | `string` |  | [Defaults to `undefined`] |
+| **to** | `string` | from부터 최대 42일 범위의 종료일 | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -63,7 +67,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -97,10 +101,14 @@ import type { GetDayDetailRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new CalendarApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new CalendarApi(config);
 
   const body = {
-    // Date
+    // string
     date: 2013-10-20,
   } satisfies GetDayDetailRequest;
 
@@ -121,7 +129,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **date** | `Date` |  | [Defaults to `undefined`] |
+| **date** | `string` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -129,7 +137,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 

@@ -29,7 +29,11 @@ import type { CompleteTaskRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new TaskApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TaskApi(config);
 
   const body = {
     // string
@@ -64,7 +68,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -99,7 +103,11 @@ import type { CreateTaskOperationRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new TaskApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TaskApi(config);
 
   const body = {
     // CreateTaskRequest
@@ -131,7 +139,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -165,7 +173,11 @@ import type { DeleteTaskRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new TaskApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TaskApi(config);
 
   const body = {
     // string
@@ -200,7 +212,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -235,7 +247,11 @@ import type { ReopenTaskRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new TaskApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TaskApi(config);
 
   const body = {
     // string
@@ -270,7 +286,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -305,7 +321,11 @@ import type { UpdateTaskOperationRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new TaskApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TaskApi(config);
 
   const body = {
     // string
@@ -340,7 +360,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 

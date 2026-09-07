@@ -2,7 +2,7 @@
 title: TODOROK MVP PRD
 product: TODOROK
 status: approved
-version: 1.4.1
+version: 1.4.2
 created: 2026-08-31
 updated: 2026-09-07
 owner: 김민준
@@ -118,14 +118,14 @@ owner: 김민준
 ### 9.1 Task
 
 - 유형: `GENERAL`, `WORKOUT`, `STUDY`, `CLIMBING`
-- 상태: `PLANNED`, `COMPLETED`, `SKIPPED`
+- 상태: `PLANNED`, `COMPLETED`, `SKIPPED`, `DELETED`
 - `task_series`는 반복 제목, 유형, 메모와 반복 규칙을 보관한다.
 - `task`는 달력에 표시되는 개별 회차이며 일회성 Task는 series 없이 저장한다.
 - 시리즈별 활성 `PLANNED` Task는 DB partial unique index로 하나만 허용한다.
 - 일반 반복은 `DAILY`, `WEEKLY`, `MONTHLY`와 간격·요일 또는 일자·시작·종료 조건만 지원한다.
 - 운동 프로그램 세션 생성은 일반 반복 규칙과 별도 엔진에서 처리한다.
 - `MISSED`는 영구 이력이 아니라 날짜 이월 처리 중 사용하는 전이 상태다.
-- 계획 Task 삭제는 soft delete, series·category·template 삭제는 archive로 처리한다.
+- 계획 Task 삭제는 `DELETED` 상태의 soft delete로 처리하며 일반 달력·상세 조회에서는 제외한다. series·category·template 삭제는 archive로 처리한다.
 
 ### 9.2 Activity Record
 
@@ -429,6 +429,7 @@ PostgreSQL
 - refresh token 재사용을 탐지하면 해당 session chain을 폐기한다.
 - planner가 비대칭 키로 서명하고 activity·notification은 Spring Security Resource Server로 공개키를 독립 검증한다.
 - REST의 기준 파일은 `contracts/openapi/*-v1.yaml`이며 Spring Boot 4 API interface·DTO와 TypeScript Fetch client를 생성한다.
+- planner의 login·refresh를 제외한 planner·activity API는 bearer access token을 요구한다.
 - 외부 경로는 `/api/planner/v1/**`, `/api/activity/v1/**`를 사용한다.
 - 이벤트 기준 파일은 버전별 JSON Schema이며 fixture 계약 테스트로 Java record 직렬화를 검증한다.
 - Schema Registry는 사용하지 않는다.

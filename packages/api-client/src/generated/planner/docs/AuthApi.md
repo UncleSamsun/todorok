@@ -94,7 +94,11 @@ import type { LogoutRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new AuthApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new AuthApi(config);
 
   try {
     const data = await api.logout();
@@ -118,7 +122,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 

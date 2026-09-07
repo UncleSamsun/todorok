@@ -28,7 +28,11 @@ import type { CreateActivityOperationRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new ActivityApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
 
   const body = {
     // CreateActivityRequest
@@ -60,7 +64,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -95,7 +99,11 @@ import type { GetActivityRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new ActivityApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
 
   const body = {
     // string
@@ -127,7 +135,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -161,10 +169,14 @@ import type { ListActivitiesRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new ActivityApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
 
   const body = {
-    // Date (optional)
+    // string (optional)
     date: 2013-10-20,
     // string (optional)
     cursor: cursor_example,
@@ -189,7 +201,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **date** | `Date` |  | [Optional] [Defaults to `undefined`] |
+| **date** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **cursor** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **limit** | `number` |  | [Optional] [Defaults to `20`] |
 
@@ -199,7 +211,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -233,7 +245,11 @@ import type { VoidActivityOperationRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new ActivityApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
 
   const body = {
     // string
@@ -268,7 +284,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 

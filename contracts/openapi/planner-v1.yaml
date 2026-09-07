@@ -4,6 +4,8 @@ info:
   version: 1.0.0
 servers:
   - url: /api/planner/v1
+security:
+  - BearerAuth: []
 tags:
   - name: Auth
   - name: Calendar
@@ -13,6 +15,7 @@ paths:
     post:
       tags: [Auth]
       operationId: login
+      security: []
       requestBody:
         required: true
         content:
@@ -26,6 +29,7 @@ paths:
     post:
       tags: [Auth]
       operationId: refreshSession
+      security: []
       responses:
         '200': { $ref: '#/components/responses/SessionSuccess' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -153,6 +157,9 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 components:
+  securitySchemes:
+    BearerAuth:
+      $ref: './common-v1.yaml#/components/securitySchemes/BearerAuth'
   parameters:
     FromDate:
       name: from

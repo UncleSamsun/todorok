@@ -4,6 +4,8 @@ info:
   version: 1.0.0
 servers:
   - url: /api/activity/v1
+security:
+  - BearerAuth: []
 tags:
   - name: Activity
 paths:
@@ -81,6 +83,9 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 components:
+  securitySchemes:
+    BearerAuth:
+      $ref: './common-v1.yaml#/components/securitySchemes/BearerAuth'
   parameters:
     ActivityIdPath:
       name: activityId

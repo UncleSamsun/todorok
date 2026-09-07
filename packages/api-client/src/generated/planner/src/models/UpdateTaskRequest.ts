@@ -27,10 +27,10 @@ export interface UpdateTaskRequest {
     title: string;
     /**
      *
-     * @type {Date}
+     * @type {string}
      * @memberof UpdateTaskRequest
      */
-    scheduledDate: Date;
+    scheduledDate: string;
     /**
      *
      * @type {number}
@@ -60,7 +60,7 @@ export function UpdateTaskRequestFromJSONTyped(json: any, ignoreDiscriminator: b
     return {
 
         'title': json['title'],
-        'scheduledDate': (new Date(json['scheduledDate'])),
+        'scheduledDate': json['scheduledDate'],
         'version': json['version'],
     };
 }
@@ -77,7 +77,7 @@ export function UpdateTaskRequestToJSONTyped(value?: UpdateTaskRequest | null, i
     return {
 
         'title': value['title'],
-        'scheduledDate': value['scheduledDate'].toISOString().substring(0,10),
+        'scheduledDate': value['scheduledDate'],
         'version': value['version'],
     };
 }

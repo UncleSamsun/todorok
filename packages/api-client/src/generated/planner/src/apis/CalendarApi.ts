@@ -30,12 +30,12 @@ import {
 } from '../models/ProblemDetails';
 
 export interface GetCalendarSummaryRequest {
-    from: Date;
-    to: Date;
+    from: string;
+    to: string;
 }
 
 export interface GetDayDetailRequest {
-    date: Date;
+    date: string;
 }
 
 /**
@@ -47,8 +47,8 @@ export interface GetDayDetailRequest {
 export interface CalendarApiInterface {
     /**
      * Creates request options for getCalendarSummary without sending the request
-     * @param {Date} from
-     * @param {Date} to from부터 최대 42일 범위의 종료일
+     * @param {string} from
+     * @param {string} to from부터 최대 42일 범위의 종료일
      * @throws {RequiredError}
      * @memberof CalendarApiInterface
      */
@@ -56,8 +56,8 @@ export interface CalendarApiInterface {
 
     /**
      * 시작일과 종료일을 포함한 최대 42일의 달력 요약을 반환한다.
-     * @param {Date} from
-     * @param {Date} to from부터 최대 42일 범위의 종료일
+     * @param {string} from
+     * @param {string} to from부터 최대 42일 범위의 종료일
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof CalendarApiInterface
@@ -71,7 +71,7 @@ export interface CalendarApiInterface {
 
     /**
      * Creates request options for getDayDetail without sending the request
-     * @param {Date} date
+     * @param {string} date
      * @throws {RequiredError}
      * @memberof CalendarApiInterface
      */
@@ -79,7 +79,7 @@ export interface CalendarApiInterface {
 
     /**
      *
-     * @param {Date} date
+     * @param {string} date
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof CalendarApiInterface
@@ -118,15 +118,23 @@ export class CalendarApi extends runtime.BaseAPI implements CalendarApiInterface
         const queryParameters: any = {};
 
         if (requestParameters['from'] != null) {
-            queryParameters['from'] = (requestParameters['from'] as any).toISOString().substring(0,10);
+            queryParameters['from'] = requestParameters['from'];
         }
 
         if (requestParameters['to'] != null) {
-            queryParameters['to'] = (requestParameters['to'] as any).toISOString().substring(0,10);
+            queryParameters['to'] = requestParameters['to'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/calendar`;
 
@@ -171,13 +179,17 @@ export class CalendarApi extends runtime.BaseAPI implements CalendarApiInterface
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/calendar/{date}`;
-        if (requestParameters['date'] instanceof Date) {
-            urlPath = urlPath.replace('{date}', encodeURIComponent(requestParameters['date'].toISOString().substring(0,10)));
-        } else {
-            urlPath = urlPath.replace('{date}', encodeURIComponent(String(requestParameters['date'])));
-        }
+        urlPath = urlPath.replace('{date}', encodeURIComponent(String(requestParameters['date'])));
 
         return {
             path: urlPath,

@@ -22,7 +22,11 @@ import type { CreateActivityOperationRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
-  const api = new ActivityApi();
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
 
   const body = {
     // CreateActivityRequest
@@ -70,8 +74,13 @@ All URIs are relative to */api/activity/v1*
 
 ### Authorization
 
-Endpoints do not require authorization.
 
+Authentication schemes defined for the API:
+<a id="BearerAuth"></a>
+#### BearerAuth
+
+
+- **Type**: HTTP Bearer Token authentication (JWT)
 
 ## About
 

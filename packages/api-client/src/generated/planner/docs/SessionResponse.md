@@ -7,7 +7,7 @@
 Name | Type
 ------------ | -------------
 `accessToken` | string
-`expiresAt` | Date
+`expiresAt` | string
 `userId` | string
 
 ## Example

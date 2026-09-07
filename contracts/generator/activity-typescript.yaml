@@ -6,3 +6,5 @@ additionalProperties:
   hideGenerationTimestamp: true
   npmName: '@todorok/api-client'
   withInterfaces: true
+typeMappings:
+  Date: string

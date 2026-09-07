@@ -6,7 +6,7 @@
 
 Name | Type
 ------------ | -------------
-`date` | Date
+`date` | string
 `tasks` | [Array&lt;TaskResponse&gt;](TaskResponse.md)
 
 ## Example

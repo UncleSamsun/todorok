@@ -81,8 +81,13 @@ All URIs are relative to */api/planner/v1*
 
 ### Authorization
 
-Endpoints do not require authorization.
 
+Authentication schemes defined for the API:
+<a id="BearerAuth"></a>
+#### BearerAuth
+
+
+- **Type**: HTTP Bearer Token authentication (JWT)
 
 ## About
 

@@ -4,6 +4,11 @@ info:
   version: 1.0.0
 paths: {}
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     FieldError:
       type: object

@@ -10,7 +10,7 @@ Name | Type
 `taskId` | string
 `activityType` | [ActivityType](ActivityType.md)
 `completionStatus` | [ActivityCompletionStatus](ActivityCompletionStatus.md)
-`performedAt` | Date
+`performedAt` | string
 `detail` | { [key: string]: any; }
 
 ## Example

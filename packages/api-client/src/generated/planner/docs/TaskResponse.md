@@ -10,7 +10,7 @@ Name | Type
 `userId` | string
 `title` | string
 `taskType` | [TaskType](TaskType.md)
-`scheduledDate` | Date
+`scheduledDate` | string
 `status` | [TaskStatus](TaskStatus.md)
 `version` | number
 
