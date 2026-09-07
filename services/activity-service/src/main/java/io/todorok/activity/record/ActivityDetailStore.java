@@ -35,10 +35,10 @@ public class ActivityDetailStore {
         if (
             (detail.getWorkout() != null &&
                 detail.getWorkout().getSets() != null &&
-                detail.getWorkout().getSets().contains(null)) ||
+                detail.getWorkout().getSets().stream().anyMatch(Objects::isNull)) ||
             (detail.getClimbing() != null &&
                 detail.getClimbing().getRounds() != null &&
-                detail.getClimbing().getRounds().contains(null))
+                detail.getClimbing().getRounds().stream().anyMatch(Objects::isNull))
         ) throw new ApiFailure(
             400,
             "INVALID_DETAIL_ITEM",

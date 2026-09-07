@@ -19,6 +19,23 @@ import tools.jackson.databind.ObjectMapper;
 @Transactional(readOnly = true)
 public class ActivityService {
 
+    // All correlated detail reads belong to the same PostgreSQL statement snapshot as the header.
+    private static final String SNAPSHOT_SELECT = """
+        select a.*, case a.activity_type
+          when 'WORKOUT' then jsonb_build_object('workout', jsonb_build_object('sets',
+            coalesce((select jsonb_agg(jsonb_build_object('exercise',s.exercise,'reps',s.reps,
+              'weightKg',s.weight_kg,'durationSeconds',s.duration_seconds) order by s.position)
+              from workout_set s where s.activity_id=a.id), '[]'::jsonb)))
+          when 'STUDY' then jsonb_build_object('study',
+            (select jsonb_build_object('subject',s.subject,'durationMinutes',s.duration_minutes,
+              'values',s.values_json,'snapshot',s.snapshot) from study_detail s where s.activity_id=a.id))
+          when 'CLIMBING' then jsonb_build_object('climbing', jsonb_build_object(
+            'durationSeconds',(select c.duration_seconds from climbing_detail c where c.activity_id=a.id),
+            'rounds',coalesce((select jsonb_agg(jsonb_build_object('grade',c.grade,'attempts',c.attempts,
+              'completed',c.completed) order by c.position) from climbing_round c where c.activity_id=a.id), '[]'::jsonb)))
+        end as detail_snapshot from activity_record a
+        """;
+
     private final JdbcTemplate jdbc;
     private final ActivityDetailStore details;
     private final OutboxEventWriter outbox;
@@ -154,29 +171,8 @@ public class ActivityService {
 
     public ActivityResponse get(UUID owner, UUID id) {
         var rows = jdbc.query(
-            "select * from activity_record where user_id=? and id=?",
-            (r, n) -> {
-                var type = ActivityType.valueOf(r.getString("activity_type"));
-                return new ActivityResponse(
-                    id,
-                    (UUID) r.getObject("command_id"),
-                    (UUID) r.getObject("task_id"),
-                    owner,
-                    type,
-                    r.getObject("performed_at", OffsetDateTime.class),
-                    details.read(id, type),
-                    ActivityStatus.valueOf(r.getString("status")),
-                    r.getLong("revision")
-                )
-                    .note(r.getString("note"))
-                    .previousPerformedAt(r.getObject("previous_performed_at", OffsetDateTime.class))
-                    .startedAt(r.getObject("started_at", OffsetDateTime.class))
-                    .endedAt(r.getObject("ended_at", OffsetDateTime.class))
-                    .syncState(
-                        ActivitySyncState.valueOf(r.getString("sync_state"))
-                    )
-                    .syncReason(r.getString("sync_reason"));
-            },
+            SNAPSHOT_SELECT + " where user_id=? and id=?",
+            this::snapshot,
             owner,
             id
         );
@@ -188,6 +184,26 @@ public class ActivityService {
             false
         );
         return rows.getFirst();
+    }
+
+    private ActivityResponse snapshot(java.sql.ResultSet r, int index) throws java.sql.SQLException {
+        return new ActivityResponse(
+            (UUID) r.getObject("id"),
+            (UUID) r.getObject("command_id"),
+            (UUID) r.getObject("task_id"),
+            (UUID) r.getObject("user_id"),
+            ActivityType.valueOf(r.getString("activity_type")),
+            r.getObject("performed_at", OffsetDateTime.class),
+            mapper.readValue(r.getString("detail_snapshot"), ActivityDetail.class),
+            ActivityStatus.valueOf(r.getString("status")),
+            r.getLong("revision")
+        )
+            .note(r.getString("note"))
+            .previousPerformedAt(r.getObject("previous_performed_at", OffsetDateTime.class))
+            .startedAt(r.getObject("started_at", OffsetDateTime.class))
+            .endedAt(r.getObject("ended_at", OffsetDateTime.class))
+            .syncState(ActivitySyncState.valueOf(r.getString("sync_state")))
+            .syncReason(r.getString("sync_reason"));
     }
 
     public ActivityPageResponse list(
@@ -211,7 +227,7 @@ public class ActivityService {
         }
         var args = new ArrayList<Object>();
         args.add(owner);
-        String sql = "select id from activity_record where user_id=?";
+        String sql = SNAPSHOT_SELECT + " where user_id=?";
         if (date != null) {
             sql += " and performed_at>=? and performed_at<?";
             args.add(
@@ -230,15 +246,14 @@ public class ActivityService {
         }
         sql += " order by id limit ?";
         args.add(size + 1);
-        var ids = jdbc.queryForList(sql, UUID.class, args.toArray());
+        var records = jdbc.query(sql, this::snapshot, args.toArray());
         var page = new ActivityPageResponse(
-            ids
+            records
                 .stream()
                 .limit(size)
-                .map(id -> get(owner, id))
                 .toList()
         );
-        if (ids.size() > size) page.nextCursor(ids.get(size - 1).toString());
+        if (records.size() > size) page.nextCursor(records.get(size - 1).getActivityId().toString());
         return page;
     }
 

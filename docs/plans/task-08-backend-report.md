@@ -60,3 +60,21 @@ ActivityCorrected v1은 `activityId,taskId,activityType,completionStatus,complet
 - `.\gradlew.bat :tests:messaging-integration:test --tests '*ActivityServiceRoundTripTest.correctionPreservesTypedHistoryAndVersionRacesAndVoid' --no-daemon --no-configuration-cache`: 시간 구간 저장→다음 PATCH에서 생략하여 planner 구간도 비워지는 assertion 보강 후 해당 사례만 **1/1 성공**, skipped 0, 2분40초. 세 유형에서 실제 Kafka로 start/end 전달 및 제거 확인. `git diff --cached --check` 성공.
 
 위 실패 주입의 rollback 검사는 Spring transaction proxy 직접 호출을 포함하며 성공/복구는 실제 Kafka listener 경로다. 새 correction 계약의 서비스 JVM 교체, broker/Connect 장애, DLT 운영 재전송은 이번에 반복하지 않았다. UI/월별 read-only API/프로그램 진급은 이 서버 단계 검증 범위 밖이다.
+
+## P2 리뷰 수정: 조회 revision 일관성
+
+기존 GET은 header SQL의 row mapping 중 별도 detail SQL을 실행해 READ_COMMITTED에서 concurrent PATCH가 끼면 revision N header와 N+1 detail을 함께 반환할 수 있었다. 목록의 여러 GET 호출과 생성 command 재전송의 내부 GET도 같은 경로였다.
+
+공통 SELECT 한 문장에서 header와 유형별 관계형 detail의 JSON aggregate를 가져오고 row mapper는 추가 SQL 없이 변환한다. GET은 한 기록, list는 날짜·cursor·limit 필터까지 같은 statement snapshot을 사용한다. PostgreSQL statement snapshot으로 해결했으며 READ_COMMITTED·생성 command advisory lock·쓰기 잠금 순서는 변경하지 않았다. 따라서 advisory lock 대기 전에 REPEATABLE_READ snapshot을 고정하는 문제를 만들지 않는다. 생성 원본 command 재전송도 같은 snapshot mapper를 사용한다.
+
+실제 PostgreSQL 테스트는 ResultSet을 얻은 뒤 row mapping 직전에 latch로 조회를 멈추고, 다른 transaction에서 PATCH를 commit한 다음 조회를 재개한다. 세 유형 × GET/list/원본 command replay 9조합에서 이전 revision의 header·메모·수행일·detail을 함께 반환하고 다음 GET은 새 revision을 반환하는지 검사한다. 동일 command 8개를 동시에 시작해 모두 같은 Activity ID를 받으며 저장 행은 하나인지 별도 확인한다. 기존 persistence migration 수 기대값은 신규 V4와 테스트 V9000을 포함한 5개로 수정했다.
+
+첫 두 DB 실행은 새 서비스 호출 fixture의 search_path 설정 문제로 `task_reference`를 찾지 못했다(각 실행에서 기존 4개 통과, 새 2개 초기화 실패). 기존 fixture는 schema-qualified 조회만 했고, 첫 수정에서는 Testcontainers URL의 기존 `?loggerLevel=OFF`를 놓쳤다. URL query 유무에 따라 `&`/`?`를 구분해 실제 서비스와 동일한 `currentSchema=activity`를 명시했다.
+
+다음 실행은 기존 4개와 동시 command 8개 검증이 통과했다. barrier fixture의 `List.of`가 기존 validation의 `contains(null)` 호출에서 예외를 내는 문제도 드러났다. barrier는 generated mutable-list builder로 분리해 조회 문제를 검사했고, 유효한 immutable list도 허용해야 하므로 기존 validator 자체를 `stream().anyMatch(Objects::isNull)`로 수정했다. 별도 단위 테스트에서 immutable sets/rounds 허용과 null set/round 거부를 검증한다.
+
+- `.\gradlew.bat :services:activity-service:test --tests '*ActivityPersistenceIntegrationTest' --no-daemon --no-configuration-cache`: URL 보정 뒤 기존 persistence/migration 4개와 8개 동시 command 멱등성 1개 통과. 위 validation 문제로 barrier fixture만 실패했으며 제품 조회 assertion 실패는 없었다.
+- `.\gradlew.bat :services:activity-service:test --tests '*ActivityPersistenceIntegrationTest.readsOneRevisionWhenCorrectionCommitsBetweenResultSetAndMapping' --no-daemon --no-configuration-cache`: 실제 PG barrier **1/1 성공(내부 9조합), skipped 0**, 58초. query 결과를 얻은 후 PATCH가 실제 commit되어도 header/detail은 동일 revision이며 다음 GET은 새 revision이다.
+- `.\gradlew.bat :services:activity-service:test --tests '*ActivityDetailValidationTest' --no-daemon --no-configuration-cache`: immutable DTO list와 null item 단위 **3/3 성공**, skipped 0, 42초. `git diff --check` 성공.
+
+공개 계약·Kafka 처리·쓰기 격리는 변경하지 않아 생성 drift나 전체 Kafka gate는 다시 실행하지 않았다.
