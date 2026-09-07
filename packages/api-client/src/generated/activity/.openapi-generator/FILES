@@ -12,6 +12,7 @@ docs/ClimbingDetail.md
 docs/ClimbingRound.md
 docs/CorrectActivityRequest.md
 docs/CreateActivityRequest.md
+docs/MonthlyActivitySummaryResponse.md
 docs/ProblemDetails.md
 docs/ProblemDetailsFieldErrorsInner.md
 docs/StudyDetail.md
@@ -33,6 +34,7 @@ src/models/ClimbingDetail.ts
 src/models/ClimbingRound.ts
 src/models/CorrectActivityRequest.ts
 src/models/CreateActivityRequest.ts
+src/models/MonthlyActivitySummaryResponse.ts
 src/models/ProblemDetails.ts
 src/models/ProblemDetailsFieldErrorsInner.ts
 src/models/StudyDetail.ts

@@ -24,6 +24,11 @@ import {
     ActivityResponseToJSON,
 } from '../models/ActivityResponse';
 import {
+    type ActivityType,
+    ActivityTypeFromJSON,
+    ActivityTypeToJSON,
+} from '../models/ActivityType';
+import {
     type CorrectActivityRequest,
     CorrectActivityRequestFromJSON,
     CorrectActivityRequestToJSON,
@@ -33,6 +38,11 @@ import {
     CreateActivityRequestFromJSON,
     CreateActivityRequestToJSON,
 } from '../models/CreateActivityRequest';
+import {
+    type MonthlyActivitySummaryResponse,
+    MonthlyActivitySummaryResponseFromJSON,
+    MonthlyActivitySummaryResponseToJSON,
+} from '../models/MonthlyActivitySummaryResponse';
 import {
     type ProblemDetails,
     ProblemDetailsFromJSON,
@@ -55,6 +65,11 @@ export interface CreateActivityOperationRequest {
 
 export interface GetActivityRequest {
     activityId: string;
+}
+
+export interface GetMonthlyActivitySummaryRequest {
+    month: string;
+    activityType: ActivityType;
 }
 
 export interface ListActivitiesRequest {
@@ -140,6 +155,30 @@ export interface ActivityApiInterface {
     /**
      */
     getActivity(requestParameters: GetActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityResponse>;
+
+    /**
+     * Creates request options for getMonthlyActivitySummary without sending the request
+     * @param {string} month
+     * @param {ActivityType} activityType
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    getMonthlyActivitySummaryRequestOpts(requestParameters: GetMonthlyActivitySummaryRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     * Read-only aggregate for one owner\'s performed activities in a Seoul calendar month.
+     * @param {string} month
+     * @param {ActivityType} activityType
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    getMonthlyActivitySummaryRaw(requestParameters: GetMonthlyActivitySummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MonthlyActivitySummaryResponse>>;
+
+    /**
+     * Read-only aggregate for one owner\'s performed activities in a Seoul calendar month.
+     */
+    getMonthlyActivitySummary(requestParameters: GetMonthlyActivitySummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MonthlyActivitySummaryResponse>;
 
     /**
      * Creates request options for listActivities without sending the request
@@ -360,6 +399,73 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
      */
     async getActivity(requestParameters: GetActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityResponse> {
         const response = await this.getActivityRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getMonthlyActivitySummary without sending the request
+     */
+    async getMonthlyActivitySummaryRequestOpts(requestParameters: GetMonthlyActivitySummaryRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['month'] == null) {
+            throw new runtime.RequiredError(
+                'month',
+                'Required parameter "month" was null or undefined when calling getMonthlyActivitySummary().'
+            );
+        }
+
+        if (requestParameters['activityType'] == null) {
+            throw new runtime.RequiredError(
+                'activityType',
+                'Required parameter "activityType" was null or undefined when calling getMonthlyActivitySummary().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['month'] != null) {
+            queryParameters['month'] = requestParameters['month'];
+        }
+
+        if (requestParameters['activityType'] != null) {
+            queryParameters['activityType'] = requestParameters['activityType'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/activities/summary`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Read-only aggregate for one owner\'s performed activities in a Seoul calendar month.
+     */
+    async getMonthlyActivitySummaryRaw(requestParameters: GetMonthlyActivitySummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MonthlyActivitySummaryResponse>> {
+        const requestOptions = await this.getMonthlyActivitySummaryRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => MonthlyActivitySummaryResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Read-only aggregate for one owner\'s performed activities in a Seoul calendar month.
+     */
+    async getMonthlyActivitySummary(requestParameters: GetMonthlyActivitySummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MonthlyActivitySummaryResponse> {
+        const response = await this.getMonthlyActivitySummaryRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

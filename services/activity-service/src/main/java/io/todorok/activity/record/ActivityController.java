@@ -3,6 +3,9 @@ package io.todorok.activity.record;
 import io.todorok.activity.api.ActivityApi;
 import io.todorok.activity.api.model.*;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeParseException;
+import io.todorok.web.ApiFailure;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +45,18 @@ public class ActivityController implements ActivityApi {
     @Override
     public ResponseEntity<ActivityResponse> getActivity(UUID id) {
         return ResponseEntity.ok(activities.get(owner(), id));
+    }
+
+    @Override
+    public ResponseEntity<MonthlyActivitySummaryResponse> getMonthlyActivitySummary(
+        String month,
+        ActivityType activityType
+    ) {
+        try {
+            return ResponseEntity.ok(activities.monthlySummary(owner(), YearMonth.parse(month), activityType));
+        } catch (DateTimeParseException invalidMonth) {
+            throw new ApiFailure(400, "INVALID_MONTH", "Invalid month", "Use YYYY-MM.", false);
+        }
     }
 
     @Override

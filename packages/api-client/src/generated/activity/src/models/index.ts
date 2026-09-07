@@ -11,6 +11,7 @@ export * from './ClimbingDetail';
 export * from './ClimbingRound';
 export * from './CorrectActivityRequest';
 export * from './CreateActivityRequest';
+export * from './MonthlyActivitySummaryResponse';
 export * from './ProblemDetails';
 export * from './ProblemDetailsFieldErrorsInner';
 export * from './StudyDetail';

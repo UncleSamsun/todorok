@@ -40,17 +40,20 @@ public class ActivityService {
     private final ActivityDetailStore details;
     private final OutboxEventWriter outbox;
     private final ObjectMapper mapper;
+    private final Clock clock;
 
     public ActivityService(
         JdbcTemplate jdbc,
         ActivityDetailStore details,
         OutboxEventWriter outbox,
-        ObjectMapper mapper
+        ObjectMapper mapper,
+        Clock clock
     ) {
         this.jdbc = jdbc;
         this.details = details;
         this.outbox = outbox;
         this.mapper = mapper;
+        this.clock = clock;
     }
 
     @Transactional
@@ -255,6 +258,40 @@ public class ActivityService {
         );
         if (records.size() > size) page.nextCursor(records.get(size - 1).getActivityId().toString());
         return page;
+    }
+
+    public MonthlyActivitySummaryResponse monthlySummary(UUID owner, YearMonth month, ActivityType type) {
+        var current = YearMonth.now(clock.withZone(ZoneId.of("Asia/Seoul")));
+        if (month.isAfter(current)) throw new ApiFailure(
+            400, "FUTURE_MONTH", "Future month", "Choose the current or an earlier Seoul month.", false
+        );
+        var from = month.atDay(1).atStartOfDay(ZoneId.of("Asia/Seoul")).toOffsetDateTime();
+        var to = month.plusMonths(1).atDay(1).atStartOfDay(ZoneId.of("Asia/Seoul")).toOffsetDateTime();
+        var row = jdbc.queryForMap("""
+            with per_activity as (
+              select a.id, a.status,
+                case
+                  when a.started_at is not null and a.ended_at is not null
+                    then floor(extract(epoch from (a.ended_at-a.started_at)))::bigint
+                  when a.activity_type='WORKOUT' then coalesce(
+                    (select sum(s.duration_seconds)::bigint from workout_set s where s.activity_id=a.id), 0)
+                  when a.activity_type='STUDY' then coalesce(
+                    (select s.duration_minutes::bigint*60 from study_detail s where s.activity_id=a.id), 0)
+                  when a.activity_type='CLIMBING' then coalesce(
+                    (select c.duration_seconds::bigint from climbing_detail c where c.activity_id=a.id), 0)
+                  else 0
+                end as duration_seconds
+              from activity_record a
+              where a.user_id=? and a.activity_type=? and a.performed_at>=? and a.performed_at<?
+            )
+            select count(*) filter (where status='COMPLETED')::int as completed_count,
+                   coalesce(sum(duration_seconds) filter (where status in ('COMPLETED','PARTIAL')),0)::bigint as duration_seconds
+            from per_activity
+            """, owner, type.name(), from, to);
+        return new MonthlyActivitySummaryResponse(
+            month.toString(), type, ((Number) row.get("completed_count")).intValue(),
+            ((Number) row.get("duration_seconds")).longValue()
+        );
     }
 
     @Transactional

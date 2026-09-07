@@ -7,6 +7,7 @@ All URIs are relative to */api/activity/v1*
 | [**correctActivity**](ActivityApi.md#correctactivityoperation) | **PATCH** /activities/{activityId} |  |
 | [**createActivity**](ActivityApi.md#createactivityoperation) | **POST** /activities |  |
 | [**getActivity**](ActivityApi.md#getactivity) | **GET** /activities/{activityId} |  |
+| [**getMonthlyActivitySummary**](ActivityApi.md#getmonthlyactivitysummary) | **GET** /activities/summary |  |
 | [**listActivities**](ActivityApi.md#listactivities) | **GET** /activities |  |
 | [**voidActivity**](ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |  |
 
@@ -226,6 +227,81 @@ example().catch(console.error);
 |-------------|-------------|------------------|
 | **200** | Activity 상세 |  -  |
 | **404** | 대상을 찾을 수 없음 |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## getMonthlyActivitySummary
+
+> MonthlyActivitySummaryResponse getMonthlyActivitySummary(month, activityType)
+
+
+
+Read-only aggregate for one owner\&#39;s performed activities in a Seoul calendar month.
+
+### Example
+
+```ts
+import {
+  Configuration,
+  ActivityApi,
+} from '@todorok/api-client';
+import type { GetMonthlyActivitySummaryRequest } from '@todorok/api-client';
+
+async function example() {
+  console.log("🚀 Testing @todorok/api-client SDK...");
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
+
+  const body = {
+    // string
+    month: month_example,
+    // ActivityType
+    activityType: ...,
+  } satisfies GetMonthlyActivitySummaryRequest;
+
+  try {
+    const data = await api.getMonthlyActivitySummary(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **month** | `string` |  | [Defaults to `undefined`] |
+| **activityType** | `ActivityType` |  | [Defaults to `undefined`] [Enum: WORKOUT, STUDY, CLIMBING] |
+
+### Return type
+
+[**MonthlyActivitySummaryResponse**](MonthlyActivitySummaryResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`, `application/problem+json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Monthly activity aggregate |  -  |
+| **400** | 잘못된 요청 |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

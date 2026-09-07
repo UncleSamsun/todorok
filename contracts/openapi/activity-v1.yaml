@@ -9,6 +9,27 @@ security:
 tags:
   - name: Activity
 paths:
+  /activities/summary:
+    get:
+      tags: [Activity]
+      operationId: getMonthlyActivitySummary
+      description: Read-only aggregate for one owner's performed activities in a Seoul calendar month.
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema: { type: string, description: Calendar month in YYYY-MM form. }
+        - name: activityType
+          in: query
+          required: true
+          schema: { $ref: '#/components/schemas/ActivityType' }
+      responses:
+        '200':
+          description: Monthly activity aggregate
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MonthlyActivitySummaryResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
   /activities:
     post:
       tags: [Activity]
@@ -140,6 +161,15 @@ components:
     ActivityCompletionStatus:
       type: string
       enum: [COMPLETED, PARTIAL]
+    MonthlyActivitySummaryResponse:
+      type: object
+      additionalProperties: false
+      required: [month, activityType, completedCount, durationSeconds]
+      properties:
+        month: { type: string, description: Calendar month in YYYY-MM form. }
+        activityType: { $ref: '#/components/schemas/ActivityType' }
+        completedCount: { type: integer, minimum: 0 }
+        durationSeconds: { type: integer, format: int64, minimum: 0 }
     ActivityDetail:
       type: object
       additionalProperties: false

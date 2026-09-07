@@ -13,10 +13,12 @@ import { LoginPage } from '../features/auth/LoginPage'
 import { TodayPage } from '../features/today/TodayPage'
 import { RecordPage } from '../features/activity/RecordPage'
 import { RecordDraftProvider } from '../features/activity/RecordDrafts'
+import { ActivityMonthProvider } from '../features/activity/ActivityMonth'
 export { seoulToday } from '@todorok/client-domain'
 const Workout = lazy(() => import('../features/workout/WorkoutPage'))
 const Study = lazy(() => import('../features/study/StudyPage'))
 const Climbing = lazy(() => import('../features/climbing/ClimbingPage'))
+const ActivityRecord = lazy(() => import('../features/activity/ActivityRecordPage'))
 const Settings = lazy(() => import('../features/settings/SettingsPage'))
 function ProtectedShell() {
   const { session } = useAuth()
@@ -64,6 +66,7 @@ function ProtectedShell() {
       </nav>
       {error && <p role="alert">{error}</p>}
       <main>
+        <ActivityMonthProvider>
         <Suspense fallback={<p role="status">화면을 불러오는 중…</p>}>
           <Routes>
             <Route path="/today" element={<TodayPage />} />
@@ -74,6 +77,7 @@ function ProtectedShell() {
             <Route path="*" element={<Navigate to="/today" replace />} />
           </Routes>
         </Suspense>
+        </ActivityMonthProvider>
       </main>
     </div>
   )
@@ -113,8 +117,8 @@ function EnterSession({
   return <p role="status">오늘을 여는 중…</p>
 }
 function DomainOrRecord({ type, fallback }: { type: 'WORKOUT' | 'STUDY' | 'CLIMBING'; fallback: ReactNode }) {
-  const [params] = useSearchParams(), taskId = params.get('taskId')
-  return taskId ? <RecordPage key={taskId} type={type} /> : fallback
+  const [params] = useSearchParams(), taskId = params.get('taskId'), activityId = params.get('activityId')
+  return taskId ? <RecordPage key={taskId} type={type} /> : activityId ? <ActivityRecord key={activityId} type={type} activityId={activityId} /> : fallback
 }
 export function AppRouter() {
   return (

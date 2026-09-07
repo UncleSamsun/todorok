@@ -59,6 +59,7 @@ All URIs are relative to */api/activity/v1*
 *ActivityApi* | [**correctActivity**](docs/ActivityApi.md#correctactivityoperation) | **PATCH** /activities/{activityId} |
 *ActivityApi* | [**createActivity**](docs/ActivityApi.md#createactivityoperation) | **POST** /activities |
 *ActivityApi* | [**getActivity**](docs/ActivityApi.md#getactivity) | **GET** /activities/{activityId} |
+*ActivityApi* | [**getMonthlyActivitySummary**](docs/ActivityApi.md#getmonthlyactivitysummary) | **GET** /activities/summary |
 *ActivityApi* | [**listActivities**](docs/ActivityApi.md#listactivities) | **GET** /activities |
 *ActivityApi* | [**voidActivity**](docs/ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |
 
@@ -76,6 +77,7 @@ All URIs are relative to */api/activity/v1*
 - [ClimbingRound](docs/ClimbingRound.md)
 - [CorrectActivityRequest](docs/CorrectActivityRequest.md)
 - [CreateActivityRequest](docs/CreateActivityRequest.md)
+- [MonthlyActivitySummaryResponse](docs/MonthlyActivitySummaryResponse.md)
 - [ProblemDetails](docs/ProblemDetails.md)
 - [ProblemDetailsFieldErrorsInner](docs/ProblemDetailsFieldErrorsInner.md)
 - [StudyDetail](docs/StudyDetail.md)

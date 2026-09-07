@@ -7,10 +7,12 @@ package io.todorok.activity.api;
 
 import io.todorok.activity.api.model.ActivityPageResponse;
 import io.todorok.activity.api.model.ActivityResponse;
+import io.todorok.activity.api.model.ActivityType;
 import io.todorok.activity.api.model.CorrectActivityRequest;
 import io.todorok.activity.api.model.CreateActivityRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
+import io.todorok.activity.api.model.MonthlyActivitySummaryResponse;
 import org.springframework.lang.Nullable;
 import io.todorok.activity.api.model.ProblemDetails;
 import java.util.UUID;
@@ -90,6 +92,27 @@ public interface ActivityApi {
     )
     ResponseEntity<ActivityResponse> getActivity(
          @PathVariable("activityId") UUID activityId
+    );
+
+
+    String PATH_GET_MONTHLY_ACTIVITY_SUMMARY = "/activities/summary";
+    /**
+     * GET /activities/summary
+     * Read-only aggregate for one owner&#39;s performed activities in a Seoul calendar month.
+     *
+     * @param month  (required)
+     * @param activityType  (required)
+     * @return Monthly activity aggregate (status code 200)
+     *         or 잘못된 요청 (status code 400)
+     */
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = ActivityApi.PATH_GET_MONTHLY_ACTIVITY_SUMMARY,
+        produces = { "application/json", "application/problem+json" }
+    )
+    ResponseEntity<MonthlyActivitySummaryResponse> getMonthlyActivitySummary(
+        @NotNull  @Valid @RequestParam(value = "month", required = true) String month,
+        @NotNull  @Valid @RequestParam(value = "activityType", required = true) ActivityType activityType
     );
 
 

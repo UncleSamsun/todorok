@@ -4,9 +4,15 @@ import io.todorok.messaging.*;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.ObjectMapper;
+import java.time.Clock;
 
 @Configuration
 public class ActivityConfiguration {
+
+    @Bean
+    Clock activityClock() {
+        return Clock.systemUTC();
+    }
 
     @Bean
     OutboxEventWriter activityOutbox(JdbcTemplate jdbc, ObjectMapper mapper) {

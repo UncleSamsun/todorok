@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import io.todorok.activity.record.*;
@@ -73,6 +74,30 @@ class ActivityPersistenceIntegrationTest {
     @Autowired PlatformTransactionManager transactions;
 
     @Test
+    void summarizesEachActivityOnceAndPrefersTheHeaderInterval() {
+        UUID owner = UUID.randomUUID();
+        var workout = activities.create(owner, recordRequest(owner, ActivityType.WORKOUT));
+        jdbc.update("update activity_record set started_at=?,ended_at=? where id=?",
+            OffsetDateTime.parse("2026-09-07T10:00:00+09:00"),
+            OffsetDateTime.parse("2026-09-07T10:30:00+09:00"), workout.getActivityId());
+        jdbc.update("update workout_set set duration_seconds=999 where activity_id=?", workout.getActivityId());
+        var partial = activities.create(owner, recordRequest(owner, ActivityType.WORKOUT)
+            .completionStatus(ActivityCompletionStatus.PARTIAL));
+        jdbc.update("update workout_set set duration_seconds=120 where activity_id=?", partial.getActivityId());
+        var voided = activities.create(owner, recordRequest(owner, ActivityType.WORKOUT));
+        activities.voidRecord(owner, voided.getActivityId(), new VoidActivityRequest("mistake", 0L));
+        UUID other = UUID.randomUUID();
+        activities.create(other, recordRequest(other, ActivityType.WORKOUT));
+
+        var summary = activities.monthlySummary(owner, YearMonth.of(2026, 9), ActivityType.WORKOUT);
+
+        assertThat(summary.getMonth()).isEqualTo("2026-09");
+        assertThat(summary.getActivityType()).isEqualTo(ActivityType.WORKOUT);
+        assertThat(summary.getCompletedCount()).isEqualTo(1);
+        assertThat(summary.getDurationSeconds()).isEqualTo(1920L);
+    }
+
+    @Test
     void readsOneRevisionWhenCorrectionCommitsBetweenResultSetAndMapping() throws Exception {
         for (ActivityType type : ActivityType.values()) {
             for (String operation : List.of("GET", "LIST", "REPLAY")) {
@@ -98,7 +123,7 @@ class ActivityPersistenceIntegrationTest {
                         }, args);
                     }
                 };
-                var reader = new ActivityService(barrierJdbc, details, outbox, mapper);
+                var reader = new ActivityService(barrierJdbc, details, outbox, mapper, java.time.Clock.systemUTC());
                 try (var pool = Executors.newSingleThreadExecutor()) {
                     var pending = pool.submit(() -> new TransactionTemplate(transactions).execute(status -> switch (operation) {
                         case "GET" -> reader.get(owner, original.getActivityId());
