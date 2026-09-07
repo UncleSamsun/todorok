@@ -62,3 +62,12 @@ Nginx actual access log에서 Task POST201, complete/reopen200, PATCH200, 상세
 - 화면 검증은 Chromium이다. 실제 iPhone Safari 및 네이티브 PWA 설치는 이 작업에서 검증하지 않았다.
 - 모든 동작을 RED로 개별 관찰했다고 주장하지 않는다. 최초 endpoint/화면 부재와 no-op event 실패를 관찰했고, 나머지 경계는 실제 통합 회귀 테스트와 브라우저로 검증했다.
 - 원격 push/merge는 하지 않았다. parent 소유 PRD/progress/brief와 다른 작업 파일은 변경·commit하지 않는다.
+
+## 리뷰 1차 후속 수정: 편집 초안과 version 스냅샷
+
+같은 Task 제목을 다시 누르면 부모는 새 상세 응답의 version을 받지만 TaskEditor의 기존 title/date 입력은 유지되어, 오래된 초안이 새 version으로 저장될 수 있었다. 편집을 여는 순간 응답을 별도 readonly/frozen 스냅샷으로 고정하고, 같은 Task 재클릭은 그 스냅샷을 교체하지 않도록 수정했다. 명시적으로 닫고 다시 열면 최신 값을 가져온다.
+
+- RED: `pnpm --dir apps/web exec vitest run src/features/today/TodayPage.test.tsx` — 2개 중 1개 실패. A가 v0을 열어 초안을 수정하고 B가 v1로 변경한 뒤 A가 같은 제목을 다시 눌러 저장하면, 요청은 기대 version0/실제 version1이었다.
+- GREEN: `pnpm --dir apps/web exec vitest run src/features/today src/App.test.tsx` — 4 files, 9 tests 통과. 동일 시나리오에서 v0 요청은 제어된 HTTP 경계의 409를 받고 title/date 초안과 B의 변경을 유지한다. 명시적 닫기/재열기에서는 B의 최신 제목·날짜를 표시한다.
+- GREEN: `pnpm build:web` — TypeScript·production/PWA build 통과, 초기 JS gzip 92.00KB.
+- `git diff --check` 통과. 이번 수정은 결정적 컴포넌트 회귀 테스트로 검증했으며 실제 DB·브라우저 전체 흐름은 재실행하지 않았다. 앞 절의 브라우저 결과는 최초 구현 검증이다.

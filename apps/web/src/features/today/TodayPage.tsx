@@ -42,7 +42,7 @@ export function TodayPage() {
       }
     })
   const [adding, setAdding] = useState<planner.TaskType | null>(null),
-    [editing, setEditing] = useState<Task | null>(null),
+    [editing, setEditing] = useState<Readonly<Task> | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('')
   const days = view === 'week' ? weekDays(selected) : monthDays(selected),
@@ -112,7 +112,9 @@ export function TodayPage() {
     )
   }
   async function edit(task: Task) {
-    if (busy) return
+    // Keep the draft and expected version on the same edit-session snapshot.
+    // Closing the editor explicitly allows a fresh snapshot on the next open.
+    if (busy || editing?.taskId === task.taskId) return
     setBusy(true)
     setError('')
     try {
@@ -121,7 +123,7 @@ export function TodayPage() {
         queryFn: () => api.tasks.getTask({ taskId: task.taskId }),
         staleTime: 0,
       })
-      setEditing(current)
+      setEditing(Object.freeze({ ...current }))
       setAdding(null)
     } catch {
       setError('할 일을 불러오지 못했습니다. 다시 시도해 주세요.')
