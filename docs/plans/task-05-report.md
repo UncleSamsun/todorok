@@ -93,6 +93,14 @@ Nginx 로그에서 series POST201·GET200·PATCH200·archive200, skip200, rollov
 - GREEN: `gradlew.bat generateContracts` 직접 실행 성공 → `node --test scripts/contracts-generation.test.mjs` 1/1 통과 → `pnpm contracts:check` 일치. 스크립트가 동일 Gradle task를 호출한 결과와 직접 생성 결과가 같음을 확인했다.
 - stage 후 `git diff --cached --check`로 EOF 경고 해소를 확인했다. 반복 구현과 백엔드 동작은 바꾸지 않아 해당 테스트·브라우저를 반복하지 않았다.
 
+## 리뷰 후속 수정: 수동 조회 재시도의 이월 순서 보장
+
+- 기존 query 오류가 cache에 남은 상태에서 과거 날짜→오늘으로 이동하면, `enabled: false`여도 직접 `refetch()`하는 버튼이 이월 command를 우회할 수 있었다. 달력 요약과 날짜 상세의 두 재시도 버튼을 `ready`일 때만 활성화하고 핸들러에서도 같은 조건을 검사한다.
+- RED: `pnpm --dir apps/web exec vitest run src/features/today/recurrence.test.tsx` — 3개 중 1개 실패. 이월 대기 중 두 수동 재시도 후 GET 수는 기대3/실제5였다.
+- GREEN: 같은 명령 3/3 통과. cache 오류→같은 주 과거 선택→오늘 이월 pending/failed 동안 추가 GET0, rollover 성공 후 정상 조회와 수동 재시도까지 실제 컴포넌트와 생성 client를 사용해 검증했다.
+- `pnpm build:web` TypeScript·production/PWA 빌드 통과(17:33 KST). 초기 JS gzip94.31KB다. 최초 빌드에서 테스트의 지원하지 않는 `exact` 옵션을 발견해 제거한 뒤 다시 검사했다.
+- 이번 수정은 UI guard와 회귀 테스트뿐이다. 백엔드 정책·DB 테스트와 실제 브라우저는 다시 실행하지 않았으며 위 브라우저 결과는 이 guard 수정 전 작업05 통합 흐름의 증거다.
+
 ## 범위
 
 - Activity 완료/void 이벤트의 실제 수신 연결은 후속 작업08이다. 이번에는 완료 결과가 COMPLETED/PARTIAL일 때 다음 회차를 결정하는 정책과 서비스 경계를 검증했다.

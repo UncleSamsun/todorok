@@ -237,7 +237,14 @@ export function TodayPage() {
         {range.isError ? (
           <p role="alert">
             달력을 불러오지 못했습니다.{' '}
-            <button onClick={() => void range.refetch()}>다시 불러오기</button>
+            <button
+              disabled={!ready}
+              onClick={() => {
+                if (ready) void range.refetch()
+              }}
+            >
+              다시 불러오기
+            </button>
           </p>
         ) : range.isPending ? (
           <p role="status">달력을 불러오는 중…</p>
@@ -275,7 +282,14 @@ export function TodayPage() {
         {detail.isError && (
           <p role="alert">
             할 일을 불러오지 못했습니다.{' '}
-            <button onClick={() => void detail.refetch()}>다시 불러오기</button>
+            <button
+              disabled={!ready}
+              onClick={() => {
+                if (ready) void detail.refetch()
+              }}
+            >
+              다시 불러오기
+            </button>
           </p>
         )}
         <TaskGroups
