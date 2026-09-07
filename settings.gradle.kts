@@ -24,4 +24,5 @@ include(
     "services:planner-service",
     "services:activity-service",
     "services:notification-service",
+    "tests:messaging-integration",
 )

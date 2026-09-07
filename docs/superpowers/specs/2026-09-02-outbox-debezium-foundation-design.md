@@ -88,7 +88,7 @@ create table outbox_event (
 create index outbox_event_created_at_idx on outbox_event(created_at);
 ```
 
-column 이름은 Debezium Outbox Event Router의 기본 field와 맞춘다. `id`는 `EventEnvelope.eventId`, `type`은 `EventType`, `payload`는 payload fragment가 아니라 전체 `EventEnvelope` JSON이다. Kafka message value가 현재 JSON Schema 계약과 바로 일치하게 하기 위해서다.
+column 이름은 Debezium Outbox Event Router의 기본 field와 맞춘다. `id`는 `EventEnvelope.eventId`, `type`은 `EventType`, `occurred_at`은 DB audit용 업무 발생 시각, `payload`는 payload fragment가 아니라 전체 `EventEnvelope` JSON이다. Kafka message value가 현재 JSON Schema 계약과 바로 일치하게 하기 위해서다. Kafka record timestamp는 Debezium capture 시각을 사용하고 정확한 업무 시각은 envelope의 `occurredAt`을 기준으로 한다.
 
 `aggregatetype`은 `task` 또는 `activity`, `aggregateid`는 aggregate UUID 문자열이다. 같은 aggregate ID를 Kafka key로 사용해 한 partition 안의 순서를 유지한다.
 
@@ -194,6 +194,9 @@ connector 이름은 `todorok-postgres-outbox`이며 핵심 설정은 다음과 �
 ```properties
 connector.class=io.debezium.connector.postgresql.PostgresConnector
 tasks.max=1
+key.converter=org.apache.kafka.connect.storage.StringConverter
+value.converter=org.apache.kafka.connect.json.JsonConverter
+value.converter.schemas.enable=false
 plugin.name=pgoutput
 slot.name=todorok_outbox_slot
 publication.name=todorok_outbox
@@ -204,7 +207,6 @@ transforms=outbox
 transforms.outbox.type=io.debezium.transforms.outbox.EventRouter
 transforms.outbox.route.by.field=aggregatetype
 transforms.outbox.route.topic.replacement=todorok.${routedByValue}.v1
-transforms.outbox.table.field.event.timestamp=occurred_at
 transforms.outbox.table.expand.json.payload=true
 transforms.outbox.table.op.invalid.behavior=fatal
 errors.tolerance=none

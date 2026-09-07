@@ -3,6 +3,9 @@
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "tasks.max": "1",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
     "database.hostname": "postgres",
     "database.port": "5432",
     "database.user": "debezium_app",
@@ -22,7 +25,6 @@
     "transforms.outbox.table.field.event.id": "id",
     "transforms.outbox.table.field.event.key": "aggregateid",
     "transforms.outbox.table.field.event.payload": "payload",
-    "transforms.outbox.table.field.event.timestamp": "occurred_at",
     "transforms.outbox.table.expand.json.payload": "true",
     "transforms.outbox.table.op.invalid.behavior": "fatal",
     "errors.tolerance": "none",
