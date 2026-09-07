@@ -84,8 +84,9 @@ task_series
 COMPLETED ── reopen / ActivityVoided ──► PLANNED
 SKIPPED   ── reopen ───────────────────► PLANNED(today)
 
-반복 완료 후 다음 PLANNED occurrence 생성
-지난 기록 완료 후 오늘 PLANNED occurrence 생성
+반복 완료 후 기존 PLANNED가 없을 때 다음 규칙 날짜의 occurrence 생성
+지난 기록 완료 후 계산된 다음 날짜가 과거인 경우에만 오늘로 이월
+PARTIAL 기록은 현재 Task와 다음 occurrence를 변경하지 않음
 ```
 
 - 일반 반복은 `DAILY`, `WEEKLY`, `MONTHLY`와 간격·요일 또는 일자·시작·종료만 지원한다.
