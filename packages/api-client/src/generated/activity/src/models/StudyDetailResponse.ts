@@ -24,41 +24,41 @@ import {
 /**
  *
  * @export
- * @interface StudyDetail
+ * @interface StudyDetailResponse
  */
-export interface StudyDetail {
+export interface StudyDetailResponse {
     /**
      *
      * @type {string}
-     * @memberof StudyDetail
+     * @memberof StudyDetailResponse
      */
     subject?: string;
     /**
      *
      * @type {number}
-     * @memberof StudyDetail
+     * @memberof StudyDetailResponse
      */
     durationMinutes?: number;
     /**
-     * Optional values for the server-selected template. Omitted fields are not stored; 0 and false are preserved.
+     *
      * @type {Array<FieldInput>}
-     * @memberof StudyDetail
+     * @memberof StudyDetailResponse
      */
     fields?: Array<FieldInput>;
 }
 
 /**
- * Check if a given object implements the StudyDetail interface.
+ * Check if a given object implements the StudyDetailResponse interface.
  */
-export function instanceOfStudyDetail(value: object): value is StudyDetail {
+export function instanceOfStudyDetailResponse(value: object): value is StudyDetailResponse {
     return true;
 }
 
-export function StudyDetailFromJSON(json: any): StudyDetail {
-    return StudyDetailFromJSONTyped(json, false);
+export function StudyDetailResponseFromJSON(json: any): StudyDetailResponse {
+    return StudyDetailResponseFromJSONTyped(json, false);
 }
 
-export function StudyDetailFromJSONTyped(json: any, ignoreDiscriminator: boolean): StudyDetail {
+export function StudyDetailResponseFromJSONTyped(json: any, ignoreDiscriminator: boolean): StudyDetailResponse {
     if (json == null) {
         return json;
     }
@@ -70,11 +70,11 @@ export function StudyDetailFromJSONTyped(json: any, ignoreDiscriminator: boolean
     };
 }
 
-export function StudyDetailToJSON(json: any): StudyDetail {
-    return StudyDetailToJSONTyped(json, false);
+export function StudyDetailResponseToJSON(json: any): StudyDetailResponse {
+    return StudyDetailResponseToJSONTyped(json, false);
 }
 
-export function StudyDetailToJSONTyped(value?: StudyDetail | null, ignoreDiscriminator: boolean = false): any {
+export function StudyDetailResponseToJSONTyped(value?: StudyDetailResponse | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

@@ -1,8 +1,8 @@
-import { ActivityApi, ActivityResponse, CorrectActivityRequestFromJSON, ActivityResponseFromJSON } from './generated/activity/src'
+import { ActivityApi, ActivityResponse, CorrectActivityRequest, CorrectActivityRequestFromJSON, ActivityResponseFromJSON } from './generated/activity/src'
 
 export type ActivityTimestamps = { performedAt: string; startedAt?: string; endedAt?: string }
 export type EditableActivity = ActivityResponse & { timestamps?: ActivityTimestamps }
-export type ActivityCorrection = ActivityTimestamps & { expectedVersion: number; note?: string; detail: ActivityResponse['detail'] }
+export type ActivityCorrection = ActivityTimestamps & { expectedVersion: number; note?: string; detail: CorrectActivityRequest['detail'] }
 
 // Generated Date fields truncate precision beyond milliseconds. Keep the original
 // wire timestamps alongside the typed model at the API boundary for round trips.

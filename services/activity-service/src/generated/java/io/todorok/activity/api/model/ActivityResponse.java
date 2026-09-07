@@ -8,10 +8,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.Nulls;
-import io.todorok.activity.api.model.ActivityDetail;
+import io.todorok.activity.api.model.ActivityDetailResponse;
 import io.todorok.activity.api.model.ActivityStatus;
 import io.todorok.activity.api.model.ActivitySyncState;
+import io.todorok.activity.api.model.ActivityTemplateSnapshot;
 import io.todorok.activity.api.model.ActivityType;
+import io.todorok.activity.api.model.DetailFormat;
+import io.todorok.activity.api.model.LegacyStudyPayload;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -52,7 +55,16 @@ public class ActivityResponse {
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private @Nullable OffsetDateTime endedAt;
 
-  private ActivityDetail detail;
+  private ActivityDetailResponse detail;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable DetailFormat detailFormat;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable ActivityTemplateSnapshot templateSnapshot;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable LegacyStudyPayload legacyStudyPayload;
 
   private ActivityStatus status;
 
@@ -78,7 +90,7 @@ public class ActivityResponse {
   /**
    * Constructor with only required parameters
    */
-  public ActivityResponse(UUID activityId, UUID commandId, UUID taskId, UUID userId, ActivityType activityType, OffsetDateTime performedAt, ActivityDetail detail, ActivityStatus status, Long version) {
+  public ActivityResponse(UUID activityId, UUID commandId, UUID taskId, UUID userId, ActivityType activityType, OffsetDateTime performedAt, ActivityDetailResponse detail, ActivityStatus status, Long version) {
     this.activityId = activityId;
     this.commandId = commandId;
     this.taskId = taskId;
@@ -252,7 +264,7 @@ public class ActivityResponse {
     this.endedAt = endedAt;
   }
 
-  public ActivityResponse detail(ActivityDetail detail) {
+  public ActivityResponse detail(ActivityDetailResponse detail) {
     this.detail = detail;
     return this;
   }
@@ -263,13 +275,76 @@ public class ActivityResponse {
    */
   @NotNull @Valid
   @JsonProperty("detail")
-  public ActivityDetail getDetail() {
+  public ActivityDetailResponse getDetail() {
     return detail;
   }
 
   @JsonProperty("detail")
-  public void setDetail(ActivityDetail detail) {
+  public void setDetail(ActivityDetailResponse detail) {
     this.detail = detail;
+  }
+
+  public ActivityResponse detailFormat(@Nullable DetailFormat detailFormat) {
+    this.detailFormat = detailFormat;
+    return this;
+  }
+
+  /**
+   * Get detailFormat
+   * @return detailFormat
+   */
+  @Valid
+  @JsonProperty("detailFormat")
+  public @Nullable DetailFormat getDetailFormat() {
+    return detailFormat;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("detailFormat")
+  public void setDetailFormat(@Nullable DetailFormat detailFormat) {
+    this.detailFormat = detailFormat;
+  }
+
+  public ActivityResponse templateSnapshot(@Nullable ActivityTemplateSnapshot templateSnapshot) {
+    this.templateSnapshot = templateSnapshot;
+    return this;
+  }
+
+  /**
+   * Get templateSnapshot
+   * @return templateSnapshot
+   */
+  @Valid
+  @JsonProperty("templateSnapshot")
+  public @Nullable ActivityTemplateSnapshot getTemplateSnapshot() {
+    return templateSnapshot;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("templateSnapshot")
+  public void setTemplateSnapshot(@Nullable ActivityTemplateSnapshot templateSnapshot) {
+    this.templateSnapshot = templateSnapshot;
+  }
+
+  public ActivityResponse legacyStudyPayload(@Nullable LegacyStudyPayload legacyStudyPayload) {
+    this.legacyStudyPayload = legacyStudyPayload;
+    return this;
+  }
+
+  /**
+   * Get legacyStudyPayload
+   * @return legacyStudyPayload
+   */
+  @Valid
+  @JsonProperty("legacyStudyPayload")
+  public @Nullable LegacyStudyPayload getLegacyStudyPayload() {
+    return legacyStudyPayload;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("legacyStudyPayload")
+  public void setLegacyStudyPayload(@Nullable LegacyStudyPayload legacyStudyPayload) {
+    this.legacyStudyPayload = legacyStudyPayload;
   }
 
   public ActivityResponse status(ActivityStatus status) {
@@ -415,6 +490,9 @@ public class ActivityResponse {
         Objects.equals(this.startedAt, activityResponse.startedAt) &&
         Objects.equals(this.endedAt, activityResponse.endedAt) &&
         Objects.equals(this.detail, activityResponse.detail) &&
+        Objects.equals(this.detailFormat, activityResponse.detailFormat) &&
+        Objects.equals(this.templateSnapshot, activityResponse.templateSnapshot) &&
+        Objects.equals(this.legacyStudyPayload, activityResponse.legacyStudyPayload) &&
         Objects.equals(this.status, activityResponse.status) &&
         Objects.equals(this.version, activityResponse.version) &&
         Objects.equals(this.note, activityResponse.note) &&
@@ -425,7 +503,7 @@ public class ActivityResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(activityId, commandId, taskId, userId, activityType, performedAt, startedAt, endedAt, detail, status, version, note, syncState, syncReason, previousPerformedAt);
+    return Objects.hash(activityId, commandId, taskId, userId, activityType, performedAt, startedAt, endedAt, detail, detailFormat, templateSnapshot, legacyStudyPayload, status, version, note, syncState, syncReason, previousPerformedAt);
   }
 
   @Override
@@ -441,6 +519,9 @@ public class ActivityResponse {
     sb.append("    startedAt: ").append(toIndentedString(startedAt)).append("\n");
     sb.append("    endedAt: ").append(toIndentedString(endedAt)).append("\n");
     sb.append("    detail: ").append(toIndentedString(detail)).append("\n");
+    sb.append("    detailFormat: ").append(toIndentedString(detailFormat)).append("\n");
+    sb.append("    templateSnapshot: ").append(toIndentedString(templateSnapshot)).append("\n");
+    sb.append("    legacyStudyPayload: ").append(toIndentedString(legacyStudyPayload)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    note: ").append(toIndentedString(note)).append("\n");

@@ -1,26 +1,27 @@
 
-# StudyDetail
+# LegacyStudyPayload
 
+Response-only original JSONB. Never interpret as validated template definitions or submit as input.
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`subject` | string
-`durationMinutes` | number
-`fields` | [Array&lt;FieldInput&gt;](FieldInput.md)
+`provenance` | string
+`values` | any
+`snapshot` | any
 
 ## Example
 
 ```typescript
-import type { StudyDetail } from '@todorok/api-client'
+import type { LegacyStudyPayload } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
-  "subject": null,
-  "durationMinutes": null,
-  "fields": null,
-} satisfies StudyDetail
+  "provenance": null,
+  "values": null,
+  "snapshot": null,
+} satisfies LegacyStudyPayload
 
 console.log(example)
 
@@ -29,7 +30,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as StudyDetail
+const exampleParsed = JSON.parse(exampleJSON) as LegacyStudyPayload
 console.log(exampleParsed)
 ```
 

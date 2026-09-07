@@ -41,6 +41,7 @@ public class ActivityService {
     private final OutboxEventWriter outbox;
     private final ObjectMapper mapper;
     private final Clock clock;
+    private final ActivityTemplateRecords templates;
 
     public ActivityService(
         JdbcTemplate jdbc,
@@ -54,6 +55,7 @@ public class ActivityService {
         this.outbox = outbox;
         this.mapper = mapper;
         this.clock = clock;
+        this.templates = new ActivityTemplateRecords(jdbc);
     }
 
     @Transactional
@@ -112,8 +114,8 @@ public class ActivityService {
         if (
             !request.getActivityType().name().equals(reference.get("task_type"))
         ) throw fail("TASK_TYPE_MISMATCH", false);
-        // 09B2 replaces this explicit boundary with typed value validation and a server snapshot.
-        if (reference.get("template_binding_id") != null) throw fail("TEMPLATE_RECORD_NOT_READY", false);
+        var template = templates.current(owner, reference, request.getExpectedTemplateVersion());
+        var studyValues = templates.validate(request.getDetail(), template);
         if (!"PLANNED".equals(reference.get("status"))) throw fail(
             "TASK_" + reference.get("status"),
             false
@@ -133,8 +135,9 @@ public class ActivityService {
             request.getCompletionStatus() == ActivityCompletionStatus.COMPLETED;
         jdbc.update(
             """
-            insert into activity_record(id,user_id,task_id,activity_type,performed_at,status,command_id,fingerprint,note,sync_state,started_at,ended_at)
-            values (?,?,?,?,?,?,?,?,?,?,?,?)
+            insert into activity_record(id,user_id,task_id,activity_type,performed_at,status,command_id,fingerprint,note,sync_state,started_at,ended_at,
+              detail_format,template_id,template_version,template_binding_id,template_snapshot)
+            values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,cast(? as jsonb))
             """,
             id,
             owner,
@@ -147,9 +150,14 @@ public class ActivityService {
             request.getNote(),
             complete ? "PENDING" : "NOT_REQUIRED",
             start,
-            end
+            end,
+            template == null ? "STANDARD" : "TEMPLATE",
+            template == null ? null : template.getTemplateId(),
+            template == null ? null : template.getTemplateVersion(),
+            template == null ? null : reference.get("template_binding_id"),
+            template == null ? null : mapper.writeValueAsString(template)
         );
-        details.save(id, request.getActivityType(), request.getDetail());
+        details.save(id, request.getActivityType(), request.getDetail(), template == null ? null : studyValues);
         if (complete) outbox.append(
             "activity",
             id.toString(),
@@ -165,7 +173,7 @@ public class ActivityService {
                     request.getTaskId(),
                     request.getActivityType().name(),
                     request.getPerformedAt().toInstant(),
-                    summary(request),
+                    template == null ? summary(request) : template.getName() + " · 공부 기록",
                     start == null ? null : start.toInstant(),
                     end == null ? null : end.toInstant()
                 )
@@ -192,6 +200,35 @@ public class ActivityService {
     }
 
     private ActivityResponse snapshot(java.sql.ResultSet r, int index) throws java.sql.SQLException {
+        var format = DetailFormat.valueOf(r.getString("detail_format"));
+        ActivityTemplateSnapshot template = r.getString("template_snapshot") == null ? null
+            : mapper.readValue(r.getString("template_snapshot"), ActivityTemplateSnapshot.class);
+        // JSONB may contain arbitrary legacy decimals. A floating-point intermediary would corrupt revision history.
+        var raw = mapper.reader().with(tools.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+            .readTree(r.getString("detail_snapshot"));
+        var study = raw.get("study");
+        LegacyStudyPayload legacy = null;
+        if (study != null && study.isObject()) {
+            var values = study.get("values");
+            if (format == DetailFormat.LEGACY) legacy = new LegacyStudyPayload(LegacyStudyPayload.ProvenanceEnum.UNVERIFIED_LEGACY)
+                .values(values).snapshot(study.get("snapshot"));
+            var object = (tools.jackson.databind.node.ObjectNode) study;
+            object.remove("values"); object.remove("snapshot");
+            if (template != null) {
+                var fields = object.putArray("fields");
+                for (var definition : template.getFields()) {
+                    var value = values == null ? null : values.get(definition.getFieldId().toString());
+                    if (value == null) continue;
+                    var input = fields.addObject().put("fieldId", definition.getFieldId().toString()).put("type", definition.getType().name());
+                    input.set(switch (definition.getType()) {
+                        case NUMBER -> "numberValue"; case TIME -> "timeSeconds"; case SHORT_TEXT -> "textValue";
+                        case CHECK -> "checked"; case MEMO -> "memoValue";
+                    }, value);
+                }
+            }
+        }
+        var responseDetail = mapper.treeToValue(raw, ActivityDetailResponse.class);
+        if (template == null && responseDetail.getStudy() != null) responseDetail.getStudy().setFields(null);
         return new ActivityResponse(
             (UUID) r.getObject("id"),
             (UUID) r.getObject("command_id"),
@@ -199,10 +236,11 @@ public class ActivityService {
             (UUID) r.getObject("user_id"),
             ActivityType.valueOf(r.getString("activity_type")),
             r.getObject("performed_at", OffsetDateTime.class),
-            mapper.readValue(r.getString("detail_snapshot"), ActivityDetail.class),
+            responseDetail,
             ActivityStatus.valueOf(r.getString("status")),
             r.getLong("revision")
         )
+            .detailFormat(format).templateSnapshot(template).legacyStudyPayload(legacy)
             .note(r.getString("note"))
             .previousPerformedAt(r.getObject("previous_performed_at", OffsetDateTime.class))
             .startedAt(r.getObject("started_at", OffsetDateTime.class))
@@ -303,6 +341,7 @@ public class ActivityService {
         if (!old.getVersion().equals(request.getExpectedVersion())) throw fail("VERSION_CONFLICT", false);
         if (old.getStatus() == ActivityStatus.VOIDED) throw fail("ACTIVITY_VOIDED", false);
         details.validate(old.getActivityType(), request.getDetail());
+        var studyValues = templates.validate(request.getDetail(), old.getTemplateSnapshot());
         var start = request.getStartedAt();
         var end = request.getEndedAt();
         var zone = ZoneId.of("Asia/Seoul");
@@ -315,12 +354,20 @@ public class ActivityService {
         boolean complete = old.getStatus() == ActivityStatus.COMPLETED;
         jdbc.update("update activity_record set previous_performed_at=performed_at,performed_at=?,started_at=?,ended_at=?,note=?,revision=revision+1,sync_state=?,sync_reason=null where id=?",
             request.getPerformedAt(), start, end, request.getNote(), complete ? "PENDING" : "NOT_REQUIRED", id);
-        details.replace(id, old.getActivityType(), request.getDetail());
+        if (old.getActivityType() == ActivityType.STUDY) {
+            // Update only validated columns on legacy rows; their arbitrary JSON is never round-tripped through input DTOs.
+            var study = request.getDetail().getStudy();
+            jdbc.update("update study_detail set subject=?,duration_minutes=? where activity_id=?",
+                study == null ? null : study.getSubject(), study == null ? null : study.getDurationMinutes(), id);
+            if (old.getDetailFormat() == DetailFormat.TEMPLATE) jdbc.update("update study_detail set values_json=cast(? as jsonb) where activity_id=?",
+                mapper.writeValueAsString(studyValues), id);
+        } else details.replace(id, old.getActivityType(), request.getDetail());
         var summaryRequest = new CreateActivityRequest().activityType(old.getActivityType()).detail(request.getDetail());
         outbox.append("activity", id.toString(), new EventEnvelope<>(UUID.randomUUID(), EventType.ACTIVITY_CORRECTED,
             1, old.getVersion() + 1, Instant.now(), owner,
             new ActivityCorrected(id, old.getTaskId(), old.getActivityType().name(), request.getPerformedAt().toInstant(),
-                summary(summaryRequest), start == null ? null : start.toInstant(), end == null ? null : end.toInstant(),
+                old.getTemplateSnapshot() == null ? summary(summaryRequest) : old.getTemplateSnapshot().getName() + " · 공부 기록",
+                start == null ? null : start.toInstant(), end == null ? null : end.toInstant(),
                 old.getPerformedAt().toInstant(), old.getStatus().name())));
         return get(owner, id);
     }

@@ -36,7 +36,7 @@ public interface ActivityApi {
     String PATH_CORRECT_ACTIVITY = "/activities/{activityId}";
     /**
      * PATCH /activities/{activityId}
-     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     * Replace editable values using the original templateSnapshot definition. Status, task, type, detailFormat and template identity/version/snapshot are immutable. Legacy Study JSON is preserved by the server. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
      *
      * @param activityId  (required)
      * @param correctActivityRequest  (required)
@@ -44,6 +44,8 @@ public interface ActivityApi {
      *         or 잘못된 요청 (status code 400)
      *         or 대상을 찾을 수 없음 (status code 404)
      *         or 버전 또는 상태 충돌 (status code 409)
+     *         or Template management body exceeds 1 MiB (status code 413)
+     *         or Compressed template management and activity record bodies are not supported (status code 415)
      */
     @RequestMapping(
         method = RequestMethod.PATCH,
@@ -65,6 +67,8 @@ public interface ActivityApi {
      * @return Activity 생성 (status code 201)
      *         or 잘못된 요청 (status code 400)
      *         or 버전 또는 상태 충돌 (status code 409)
+     *         or Template management body exceeds 1 MiB (status code 413)
+     *         or Compressed template management and activity record bodies are not supported (status code 415)
      */
     @RequestMapping(
         method = RequestMethod.POST,

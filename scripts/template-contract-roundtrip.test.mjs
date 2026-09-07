@@ -35,6 +35,32 @@ test('생성 TypeScript 템플릿 응답은 version과 fields를 함께 왕복�
     }
     const json = JSON.parse(JSON.stringify(generated.TemplateResponseToJSON(response)))
     assert.deepEqual(generated.TemplateResponseFromJSON(json), response)
+    const uuid = n => `20000000-0000-0000-0000-${String(n).padStart(12, '0')}`
+    const fields = [
+      { fieldId: uuid(1), type: 'NUMBER', numberValue: 0 },
+      { fieldId: uuid(2), type: 'TIME', timeSeconds: 9007199254740991 },
+      { fieldId: uuid(3), type: 'SHORT_TEXT', textValue: 'BFS' },
+      { fieldId: uuid(4), type: 'CHECK', checked: false },
+      { fieldId: uuid(5), type: 'MEMO', memoValue: ' 첫 줄\n둘째 줄 ' },
+    ]
+    const record = { activityId: uuid(6), commandId: uuid(7), taskId: uuid(8), userId: uuid(9), activityType: 'STUDY',
+      performedAt: '2026-09-07T01:00:00.000Z', status: 'COMPLETED', version: 1, detailFormat: 'TEMPLATE',
+      templateSnapshot: { schemaVersion: 1, templateId: response.templateId, templateVersion: 1, name: '최초 정의', domain: 'STUDY', kind: 'STUDY_CATEGORY',
+        fields: fields.map((field, position) => ({ fieldId: field.fieldId, type: field.type, name: field.type, position })) },
+      detail: { study: { fields } } }
+    for (const [type, source] of [
+      ['CreateActivityRequest', { commandId: uuid(7), taskId: uuid(8), activityType: 'STUDY', completionStatus: 'COMPLETED',
+        performedAt: record.performedAt, expectedTemplateVersion: 1, detail: record.detail }],
+      ['CorrectActivityRequest', { expectedVersion: 1, performedAt: record.performedAt, detail: record.detail }],
+      ['ActivityResponse', record],
+      ['ActivityResponse', { ...record, detailFormat: 'LEGACY', templateSnapshot: undefined, detail: { study: { durationMinutes: 1 } },
+        legacyStudyPayload: { provenance: 'UNVERIFIED_LEGACY', values: { nested: [null, 0, false, {}], empty: {} }, snapshot: { bad: [] } } }],
+    ]) {
+      assert.deepEqual(JSON.parse(JSON.stringify(generated[`${type}ToJSON`](generated[`${type}FromJSON`](source)))), JSON.parse(JSON.stringify(source)))
+    }
+    const attemptedEcho = generated.CreateActivityRequestToJSON({ ...generated.ActivityResponseFromJSON(record), completionStatus: 'COMPLETED' })
+    assert.equal(Object.hasOwn(attemptedEcho, 'templateSnapshot'), false)
+    assert.equal(Object.hasOwn(attemptedEcho, 'legacyStudyPayload'), false)
   } finally {
     await rm(output, { recursive: true, force: true })
   }

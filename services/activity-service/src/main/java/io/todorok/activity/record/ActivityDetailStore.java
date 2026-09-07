@@ -56,6 +56,10 @@ public class ActivityDetailStore {
     }
 
     public void save(UUID id, ActivityType type, ActivityDetail detail) {
+        save(id, type, detail, null);
+    }
+
+    public void save(UUID id, ActivityType type, ActivityDetail detail, Map<String,Object> studyValues) {
         switch (type) {
             case WORKOUT -> {
                 jdbc.update(
@@ -86,12 +90,10 @@ public class ActivityDetailStore {
                     id,
                     d == null ? null : d.getSubject(),
                     d == null ? null : d.getDurationMinutes(),
-                    d == null || d.getValues() == null
+                    studyValues == null
                         ? null
-                        : mapper.writeValueAsString(d.getValues()),
-                    d == null || d.getSnapshot() == null
-                        ? null
-                        : mapper.writeValueAsString(d.getSnapshot())
+                        : mapper.writeValueAsString(studyValues),
+                    null
                 );
             }
             case CLIMBING -> {
@@ -171,22 +173,6 @@ public class ActivityDetailStore {
                             .subject(r.getString("subject"))
                             .durationMinutes(
                                 (Integer) r.getObject("duration_minutes")
-                            )
-                            .values(
-                                r.getString("values_json") == null
-                                    ? null
-                                    : mapper.readValue(
-                                          r.getString("values_json"),
-                                          Map.class
-                                      )
-                            )
-                            .snapshot(
-                                r.getString("snapshot") == null
-                                    ? null
-                                    : mapper.readValue(
-                                          r.getString("snapshot"),
-                                          Map.class
-                                      )
                             ),
                     id
                 )

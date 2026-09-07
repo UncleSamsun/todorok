@@ -86,7 +86,7 @@ example().catch(console.error);
 | **404** | 대상을 찾을 수 없음 |  -  |
 | **409** | 버전 또는 상태 충돌 |  -  |
 | **413** | Template management body exceeds 1 MiB |  -  |
-| **415** | Compressed template management bodies are not supported |  -  |
+| **415** | Compressed template management and activity record bodies are not supported |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
@@ -159,7 +159,7 @@ example().catch(console.error);
 | **400** | 잘못된 요청 |  -  |
 | **409** | 버전 또는 상태 충돌 |  -  |
 | **413** | Template management body exceeds 1 MiB |  -  |
-| **415** | Compressed template management bodies are not supported |  -  |
+| **415** | Compressed template management and activity record bodies are not supported |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
@@ -236,7 +236,7 @@ example().catch(console.error);
 | **404** | 대상을 찾을 수 없음 |  -  |
 | **409** | 버전 또는 상태 충돌 |  -  |
 | **413** | Template management body exceeds 1 MiB |  -  |
-| **415** | Compressed template management bodies are not supported |  -  |
+| **415** | Compressed template management and activity record bodies are not supported |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

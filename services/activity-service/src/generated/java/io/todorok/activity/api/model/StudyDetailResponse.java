@@ -21,11 +21,11 @@ import java.util.*;
 import jakarta.annotation.Generated;
 
 /**
- * StudyDetail
+ * StudyDetailResponse
  */
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
-public class StudyDetail {
+public class StudyDetailResponse {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private @Nullable String subject;
@@ -36,7 +36,7 @@ public class StudyDetail {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private List<@Valid FieldInput> fields = new ArrayList<>();
 
-  public StudyDetail subject(@Nullable String subject) {
+  public StudyDetailResponse subject(@Nullable String subject) {
     this.subject = subject;
     return this;
   }
@@ -57,7 +57,7 @@ public class StudyDetail {
     this.subject = subject;
   }
 
-  public StudyDetail durationMinutes(@Nullable Integer durationMinutes) {
+  public StudyDetailResponse durationMinutes(@Nullable Integer durationMinutes) {
     this.durationMinutes = durationMinutes;
     return this;
   }
@@ -80,12 +80,12 @@ public class StudyDetail {
     this.durationMinutes = durationMinutes;
   }
 
-  public StudyDetail fields(List<@Valid FieldInput> fields) {
+  public StudyDetailResponse fields(List<@Valid FieldInput> fields) {
     this.fields = fields;
     return this;
   }
 
-  public StudyDetail addFieldsItem(FieldInput fieldsItem) {
+  public StudyDetailResponse addFieldsItem(FieldInput fieldsItem) {
     if (this.fields == null) {
       this.fields = new ArrayList<>();
     }
@@ -94,7 +94,7 @@ public class StudyDetail {
   }
 
   /**
-   * Optional values for the server-selected template. Omitted fields are not stored; 0 and false are preserved.
+   * Get fields
    * @return fields
    */
   @Valid
@@ -117,10 +117,10 @@ public class StudyDetail {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StudyDetail studyDetail = (StudyDetail) o;
-    return Objects.equals(this.subject, studyDetail.subject) &&
-        Objects.equals(this.durationMinutes, studyDetail.durationMinutes) &&
-        Objects.equals(this.fields, studyDetail.fields);
+    StudyDetailResponse studyDetailResponse = (StudyDetailResponse) o;
+    return Objects.equals(this.subject, studyDetailResponse.subject) &&
+        Objects.equals(this.durationMinutes, studyDetailResponse.durationMinutes) &&
+        Objects.equals(this.fields, studyDetailResponse.fields);
   }
 
   @Override
@@ -131,7 +131,7 @@ public class StudyDetail {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StudyDetail {\n");
+    sb.append("class StudyDetailResponse {\n");
     sb.append("    subject: ").append(toIndentedString(subject)).append("\n");
     sb.append("    durationMinutes: ").append(toIndentedString(durationMinutes)).append("\n");
     sb.append("    fields: ").append(toIndentedString(fields)).append("\n");

@@ -1,26 +1,20 @@
 
-# StudyDetail
+# DetailFormat
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`subject` | string
-`durationMinutes` | number
-`fields` | [Array&lt;FieldInput&gt;](FieldInput.md)
 
 ## Example
 
 ```typescript
-import type { StudyDetail } from '@todorok/api-client'
+import type { DetailFormat } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
-  "subject": null,
-  "durationMinutes": null,
-  "fields": null,
-} satisfies StudyDetail
+} satisfies DetailFormat
 
 console.log(example)
 
@@ -29,7 +23,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as StudyDetail
+const exampleParsed = JSON.parse(exampleJSON) as DetailFormat
 console.log(exampleParsed)
 ```
 

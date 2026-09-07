@@ -100,7 +100,7 @@ export interface ActivityApiInterface {
     correctActivityRequestOpts(requestParameters: CorrectActivityOperationRequest): Promise<runtime.RequestOpts>;
 
     /**
-     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     * Replace editable values using the original templateSnapshot definition. Status, task, type, detailFormat and template identity/version/snapshot are immutable. Legacy Study JSON is preserved by the server. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
      * @param {string} activityId
      * @param {CorrectActivityRequest} correctActivityRequest
      * @param {*} [options] Override http request option.
@@ -110,7 +110,7 @@ export interface ActivityApiInterface {
     correctActivityRaw(requestParameters: CorrectActivityOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ActivityResponse>>;
 
     /**
-     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     * Replace editable values using the original templateSnapshot definition. Status, task, type, detailFormat and template identity/version/snapshot are immutable. Legacy Study JSON is preserved by the server. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
      */
     correctActivity(requestParameters: CorrectActivityOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityResponse>;
 
@@ -281,7 +281,7 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
     }
 
     /**
-     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     * Replace editable values using the original templateSnapshot definition. Status, task, type, detailFormat and template identity/version/snapshot are immutable. Legacy Study JSON is preserved by the server. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
      */
     async correctActivityRaw(requestParameters: CorrectActivityOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ActivityResponse>> {
         const requestOptions = await this.correctActivityRequestOpts(requestParameters);
@@ -291,7 +291,7 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
     }
 
     /**
-     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     * Replace editable values using the original templateSnapshot definition. Status, task, type, detailFormat and template identity/version/snapshot are immutable. Legacy Study JSON is preserved by the server. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
      */
     async correctActivity(requestParameters: CorrectActivityOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityResponse> {
         const response = await this.correctActivityRaw(requestParameters, initOverrides);

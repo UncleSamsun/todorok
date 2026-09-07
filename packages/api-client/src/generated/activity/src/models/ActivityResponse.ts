@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime';
+import type { ActivityTemplateSnapshot } from './ActivityTemplateSnapshot';
+import {
+    ActivityTemplateSnapshotFromJSON,
+    ActivityTemplateSnapshotFromJSONTyped,
+    ActivityTemplateSnapshotToJSON,
+    ActivityTemplateSnapshotToJSONTyped,
+} from './ActivityTemplateSnapshot';
 import type { ActivityStatus } from './ActivityStatus';
 import {
     ActivityStatusFromJSON,
@@ -27,13 +34,27 @@ import {
     ActivityTypeToJSON,
     ActivityTypeToJSONTyped,
 } from './ActivityType';
-import type { ActivityDetail } from './ActivityDetail';
+import type { DetailFormat } from './DetailFormat';
 import {
-    ActivityDetailFromJSON,
-    ActivityDetailFromJSONTyped,
-    ActivityDetailToJSON,
-    ActivityDetailToJSONTyped,
-} from './ActivityDetail';
+    DetailFormatFromJSON,
+    DetailFormatFromJSONTyped,
+    DetailFormatToJSON,
+    DetailFormatToJSONTyped,
+} from './DetailFormat';
+import type { LegacyStudyPayload } from './LegacyStudyPayload';
+import {
+    LegacyStudyPayloadFromJSON,
+    LegacyStudyPayloadFromJSONTyped,
+    LegacyStudyPayloadToJSON,
+    LegacyStudyPayloadToJSONTyped,
+} from './LegacyStudyPayload';
+import type { ActivityDetailResponse } from './ActivityDetailResponse';
+import {
+    ActivityDetailResponseFromJSON,
+    ActivityDetailResponseFromJSONTyped,
+    ActivityDetailResponseToJSON,
+    ActivityDetailResponseToJSONTyped,
+} from './ActivityDetailResponse';
 import type { ActivitySyncState } from './ActivitySyncState';
 import {
     ActivitySyncStateFromJSON,
@@ -98,10 +119,28 @@ export interface ActivityResponse {
     endedAt?: Date;
     /**
      *
-     * @type {ActivityDetail}
+     * @type {ActivityDetailResponse}
      * @memberof ActivityResponse
      */
-    detail: ActivityDetail;
+    detail: ActivityDetailResponse;
+    /**
+     *
+     * @type {DetailFormat}
+     * @memberof ActivityResponse
+     */
+    detailFormat?: DetailFormat;
+    /**
+     *
+     * @type {ActivityTemplateSnapshot}
+     * @memberof ActivityResponse
+     */
+    templateSnapshot?: ActivityTemplateSnapshot;
+    /**
+     *
+     * @type {LegacyStudyPayload}
+     * @memberof ActivityResponse
+     */
+    legacyStudyPayload?: LegacyStudyPayload;
     /**
      *
      * @type {ActivityStatus}
@@ -176,7 +215,10 @@ export function ActivityResponseFromJSONTyped(json: any, ignoreDiscriminator: bo
         'performedAt': (new Date(json['performedAt'])),
         'startedAt': json['startedAt'] == null ? undefined : (new Date(json['startedAt'])),
         'endedAt': json['endedAt'] == null ? undefined : (new Date(json['endedAt'])),
-        'detail': ActivityDetailFromJSON(json['detail']),
+        'detail': ActivityDetailResponseFromJSON(json['detail']),
+        'detailFormat': json['detailFormat'] == null ? undefined : DetailFormatFromJSON(json['detailFormat']),
+        'templateSnapshot': json['templateSnapshot'] == null ? undefined : ActivityTemplateSnapshotFromJSON(json['templateSnapshot']),
+        'legacyStudyPayload': json['legacyStudyPayload'] == null ? undefined : LegacyStudyPayloadFromJSON(json['legacyStudyPayload']),
         'status': ActivityStatusFromJSON(json['status']),
         'version': json['version'],
         'note': json['note'] == null ? undefined : json['note'],
@@ -205,7 +247,10 @@ export function ActivityResponseToJSONTyped(value?: ActivityResponse | null, ign
         'performedAt': value['performedAt'].toISOString(),
         'startedAt': value['startedAt'] == null ? value['startedAt'] : value['startedAt'].toISOString(),
         'endedAt': value['endedAt'] == null ? value['endedAt'] : value['endedAt'].toISOString(),
-        'detail': ActivityDetailToJSON(value['detail']),
+        'detail': ActivityDetailResponseToJSON(value['detail']),
+        'detailFormat': DetailFormatToJSON(value['detailFormat']),
+        'templateSnapshot': ActivityTemplateSnapshotToJSON(value['templateSnapshot']),
+        'legacyStudyPayload': LegacyStudyPayloadToJSON(value['legacyStudyPayload']),
         'status': ActivityStatusToJSON(value['status']),
         'version': value['version'],
         'note': value['note'],

@@ -57,12 +57,34 @@ test('실제 Nginx 템플릿 경로는 1 MiB를 허용하고 chunked 초과를 �
   }
 })
 
-function post(host, port, body, contentLength) {
+test('실제 Nginx 공부 기록 경로의 초과 본문은 공통 413으로 거절한다', async () => {
+  const name = `todorok-study-nginx-${process.pid}-${Date.now()}`
+  const docker = (...args) => {
+    const result = spawnSync('docker', args, { encoding: 'utf8', timeout: 120_000 })
+    assert.equal(result.status, 0, result.stderr || result.stdout)
+    return result.stdout.trim()
+  }
+  try {
+    docker('run', '-d', '--name', name, '-p', '127.0.0.1::80',
+      '--add-host', 'activity-service:127.0.0.1', '--add-host', 'planner-service:127.0.0.1',
+      '--mount', `type=bind,src=${path.resolve('infra/nginx/nginx.conf')},dst=/etc/nginx/nginx.conf,readonly`, 'nginx:1.28.0-alpine')
+    docker('exec', name, 'nginx', '-t')
+    const [host, port] = docker('port', name, '80/tcp').split(':')
+    for (const route of ['/api/activity/v1/activities', '/api/activity/v1/activities/id']) {
+      const over = await post(host, Number(port), Buffer.alloc(MEBIBYTE + 1, 0x20), true, route)
+      assert.equal(over.status, 413)
+      assert.match(over.headers['content-type'], /^application\/problem\+json/)
+      assert.equal(JSON.parse(over.body).code, 'PAYLOAD_TOO_LARGE')
+    }
+  } finally { spawnSync('docker', ['rm', '-f', name], { encoding: 'utf8', timeout: 120_000 }) }
+})
+
+function post(host, port, body, contentLength, route = '/api/activity/v1/templates') {
   return new Promise((resolve, reject) => {
     const request = http.request({
       host,
       port,
-      path: '/api/activity/v1/templates',
+      path: route,
       method: 'POST',
       headers: {
         'content-type': 'application/json',

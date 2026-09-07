@@ -44,7 +44,7 @@ test('activity 계약은 생성·조회·목록·무효화 operation을 제공�
     assert.match(yaml, new RegExp(`operationId: ${operationId}\\b`))
   }
   assert.match(yaml, /activityType:/)
-  assert.match(yaml, /additionalProperties: true/)
+  assert.match(yaml, /LegacyStudyPayload:/)
   assert.match(yaml, /enum: \[COMPLETED, PARTIAL, VOIDED\]/)
   assert.match(
     yaml,

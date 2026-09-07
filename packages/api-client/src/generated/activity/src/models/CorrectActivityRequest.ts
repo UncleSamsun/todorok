@@ -40,13 +40,13 @@ export interface CorrectActivityRequest {
      */
     performedAt: Date;
     /**
-     *
+     * Preserve the original wire timestamp when unchanged. Omitting both interval members clears the interval.
      * @type {Date}
      * @memberof CorrectActivityRequest
      */
     startedAt?: Date;
     /**
-     *
+     * Preserve the original wire timestamp when unchanged. Omitting both interval members clears the interval.
      * @type {Date}
      * @memberof CorrectActivityRequest
      */

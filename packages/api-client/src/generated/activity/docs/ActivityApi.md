@@ -19,7 +19,7 @@ All URIs are relative to */api/activity/v1*
 
 
 
-Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+Replace editable values using the original templateSnapshot definition. Status, task, type, detailFormat and template identity/version/snapshot are immutable. Legacy Study JSON is preserved by the server. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
 
 ### Example
 
@@ -86,6 +86,8 @@ example().catch(console.error);
 | **400** | 잘못된 요청 |  -  |
 | **404** | 대상을 찾을 수 없음 |  -  |
 | **409** | 버전 또는 상태 충돌 |  -  |
+| **413** | Template management body exceeds 1 MiB |  -  |
+| **415** | Compressed template management and activity record bodies are not supported |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
@@ -157,6 +159,8 @@ example().catch(console.error);
 | **201** | Activity 생성 |  -  |
 | **400** | 잘못된 요청 |  -  |
 | **409** | 버전 또는 상태 충돌 |  -  |
+| **413** | Template management body exceeds 1 MiB |  -  |
+| **415** | Compressed template management and activity record bodies are not supported |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

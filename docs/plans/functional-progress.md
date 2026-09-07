@@ -12,11 +12,72 @@
 | --- | --- | --- |
 | 로그인·세션, 달력·일정·반복·메모 | 구현·관련 검증 완료 | 아래 작업01–06의 커밋·회귀·실제 브라우저 증거 |
 | 기본 활동 기록·수정·취소·지난 기록·월 집계 | 구현·관련 검증 완료 | 작업07–08의 실제 서비스 왕복·브라우저·회귀 및 중요 리뷰 |
-| 사용자 정의 공부 기록 | 진행 중 | 정의 관리·일정 연결 기반은 준비됨. 다음은 실제 값 저장과 관리→일정 선택→기록→과거 버전 유지 UI 흐름 |
+| 사용자 정의 공부 기록 | 백엔드 연결·검증 완료, UI 진행 예정 | 실제 값 저장·과거 버전/legacy 보존·Kafka APPLIED·다음 반복 회차 연결 완료. 다음은 관리→일정 선택→기록→과거 수정 UI 흐름 |
 | 사용자 정의 자유 운동·클라이밍 기록 | 남음 | 공부 흐름에서 검증한 공통 부분을 재사용해 각 세트·라운드와 연결 |
 | 운동 프로그램·실제 catalog | 남음 | 원래 작업10–11. 외부 자료의 이용 범위 확인도 유지 |
 | 클라이밍 타이머·알림·PWA/설정 | 남음 | 원래 작업12–14. 기존 PWA 업데이트 문제 포함 |
 | 최종 통합·운영 준비·실기기 검증 | 남음 | 원래 작업15–16의 필수 기준 유지. 원격 push·merge·배포는 별도 지시 없이 하지 않음 |
+
+### 공부 기록 흐름
+
+공부의 백엔드 흐름을 연결했다. 실제 공부 값 생성 → 상세·목록 → 정의 변경·보관 → 원래 정의로 수정·취소, HTTP → outbox/CDC/Kafka → APPLIED → 같은 binding의 다음 반복 회차까지 구현했다. **사용자 기능 전체 완료는 아니다.** 다음 작업은 `study-template-ui-brief.md`의 공부 관리·일정 선택·동적 기록·과거 수정 화면 연결이며, 자유 운동·클라이밍의 custom 값은 그 다음 사용자 흐름이다. 이 두 도메인의 기존 typed 세트·라운드는 유지하고 연결 custom 기록 경계는 아직 `TEMPLATE_RECORD_NOT_READY`다.
+
+저장·보존 범위:
+
+- 입력 `ActivityDetail`/`StudyDetail`과 응답 `ActivityDetailResponse`/`StudyDetailResponse`를 분리했다. 생성 시 서버 TaskReference에서 template identity를 정하고 current 행 잠금 아래 version을 비교한다. 모든 필드 정의를 `ActivityTemplateSnapshot`으로 고정하고 입력한 값만 scalar JSONB map에 저장한다.
+- `V7__study_template_records.sql`이 기존 Activity를 LEGACY로 분류하며 원본 Study JSON·typed detail·기존 history를 수정하지 않는다. 신규 미연결 기록은 STANDARD, 공부 연결 기록은 TEMPLATE다. template identity/version/snapshot/detailFormat 변경은 DB trigger로 차단한다. correction 전에 전체 revision을 이력에 넣으며 legacy correction은 subject/duration 등 검증 가능한 컬럼만 갱신한다.
+- 생성 잠금 순서는 owner/command advisory → 성공 command replay → TaskReference → template current 행이다. 관리 command는 management advisory → template → field identity advisory, 선택 승인은 binding advisory → target advisory → template 순서다. 관리·승인은 TaskReference/Activity를 잠그지 않고 projection은 template에 쓰기 잠금을 잡지 않는다. correction/void는 Activity 행만 잠그고 저장된 원래 snapshot을 사용하므로 역순 template 잠금이 없다. 저장 트랜잭션에 타 서비스 호출·DB join은 없다.
+- 상세/목록/replay는 기존 단일 SQL statement에서 header·typed detail·snapshot·값을 함께 읽는다. legacy의 긴 소수는 일반 floating-point tree를 경유할 때 history에 반올림되는 실패를 재현해, 정확한 decimal tree와 원본 JSON node로 보존하도록 보완했다. 현재 JSONB는 원래부터 보존됐으며 손실 지점은 응답을 통한 새 revision history 저장이었다.
+
+UI API 인계 — 원본은 `contracts/openapi/activity-v1.yaml`, 생성 모델은 `@todorok/api-client`의 `activity` namespace다.
+
+| 흐름 | API와 필수 사용법 |
+| --- | --- |
+| 관리 | `TemplateApi.createTemplate`, `createTemplateVersion`, `archiveTemplate`, `listTemplates({domain:'STUDY',kind:'STUDY_CATEGORY'})`. 정의 version은 1부터, 관리 revision은 0부터다. 정의 저장은 Task 생성이 아니다. |
+| 일정 선택 | 기존 planner `createTask`/`createSeries` 요청에 `commandId`와 `templateSelection:{templateId,expectedTemplateVersion}`을 함께 보낸다. 일정 응답의 `templateLink`는 선택 당시 version을 유지한다. |
+| 기록 폼 | `TemplateApi.getTaskRecordTemplate({taskId})` → `{linked,templateLink?,template?}`. `template.currentVersion`의 `templateVersion,name,fields`를 사용한다. linked=false는 기본 typed 폼이고, projection 미도착은 `409 TASK_NOT_READY`다. |
+| 생성 | `ActivityApi.createActivity({createActivityRequest})` → 201 `ActivityResponse`. 연결 공부에는 현재 폼의 `expectedTemplateVersion` 필수, 미연결에는 금지. templateId/snapshot/legacy JSON은 요청에 넣지 않는다. |
+| 상세·수정 | `getEditableActivity(api,id)`로 원본 timestamp를 보관한다. 폼 정의는 응답 `templateSnapshot.fields`, 값은 `detail.study.fields`. `correctEditableActivity(api,id,{expectedVersion,performedAt,startedAt?,endedAt?,note?,detail})`는 Activity revision을 비교하며 expectedTemplateVersion을 받지 않는다. |
+| 취소·동기화 | 기존 `voidEditableActivity`/`ActivityApi.voidActivity`, `syncState` PENDING/APPLIED/CONFLICT, 이전·새 수행 날짜/월 캐시 갱신 규칙을 그대로 사용한다. |
+
+생성 요청 예시(공통 실제 시간·note는 선택):
+
+```json
+{
+  "commandId": "10000000-0000-0000-0000-000000000001",
+  "taskId": "10000000-0000-0000-0000-000000000002",
+  "activityType": "STUDY",
+  "completionStatus": "COMPLETED",
+  "performedAt": "2026-09-07T10:00:00+09:00",
+  "expectedTemplateVersion": 1,
+  "detail": {"study": {"fields": [
+    {"fieldId":"20000000-0000-0000-0000-000000000001","type":"NUMBER","numberValue":0},
+    {"fieldId":"20000000-0000-0000-0000-000000000002","type":"TIME","timeSeconds":120},
+    {"fieldId":"20000000-0000-0000-0000-000000000003","type":"SHORT_TEXT","textValue":"BFS"},
+    {"fieldId":"20000000-0000-0000-0000-000000000004","type":"CHECK","checked":false},
+    {"fieldId":"20000000-0000-0000-0000-000000000005","type":"MEMO","memoValue":"첫 줄\n둘째 줄"}
+  ]}}
+}
+```
+
+각 fieldId는 실제 선택 정의에서 가져온다. 각 원소는 fieldId/type/맞는 값 하나만 가지며 null·혼합 멤버·중복 ID·다른 정의 ID·unknown 속성·중복 JSON 키·숫자/문자열 coercion은 400이다. 빈 배열과 미입력 생략은 유효하고 0/false는 보존한다. TIME은 표시 unit과 무관하게 정수 초(0–9007199254740991), SHORT_TEXT는 120자, MEMO는 20,000자다. 공백뿐인 문자열은 미입력으로 정규화하고 내용이 있으면 공백·줄바꿈을 보존한다. 필드 개수 상한은 없고 전송 본문은 프록시/앱 모두 1 MiB, 초과는 413 `PAYLOAD_TOO_LARGE`, 압축은 415다.
+
+응답은 공통 Activity 헤더와 함께 `detailFormat:'TEMPLATE'`, `detail.study.fields:FieldInput[]`, `templateSnapshot:{schemaVersion:1,templateId,templateVersion,name,domain:'STUDY',kind:'STUDY_CATEGORY',fields:FieldDefinition[]}`를 반환한다. snapshot의 모든 필드에는 `fieldId,name,type,unit?,position`이 있으며 미입력 항목도 남는다. TEMPLATE의 subject/durationMinutes는 기존 선택 typed 값으로 함께 사용할 수 있다. LEGACY에는 `legacyStudyPayload:{provenance:'UNVERIFIED_LEGACY',values?,snapshot?}`만 원문 읽기 영역으로 제공한다. 이 원문을 요청으로 재전송하거나 필드 정의로 추정하지 않는다. STANDARD/LEGACY 응답에는 templateSnapshot이 없다.
+
+`409 TEMPLATE_VERSION_CONFLICT`에서는 원래 입력을 보존하고 최신 정의를 재조회한다. 성공했던 동일 command/payload는 정의 변경·보관 후에도 **현재 Activity revision**을 201로 다시 반환한다. 내용이 바뀐 command 재사용은 기존 `COMMAND_CONFLICT`다. correction은 원래 snapshot으로만 값을 검증한다. 기존 시간 전체교체 계약을 유지하므로, 미수정 시간은 `getEditableActivity`가 보관한 wire timestamp를 보내 마이크로초까지 보존하고 시간 쌍을 생략하면 구간을 삭제한다. 자유 TIME은 월 시간 합계에 더하지 않으며 실제 구간 우선, 없으면 기존 durationMinutes fallback을 유지한다.
+
+실행 증거:
+
+- `./gradlew.bat :services:activity-service:test --tests '*StudyTemplateRecordHttpTest' --no-daemon --no-configuration-cache`: 입력 계약 부재/무검증 쓰기 허용 RED 후 최초 HTTP 4개 GREEN. 이후 current template lock 양방향, GET/LIST/REPLAY 수정 경합 2개 focused GREEN.
+- `./gradlew.bat :services:activity-service:test --tests '*record.*' --tests '*ActivityPersistenceIntegrationTest' --tests '*ActivityMigrationApplicationTest' :services:activity-service:assemble :services:planner-service:assemble --no-daemon --no-configuration-cache`: 영향 25개 중 16개 통과. V7 추가로 migration 개수 fixture를 8로 갱신했다. 병렬 재생성 중의 HTTP 404는 생성/컴파일과 테스트를 분리한 실행에서 제품 변경 없이 해소했다.
+- `./gradlew.bat :services:activity-service:test --tests '*StudyTemplateRecordHttpTest' --tests '*ActivityPersistenceIntegrationTest.migratesOnlyActivitySchema' --tests '*ActivityPersistenceIntegrationTest.rerunningFlywayMakesNoChanges' :services:activity-service:assemble --no-daemon --no-configuration-cache`: 나머지 9개 통과. 합계 영향 25개를 확인했고 이미 통과한 B1 foundation/선택 검사는 반복하지 않았다.
+- `./gradlew.bat :tests:messaging-integration:test --tests '*ActivityServiceRoundTripTest.templateBindingRecoversApprovalAndPlannerFailuresAndPropagatesSeriesThroughKafka' --no-daemon --no-configuration-cache`: 1개 통과. 기존 기록409/crafted 완료 fixture를 실제 값 저장·APPLIED·다음 반복 회차·보관 뒤 기록/수정으로 교체했다.
+- `./gradlew.bat :tests:messaging-integration:test --tests '*ActivityServiceRoundTripTest.typedRoundTrip*' --tests '*ActivityServiceRoundTripTest.correction*' --tests '*ActivityServiceRoundTripTest.validatesOwners*' --tests '*ActivityServiceRoundTripTest.concurrentCommands*' --tests '*ActivityServiceRoundTripTest.pastRecords*' --no-daemon --no-configuration-cache`: 기존 세 도메인 typed 기록·시간·correction/void·history·경합·rollback·과거 반복 등 영향 8개 통과.
+- `node --test --test-name-pattern='공부 기록' scripts/template-nginx.integration.test.mjs`: 실제 proxy의 413 HTML 실패를 공통 Problem JSON으로 수정 후 1개 통과. `node --test scripts/template-contract-roundtrip.test.mjs scripts/openapi-contract.test.mjs`와 TypeScript 신규 왕복 fixture 수정 후 focused 재실행으로 4개 모두 확인. 다섯 타입·TEMPLATE/LEGACY 응답 및 입력/응답 분리 직렬화를 확인했다.
+- `pnpm run contracts:check`, `pnpm run build:packages`, `pnpm run build:web` 통과. 생성 Java는 실제 HTTP/서비스에서 사용하며 TypeScript 생성기는 왕복 테스트를 통과했다.
+- 긴 소수 원문 보존 추가 fixture는 SQL `history.legacyStudyPayload.values = study_detail.values_json` 비교에서 RED였다. 최소 읽기 수정 뒤 `./gradlew.bat :services:activity-service:test --tests '*StudyTemplateRecordHttpTest.migrationAndLegacyCorrectionPreserveArbitraryJsonAndHistory' --tests '*StudyTemplateRecordHttpTest.fiveTypesRoundTripWithOriginalDefinitionAfterEditArchiveCorrectionAndVoid' :services:activity-service:assemble --no-daemon --no-configuration-cache`로 영향 HTTP 2개와 activity assemble 최종 통과를 확인했다.
+
+남은 기능은 공부 UI 전체 연결·실제 브라우저 E2E, 이후 자유 운동·클라이밍 custom 관계형 값 저장/수정 및 UI, 그리고 원래 작업10–16이다. 숫자 정밀도가 중요한 legacy 원문을 브라우저에서 편집 가능한 새 입력으로 변환하지 않는다. 비차단 구조 정리(기존 미사용 detail read helper 등)는 이번 범위에 넣지 않았다.
 
 ### 실행 규칙 (2026-09-08)
 

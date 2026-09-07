@@ -54,6 +54,12 @@ export interface CreateActivityRequest {
      */
     taskId: string;
     /**
+     * Required for template-linked tasks; forbidden for unlinked tasks. Compared with current version under lock after successful command replay.
+     * @type {number}
+     * @memberof CreateActivityRequest
+     */
+    expectedTemplateVersion?: number;
+    /**
      *
      * @type {ActivityType}
      * @memberof CreateActivityRequest
@@ -124,6 +130,7 @@ export function CreateActivityRequestFromJSONTyped(json: any, ignoreDiscriminato
 
         'commandId': json['commandId'],
         'taskId': json['taskId'],
+        'expectedTemplateVersion': json['expectedTemplateVersion'] == null ? undefined : json['expectedTemplateVersion'],
         'activityType': ActivityTypeFromJSON(json['activityType']),
         'completionStatus': ActivityCompletionStatusFromJSON(json['completionStatus']),
         'performedAt': (new Date(json['performedAt'])),
@@ -147,6 +154,7 @@ export function CreateActivityRequestToJSONTyped(value?: CreateActivityRequest |
 
         'commandId': value['commandId'],
         'taskId': value['taskId'],
+        'expectedTemplateVersion': value['expectedTemplateVersion'],
         'activityType': ActivityTypeToJSON(value['activityType']),
         'completionStatus': ActivityCompletionStatusToJSON(value['completionStatus']),
         'performedAt': value['performedAt'].toISOString(),

@@ -44,7 +44,7 @@ public interface TemplateApi {
      *         or 대상을 찾을 수 없음 (status code 404)
      *         or 버전 또는 상태 충돌 (status code 409)
      *         or Template management body exceeds 1 MiB (status code 413)
-     *         or Compressed template management bodies are not supported (status code 415)
+     *         or Compressed template management and activity record bodies are not supported (status code 415)
      */
     @RequestMapping(
         method = RequestMethod.POST,
@@ -67,7 +67,7 @@ public interface TemplateApi {
      *         or 잘못된 요청 (status code 400)
      *         or 버전 또는 상태 충돌 (status code 409)
      *         or Template management body exceeds 1 MiB (status code 413)
-     *         or Compressed template management bodies are not supported (status code 415)
+     *         or Compressed template management and activity record bodies are not supported (status code 415)
      */
     @RequestMapping(
         method = RequestMethod.POST,
@@ -91,7 +91,7 @@ public interface TemplateApi {
      *         or 대상을 찾을 수 없음 (status code 404)
      *         or 버전 또는 상태 충돌 (status code 409)
      *         or Template management body exceeds 1 MiB (status code 413)
-     *         or Compressed template management bodies are not supported (status code 415)
+     *         or Compressed template management and activity record bodies are not supported (status code 415)
      */
     @RequestMapping(
         method = RequestMethod.POST,

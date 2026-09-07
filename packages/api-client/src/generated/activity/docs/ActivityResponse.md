@@ -14,7 +14,10 @@ Name | Type
 `performedAt` | Date
 `startedAt` | Date
 `endedAt` | Date
-`detail` | [ActivityDetail](ActivityDetail.md)
+`detail` | [ActivityDetailResponse](ActivityDetailResponse.md)
+`detailFormat` | [DetailFormat](DetailFormat.md)
+`templateSnapshot` | [ActivityTemplateSnapshot](ActivityTemplateSnapshot.md)
+`legacyStudyPayload` | [LegacyStudyPayload](LegacyStudyPayload.md)
 `status` | [ActivityStatus](ActivityStatus.md)
 `version` | number
 `note` | string
@@ -38,6 +41,9 @@ const example = {
   "startedAt": null,
   "endedAt": null,
   "detail": null,
+  "detailFormat": null,
+  "templateSnapshot": null,
+  "legacyStudyPayload": null,
   "status": null,
   "version": null,
   "note": null,

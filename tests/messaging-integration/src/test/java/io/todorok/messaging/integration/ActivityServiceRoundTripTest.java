@@ -65,8 +65,13 @@ class ActivityServiceRoundTripTest {
     @Test
     void templateBindingRecoversApprovalAndPlannerFailuresAndPropagatesSeriesThroughKafka() throws Exception {
         UUID owner=UUID.randomUUID(), command=UUID.randomUUID();
+        UUID countField=UUID.randomUUID(), checkField=UUID.randomUUID();
+        var definitions=List.of(Map.of("fieldId",countField,"name","문제 수","type","NUMBER","unit","개"),
+            Map.of("fieldId",checkField,"name","복습","type","CHECK"));
+        var values=List.of(Map.of("fieldId",countField,"type","NUMBER","numberValue",0),
+            Map.of("fieldId",checkField,"type","CHECK","checked",false));
         var template=ok(call("activity",owner,"POST","/templates",JSON.writeValueAsString(Map.of("commandId",UUID.randomUUID(),
-            "name","선택 공부","domain","STUDY","kind","STUDY_CATEGORY","fields",List.of()))),201);
+            "name","선택 공부","domain","STUDY","kind","STUDY_CATEGORY","fields",definitions))),201);
         String templateId=template.path("templateId").asText();
         var request=new LinkedHashMap<String,Object>(Map.of("commandId",command,"title","연결 일정","taskType","STUDY",
             "scheduledDate","2026-09-07","templateSelection",Map.of("templateId",templateId,"expectedTemplateVersion",1)));
@@ -120,8 +125,12 @@ class ActivityServiceRoundTripTest {
         assertThat(updated.path("templateLink").path("bindingId").asText()).isEqualTo(selected);
         ok(call("planner",owner,"POST","/tasks/rollover","{}"),200);
         assertThat(ok(call("planner",owner,"GET","/tasks/"+task,null),200).path("templateLink")).isEqualTo(updated.path("templateLink"));
-        assertThat(ok(call("activity",owner,"POST","/activities",request(task,"STUDY","COMPLETED",UUID.randomUUID(),"{}")),409)
-            .path("code").asText()).isEqualTo("TEMPLATE_RECORD_NOT_READY");
+        var recording=(tools.jackson.databind.node.ObjectNode)JSON.readTree(request(task,"STUDY","COMPLETED",UUID.randomUUID(),"{}"));
+        recording.put("expectedTemplateVersion",1).set("detail",JSON.valueToTree(Map.of("study",Map.of("fields",values))));
+        var saved=ok(call("activity",owner,"POST","/activities",recording.toString()),201);
+        applied(owner,saved.path("activityId").asText());
+        assertThat(saved.path("detail").path("study").path("fields").get(1).path("checked").asBoolean(true)).isFalse();
+        assertThat(ok(call("planner",owner,"GET","/tasks/"+task,null),200).path("completionSummary").asText()).contains("선택 공부");
         request.put("title","다른 요청");
         assertThat(ok(call("planner",owner,"POST","/tasks",JSON.writeValueAsString(request)),409).path("code").asText()).isEqualTo("COMMAND_REUSE");
         Object selection=request.remove("templateSelection");
@@ -142,7 +151,7 @@ class ActivityServiceRoundTripTest {
         UUID seriesId=UUID.fromString(series.path("seriesId").asText());
         String firstTask=infra.database().queryForObject("select id::text from planner.task where series_id=?",String.class,seriesId);
         ok(call("activity",owner,"POST","/templates/"+templateId+"/versions",JSON.writeValueAsString(Map.of("commandId",UUID.randomUUID(),
-            "expectedRevision",0,"name","새 기록 정의","fields",List.of()))),201);
+            "expectedRevision",0,"name","새 기록 정의","fields",definitions))),201);
         var current=ok(call("activity",owner,"GET","/tasks/"+task+"/record-template",null),200);
         assertThat(current.path("template").path("currentVersion").path("templateVersion").asLong()).isEqualTo(2);
         assertThat(current.path("templateLink").path("selectedTemplateVersion").asLong()).isEqualTo(1);
@@ -153,19 +162,21 @@ class ActivityServiceRoundTripTest {
         assertThat(next.get("template_binding_id").toString()).isEqualTo(series.path("templateLink").path("bindingId").asText());
         await(()->infra.database().queryForObject("select count(*) from activity.task_reference where task_id=? and template_binding_id is not null",Integer.class,next.get("id"))==1);
         assertThat(ok(call("activity",owner,"GET","/tasks/"+next.get("id")+"/record-template",null),200).path("template").path("archived").asBoolean()).isTrue();
-        // Exercise the established completion-event boundary; typed record writes remain deliberately gated until09B2.
-        UUID completedId=UUID.randomUUID();
-        var completed=JSON.createObjectNode().put("eventId",UUID.randomUUID().toString()).put("type","ACTIVITY_COMPLETED")
-            .put("version",1).put("aggregateVersion",0).put("occurredAt",Instant.now().toString()).put("userId",owner.toString());
-        completed.putObject("payload").put("activityId",completedId.toString()).put("taskId",next.get("id").toString())
-            .put("activityType","STUDY").put("completedAt","2026-09-01T01:00:00Z").put("outcome","과거 완료 경계");
-        send("todorok.activity.v1",completedId.toString(),completed.toString());
+        // Real HTTP record -> transactional outbox -> CDC/Kafka -> APPLIED -> next linked occurrence.
+        var nextRecording=(tools.jackson.databind.node.ObjectNode)JSON.readTree(request(next.get("id").toString(),"STUDY","COMPLETED",UUID.randomUUID(),"{}"));
+        nextRecording.put("expectedTemplateVersion",2).put("performedAt","2026-09-01T01:00:00Z")
+            .set("detail",JSON.valueToTree(Map.of("study",Map.of("fields",values))));
+        var completedRecord=ok(call("activity",owner,"POST","/activities",nextRecording.toString()),201);
+        UUID completedId=UUID.fromString(completedRecord.path("activityId").asText());
+        applied(owner,completedId.toString());
         await(()->infra.database().queryForObject("select count(*) from planner.task where series_id=?",Integer.class,seriesId)==3);
         assertThat(infra.database().queryForObject("select count(distinct template_binding_id) from planner.task where series_id=?",Integer.class,seriesId)).isOne();
-        send("todorok.activity.v1",completedId.toString(),completed.toString());
-        var correctionEvent=completed.deepCopy().put("eventId",UUID.randomUUID().toString()).put("type","ACTIVITY_CORRECTED").put("aggregateVersion",1);
-        ((tools.jackson.databind.node.ObjectNode)correctionEvent.get("payload")).put("completionStatus","COMPLETED").put("previousPerformedAt","2026-09-01T01:00:00Z");
-        send("todorok.activity.v1",completedId.toString(),correctionEvent.toString());
+        var replay=ok(call("activity",owner,"POST","/activities",nextRecording.toString()),201);
+        assertThat(replay.path("activityId").asText()).isEqualTo(completedId.toString());
+        var corrected=ok(call("activity",owner,"PATCH","/activities/"+completedId,JSON.writeValueAsString(Map.of("expectedVersion",0,
+            "performedAt","2026-09-01T01:00:00Z","detail",Map.of("study",Map.of("fields",List.of(values.get(0))))))),200);
+        applied(owner,completedId.toString());
+        assertThat(corrected.path("templateSnapshot")).isEqualTo(completedRecord.path("templateSnapshot"));
         await(()->infra.database().queryForObject("select count(*) from planner.activity_completion_result where activity_id=? and revision=1",Integer.class,completedId)==1);
         assertThat(infra.database().queryForObject("select count(*) from planner.task where series_id=?",Integer.class,seriesId)).isEqualTo(3);
         request.put("commandId",UUID.randomUUID());
@@ -732,7 +743,7 @@ class ActivityServiceRoundTripTest {
             "WORKOUT",
             "{\"workout\":{\"sets\":[{\"exercise\":\"스쿼트\",\"reps\":5,\"weightKg\":60}]}}",
             "STUDY",
-            "{\"study\":{\"subject\":\"Java\",\"durationMinutes\":30,\"values\":{\"pages\":10},\"snapshot\":{\"label\":\"독서\"}}}",
+            "{\"study\":{\"subject\":\"Java\",\"durationMinutes\":30}}",
             "CLIMBING",
             "{\"climbing\":{\"durationSeconds\":1800,\"rounds\":[{\"grade\":\"V3\",\"attempts\":2,\"completed\":true}]}}"
         ).entrySet()) {
@@ -793,12 +804,7 @@ class ActivityServiceRoundTripTest {
                     assertThat(study.get("durationMinutes").asInt()).isEqualTo(
                         30
                     );
-                    assertThat(
-                        study.get("values").get("pages").asInt()
-                    ).isEqualTo(10);
-                    assertThat(
-                        study.get("snapshot").get("label").asText()
-                    ).isEqualTo("독서");
+                    assertThat(study.get("subject").asText()).isEqualTo("Java");
                 }
                 case "CLIMBING" -> {
                     var climbing = persisted.get("climbing");

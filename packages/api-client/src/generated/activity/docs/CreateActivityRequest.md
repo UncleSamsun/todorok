@@ -8,6 +8,7 @@ Name | Type
 ------------ | -------------
 `commandId` | string
 `taskId` | string
+`expectedTemplateVersion` | number
 `activityType` | [ActivityType](ActivityType.md)
 `completionStatus` | [ActivityCompletionStatus](ActivityCompletionStatus.md)
 `performedAt` | Date
@@ -25,6 +26,7 @@ import type { CreateActivityRequest } from '@todorok/api-client'
 const example = {
   "commandId": null,
   "taskId": null,
+  "expectedTemplateVersion": null,
   "activityType": null,
   "completionStatus": null,
   "performedAt": null,

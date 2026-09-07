@@ -104,7 +104,7 @@ public class CorrectActivityRequest {
   }
 
   /**
-   * Get startedAt
+   * Preserve the original wire timestamp when unchanged. Omitting both interval members clears the interval.
    * @return startedAt
    */
   @Valid
@@ -125,7 +125,7 @@ public class CorrectActivityRequest {
   }
 
   /**
-   * Get endedAt
+   * Preserve the original wire timestamp when unchanged. Omitting both interval members clears the interval.
    * @return endedAt
    */
   @Valid

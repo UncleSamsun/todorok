@@ -34,6 +34,9 @@ public class CreateActivityRequest {
 
   private UUID taskId;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Long expectedTemplateVersion;
+
   private ActivityType activityType;
 
   private ActivityCompletionStatus completionStatus;
@@ -108,6 +111,28 @@ public class CreateActivityRequest {
   @JsonProperty("taskId")
   public void setTaskId(UUID taskId) {
     this.taskId = taskId;
+  }
+
+  public CreateActivityRequest expectedTemplateVersion(@Nullable Long expectedTemplateVersion) {
+    this.expectedTemplateVersion = expectedTemplateVersion;
+    return this;
+  }
+
+  /**
+   * Required for template-linked tasks; forbidden for unlinked tasks. Compared with current version under lock after successful command replay.
+   * minimum: 1
+   * @return expectedTemplateVersion
+   */
+  @Min(value = 1L)
+  @JsonProperty("expectedTemplateVersion")
+  public @Nullable Long getExpectedTemplateVersion() {
+    return expectedTemplateVersion;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("expectedTemplateVersion")
+  public void setExpectedTemplateVersion(@Nullable Long expectedTemplateVersion) {
+    this.expectedTemplateVersion = expectedTemplateVersion;
   }
 
   public CreateActivityRequest activityType(ActivityType activityType) {
@@ -264,6 +289,7 @@ public class CreateActivityRequest {
     CreateActivityRequest createActivityRequest = (CreateActivityRequest) o;
     return Objects.equals(this.commandId, createActivityRequest.commandId) &&
         Objects.equals(this.taskId, createActivityRequest.taskId) &&
+        Objects.equals(this.expectedTemplateVersion, createActivityRequest.expectedTemplateVersion) &&
         Objects.equals(this.activityType, createActivityRequest.activityType) &&
         Objects.equals(this.completionStatus, createActivityRequest.completionStatus) &&
         Objects.equals(this.performedAt, createActivityRequest.performedAt) &&
@@ -275,7 +301,7 @@ public class CreateActivityRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(commandId, taskId, activityType, completionStatus, performedAt, startedAt, endedAt, note, detail);
+    return Objects.hash(commandId, taskId, expectedTemplateVersion, activityType, completionStatus, performedAt, startedAt, endedAt, note, detail);
   }
 
   @Override
@@ -284,6 +310,7 @@ public class CreateActivityRequest {
     sb.append("class CreateActivityRequest {\n");
     sb.append("    commandId: ").append(toIndentedString(commandId)).append("\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
+    sb.append("    expectedTemplateVersion: ").append(toIndentedString(expectedTemplateVersion)).append("\n");
     sb.append("    activityType: ").append(toIndentedString(activityType)).append("\n");
     sb.append("    completionStatus: ").append(toIndentedString(completionStatus)).append("\n");
     sb.append("    performedAt: ").append(toIndentedString(performedAt)).append("\n");
