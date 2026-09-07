@@ -23,6 +23,18 @@ fun registerContractTask(
     inputSpec.set(layout.projectDirectory.file(spec).asFile.absolutePath)
     configFile.set(layout.projectDirectory.file(config).asFile.absolutePath)
     outputDir.set(layout.dir(contractsOutputRoot.map { root -> File(root, output) }))
+    doLast {
+        outputDir.get().asFile.walkTopDown()
+            .filter(File::isFile)
+            .forEach { file ->
+                val content = file.readText(Charsets.UTF_8)
+                val normalized = Regex("[ \\t]+(?=\\r?$)", RegexOption.MULTILINE)
+                    .replace(content, "")
+                if (normalized != content) {
+                    file.writeText(normalized, Charsets.UTF_8)
+                }
+            }
+    }
 }
 
 registerContractTask(
