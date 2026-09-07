@@ -72,11 +72,11 @@ SMT 수정 뒤 `.\gradlew.bat :tests:messaging-integration:test --tests '*Activi
 node .local/task09b-runtime/runtime.mjs prepare
 node .local/task09b-runtime/runtime.mjs build
 node .local/task09b-runtime/runtime.mjs up
-node .local/task09b-runtime/runtime.mjs probe
-node .local/task09b-runtime/runtime.mjs audience-probe
+node .local/task09b-runtime/probe.mjs
+node .local/task09b-runtime/audience-probe.mjs
 node .local/task09b-runtime/runtime.mjs build-planner
 node .local/task09b-runtime/runtime.mjs up
-node .local/task09b-runtime/runtime.mjs probe
+node .local/task09b-runtime/probe.mjs
 node .local/task09b-runtime/runtime.mjs status
 node .local/task09b-runtime/runtime.mjs down
 ```
