@@ -8,7 +8,7 @@
   "scripts": {
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "contracts:check": "node scripts/check-contract-drift.mjs",
-    "test:contracts": "node --test scripts/contracts-generation.test.mjs scripts/openapi-contract.test.mjs scripts/check-contract-drift.test.mjs",
+    "test:contracts": "node --test scripts/contracts-generation.test.mjs scripts/openapi-contract.test.mjs scripts/check-contract-drift.test.mjs scripts/template-contract-roundtrip.test.mjs",
     "build:packages": "pnpm --filter @todorok/client-domain --filter @todorok/api-client --filter @todorok/validation --filter @todorok/design-tokens build",
     "test:packages": "pnpm --filter @todorok/client-domain --filter @todorok/api-client --filter @todorok/validation --filter @todorok/design-tokens test",
     "test:web": "pnpm --dir apps/web test",

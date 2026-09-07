@@ -8,7 +8,132 @@ security:
   - BearerAuth: []
 tags:
   - name: Activity
+  - name: Template
 paths:
+  /templates:
+    post:
+      tags: [Template]
+      operationId: createTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTemplateRequest' }
+      responses:
+        '201':
+          description: Created immutable template version 1
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TemplateResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+    get:
+      tags: [Template]
+      operationId: listTemplates
+      parameters:
+        - name: domain
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/TemplateDomain' }
+        - name: kind
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/TemplateKind' }
+        - name: includeArchived
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+        - name: cursor
+          in: query
+          required: false
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Owner-scoped keyset page ordered by creation time and identity descending
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TemplatePageResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /templates/{templateId}:
+    get:
+      tags: [Template]
+      operationId: getTemplate
+      parameters:
+        - { $ref: '#/components/parameters/TemplateIdPath' }
+      responses:
+        '200':
+          description: Template identity with its complete current immutable version
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TemplateResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /templates/{templateId}/versions/{templateVersion}:
+    get:
+      tags: [Template]
+      operationId: getTemplateVersion
+      parameters:
+        - { $ref: '#/components/parameters/TemplateIdPath' }
+        - name: templateVersion
+          in: path
+          required: true
+          schema: { type: integer, format: int64, minimum: 1 }
+      responses:
+        '200':
+          description: Complete immutable historical version
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TemplateVersion' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /templates/{templateId}/versions:
+    post:
+      tags: [Template]
+      operationId: createTemplateVersion
+      parameters:
+        - { $ref: '#/components/parameters/TemplateIdPath' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTemplateVersionRequest' }
+      responses:
+        '201':
+          description: Template with its newly appended current version
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TemplateResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+  /templates/{templateId}/archive:
+    post:
+      tags: [Template]
+      operationId: archiveTemplate
+      parameters:
+        - { $ref: '#/components/parameters/TemplateIdPath' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ArchiveTemplateRequest' }
+      responses:
+        '200':
+          description: Archived template retaining every immutable version
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TemplateResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
   /activities/summary:
     get:
       tags: [Activity]
@@ -128,6 +253,11 @@ components:
     BearerAuth:
       $ref: './common-v1.yaml#/components/securitySchemes/BearerAuth'
   parameters:
+    TemplateIdPath:
+      name: templateId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     ActivityIdPath:
       name: activityId
       in: path
@@ -149,9 +279,108 @@ components:
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/ProblemDetails' }
+    PayloadTooLarge:
+      description: Template management body exceeds 1 MiB
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    UnsupportedMediaType:
+      description: Compressed template management bodies are not supported
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
   schemas:
     ProblemDetails:
       $ref: './common-v1.yaml#/components/schemas/ProblemDetails'
+    TemplateDomain:
+      type: string
+      enum: [STUDY, WORKOUT, CLIMBING]
+    TemplateKind:
+      type: string
+      enum: [STUDY_CATEGORY, FREE_WORKOUT, FREE_HANGBOARD, CLIMBING_SESSION]
+    TemplateFieldType:
+      type: string
+      enum: [NUMBER, TIME, SHORT_TEXT, CHECK, MEMO]
+    FieldDefinitionInput:
+      type: object
+      additionalProperties: false
+      required: [fieldId, name, type]
+      properties:
+        fieldId: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        type: { $ref: '#/components/schemas/TemplateFieldType' }
+        unit: { type: string, maxLength: 40 }
+    FieldDefinition:
+      type: object
+      additionalProperties: false
+      required: [fieldId, name, type, position]
+      properties:
+        fieldId: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        type: { $ref: '#/components/schemas/TemplateFieldType' }
+        unit: { type: string, maxLength: 40 }
+        position: { type: integer, minimum: 0 }
+    CreateTemplateRequest:
+      type: object
+      additionalProperties: false
+      required: [commandId, name, domain, kind, fields]
+      properties:
+        commandId: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        domain: { $ref: '#/components/schemas/TemplateDomain' }
+        kind: { $ref: '#/components/schemas/TemplateKind' }
+        fields:
+          type: array
+          items: { $ref: '#/components/schemas/FieldDefinitionInput' }
+    CreateTemplateVersionRequest:
+      type: object
+      additionalProperties: false
+      required: [commandId, expectedRevision, name, fields]
+      properties:
+        commandId: { type: string, format: uuid }
+        expectedRevision: { type: integer, format: int64, minimum: 0 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        fields:
+          type: array
+          items: { $ref: '#/components/schemas/FieldDefinitionInput' }
+    ArchiveTemplateRequest:
+      type: object
+      additionalProperties: false
+      required: [commandId, expectedRevision]
+      properties:
+        commandId: { type: string, format: uuid }
+        expectedRevision: { type: integer, format: int64, minimum: 0 }
+    TemplateVersion:
+      type: object
+      additionalProperties: false
+      required: [templateId, templateVersion, name, fields]
+      properties:
+        templateId: { type: string, format: uuid }
+        templateVersion: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        fields:
+          type: array
+          items: { $ref: '#/components/schemas/FieldDefinition' }
+    TemplateResponse:
+      type: object
+      additionalProperties: false
+      required: [templateId, domain, kind, archived, revision, currentVersion]
+      properties:
+        templateId: { type: string, format: uuid }
+        domain: { $ref: '#/components/schemas/TemplateDomain' }
+        kind: { $ref: '#/components/schemas/TemplateKind' }
+        archived: { type: boolean }
+        revision: { type: integer, format: int64, minimum: 0 }
+        currentVersion: { $ref: '#/components/schemas/TemplateVersion' }
+    TemplatePageResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TemplateResponse' }
+        nextCursor: { type: string }
     ActivityType:
       type: string
       enum: [WORKOUT, STUDY, CLIMBING]

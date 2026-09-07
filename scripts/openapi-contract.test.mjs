@@ -34,6 +34,12 @@ test('activity 계약은 생성·조회·목록·무효화 operation을 제공�
     'getActivity',
     'listActivities',
     'voidActivity',
+    'createTemplate',
+    'listTemplates',
+    'getTemplate',
+    'getTemplateVersion',
+    'createTemplateVersion',
+    'archiveTemplate',
   ]) {
     assert.match(yaml, new RegExp(`operationId: ${operationId}\\b`))
   }
@@ -45,4 +51,10 @@ test('activity 계약은 생성·조회·목록·무효화 operation을 제공�
     /required: \[commandId, taskId, activityType, completionStatus, performedAt, detail\]/,
   )
   assert.match(yaml, /completionStatus:/)
+  assert.match(yaml, /enum: \[NUMBER, TIME, SHORT_TEXT, CHECK, MEMO\]/)
+  assert.match(yaml, /enum: \[STUDY_CATEGORY, FREE_WORKOUT, FREE_HANGBOARD, CLIMBING_SESSION\]/)
+  assert.match(yaml, /CreateTemplateRequest:[\s\S]*?additionalProperties: false/)
+  assert.match(yaml, /FieldDefinitionInput:[\s\S]*?additionalProperties: false/)
+  assert.match(yaml, /maximum: 100, default: 20/)
+  assert.doesNotMatch(yaml.match(/FieldDefinitionInput:[\s\S]*?FieldDefinition:/)?.[0] ?? '', /maxItems:/)
 })

@@ -62,6 +62,12 @@ All URIs are relative to */api/activity/v1*
 *ActivityApi* | [**getMonthlyActivitySummary**](docs/ActivityApi.md#getmonthlyactivitysummary) | **GET** /activities/summary |
 *ActivityApi* | [**listActivities**](docs/ActivityApi.md#listactivities) | **GET** /activities |
 *ActivityApi* | [**voidActivity**](docs/ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |
+*TemplateApi* | [**archiveTemplate**](docs/TemplateApi.md#archivetemplateoperation) | **POST** /templates/{templateId}/archive |
+*TemplateApi* | [**createTemplate**](docs/TemplateApi.md#createtemplateoperation) | **POST** /templates |
+*TemplateApi* | [**createTemplateVersion**](docs/TemplateApi.md#createtemplateversionoperation) | **POST** /templates/{templateId}/versions |
+*TemplateApi* | [**getTemplate**](docs/TemplateApi.md#gettemplate) | **GET** /templates/{templateId} |
+*TemplateApi* | [**getTemplateVersion**](docs/TemplateApi.md#gettemplateversion) | **GET** /templates/{templateId}/versions/{templateVersion} |
+*TemplateApi* | [**listTemplates**](docs/TemplateApi.md#listtemplates) | **GET** /templates |
 
 
 ### Models
@@ -73,14 +79,25 @@ All URIs are relative to */api/activity/v1*
 - [ActivityStatus](docs/ActivityStatus.md)
 - [ActivitySyncState](docs/ActivitySyncState.md)
 - [ActivityType](docs/ActivityType.md)
+- [ArchiveTemplateRequest](docs/ArchiveTemplateRequest.md)
 - [ClimbingDetail](docs/ClimbingDetail.md)
 - [ClimbingRound](docs/ClimbingRound.md)
 - [CorrectActivityRequest](docs/CorrectActivityRequest.md)
 - [CreateActivityRequest](docs/CreateActivityRequest.md)
+- [CreateTemplateRequest](docs/CreateTemplateRequest.md)
+- [CreateTemplateVersionRequest](docs/CreateTemplateVersionRequest.md)
+- [FieldDefinition](docs/FieldDefinition.md)
+- [FieldDefinitionInput](docs/FieldDefinitionInput.md)
 - [MonthlyActivitySummaryResponse](docs/MonthlyActivitySummaryResponse.md)
 - [ProblemDetails](docs/ProblemDetails.md)
 - [ProblemDetailsFieldErrorsInner](docs/ProblemDetailsFieldErrorsInner.md)
 - [StudyDetail](docs/StudyDetail.md)
+- [TemplateDomain](docs/TemplateDomain.md)
+- [TemplateFieldType](docs/TemplateFieldType.md)
+- [TemplateKind](docs/TemplateKind.md)
+- [TemplatePageResponse](docs/TemplatePageResponse.md)
+- [TemplateResponse](docs/TemplateResponse.md)
+- [TemplateVersion](docs/TemplateVersion.md)
 - [VoidActivityRequest](docs/VoidActivityRequest.md)
 - [WorkoutDetail](docs/WorkoutDetail.md)
 - [WorkoutSet](docs/WorkoutSet.md)
