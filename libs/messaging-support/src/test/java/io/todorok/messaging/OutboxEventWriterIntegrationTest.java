@@ -124,6 +124,7 @@ class OutboxEventWriterIntegrationTest {
                 eventId,
                 EventType.TASK_SCHEDULED,
                 1,
+                1,
                 Instant.parse("2026-09-02T00:00:00Z"),
                 UUID.fromString("00000000-0000-0000-0000-000000000103"),
                 new TaskScheduled(

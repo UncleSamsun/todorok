@@ -1,28 +1,20 @@
 
-# CalendarDaySummary
+# ActivityCompletionStatus
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`date` | Date
-`totalCount` | number
-`completedCount` | number
-`categoryProgress` | [Array&lt;CategoryProgress&gt;](CategoryProgress.md)
 
 ## Example
 
 ```typescript
-import type { CalendarDaySummary } from '@todorok/api-client'
+import type { ActivityCompletionStatus } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
-  "date": null,
-  "totalCount": null,
-  "completedCount": null,
-  "categoryProgress": null,
-} satisfies CalendarDaySummary
+} satisfies ActivityCompletionStatus
 
 console.log(example)
 
@@ -31,7 +23,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as CalendarDaySummary
+const exampleParsed = JSON.parse(exampleJSON) as ActivityCompletionStatus
 console.log(exampleParsed)
 ```
 

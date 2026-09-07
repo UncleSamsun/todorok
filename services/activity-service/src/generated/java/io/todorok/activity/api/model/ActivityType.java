@@ -20,11 +20,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 public enum ActivityType {
-  
+
   WORKOUT("WORKOUT"),
-  
+
   STUDY("STUDY"),
-  
+
   CLIMBING("CLIMBING");
 
   private final String value;

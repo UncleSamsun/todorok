@@ -45,7 +45,7 @@ public class VoidActivityRequest {
    * Get reason
    * @return reason
    */
-  @NotNull @Size(min = 1, max = 500) 
+  @NotNull @Size(min = 1, max = 500)
   @JsonProperty("reason")
   public String getReason() {
     return reason;
@@ -66,7 +66,7 @@ public class VoidActivityRequest {
    * minimum: 0
    * @return version
    */
-  @NotNull @Min(value = 0L) 
+  @NotNull @Min(value = 0L)
   @JsonProperty("version")
   public Long getVersion() {
     return version;

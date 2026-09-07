@@ -6,8 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.todorok.planner.api.model.TaskType;
-import java.time.LocalDate;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.lang.Nullable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -18,53 +16,32 @@ import java.util.*;
 import jakarta.annotation.Generated;
 
 /**
- * CreateTaskRequest
+ * CategoryProgress
  */
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
-public class CreateTaskRequest {
-
-  private String title;
+public class CategoryProgress {
 
   private TaskType taskType;
 
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-  private LocalDate scheduledDate;
+  private Integer totalCount;
 
-  public CreateTaskRequest() {
+  private Integer completedCount;
+
+  public CategoryProgress() {
     super();
   }
 
   /**
    * Constructor with only required parameters
    */
-  public CreateTaskRequest(String title, TaskType taskType, LocalDate scheduledDate) {
-    this.title = title;
+  public CategoryProgress(TaskType taskType, Integer totalCount, Integer completedCount) {
     this.taskType = taskType;
-    this.scheduledDate = scheduledDate;
+    this.totalCount = totalCount;
+    this.completedCount = completedCount;
   }
 
-  public CreateTaskRequest title(String title) {
-    this.title = title;
-    return this;
-  }
-
-  /**
-   * Get title
-   * @return title
-   */
-  @NotNull @Size(min = 1, max = 120)
-  @JsonProperty("title")
-  public String getTitle() {
-    return title;
-  }
-
-  @JsonProperty("title")
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public CreateTaskRequest taskType(TaskType taskType) {
+  public CategoryProgress taskType(TaskType taskType) {
     this.taskType = taskType;
     return this;
   }
@@ -84,24 +61,46 @@ public class CreateTaskRequest {
     this.taskType = taskType;
   }
 
-  public CreateTaskRequest scheduledDate(LocalDate scheduledDate) {
-    this.scheduledDate = scheduledDate;
+  public CategoryProgress totalCount(Integer totalCount) {
+    this.totalCount = totalCount;
     return this;
   }
 
   /**
-   * Get scheduledDate
-   * @return scheduledDate
+   * Get totalCount
+   * minimum: 0
+   * @return totalCount
    */
-  @NotNull @Valid
-  @JsonProperty("scheduledDate")
-  public LocalDate getScheduledDate() {
-    return scheduledDate;
+  @NotNull @Min(value = 0)
+  @JsonProperty("totalCount")
+  public Integer getTotalCount() {
+    return totalCount;
   }
 
-  @JsonProperty("scheduledDate")
-  public void setScheduledDate(LocalDate scheduledDate) {
-    this.scheduledDate = scheduledDate;
+  @JsonProperty("totalCount")
+  public void setTotalCount(Integer totalCount) {
+    this.totalCount = totalCount;
+  }
+
+  public CategoryProgress completedCount(Integer completedCount) {
+    this.completedCount = completedCount;
+    return this;
+  }
+
+  /**
+   * Get completedCount
+   * minimum: 0
+   * @return completedCount
+   */
+  @NotNull @Min(value = 0)
+  @JsonProperty("completedCount")
+  public Integer getCompletedCount() {
+    return completedCount;
+  }
+
+  @JsonProperty("completedCount")
+  public void setCompletedCount(Integer completedCount) {
+    this.completedCount = completedCount;
   }
 
   @Override
@@ -112,24 +111,24 @@ public class CreateTaskRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CreateTaskRequest createTaskRequest = (CreateTaskRequest) o;
-    return Objects.equals(this.title, createTaskRequest.title) &&
-        Objects.equals(this.taskType, createTaskRequest.taskType) &&
-        Objects.equals(this.scheduledDate, createTaskRequest.scheduledDate);
+    CategoryProgress categoryProgress = (CategoryProgress) o;
+    return Objects.equals(this.taskType, categoryProgress.taskType) &&
+        Objects.equals(this.totalCount, categoryProgress.totalCount) &&
+        Objects.equals(this.completedCount, categoryProgress.completedCount);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(title, taskType, scheduledDate);
+    return Objects.hash(taskType, totalCount, completedCount);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CreateTaskRequest {\n");
-    sb.append("    title: ").append(toIndentedString(title)).append("\n");
+    sb.append("class CategoryProgress {\n");
     sb.append("    taskType: ").append(toIndentedString(taskType)).append("\n");
-    sb.append("    scheduledDate: ").append(toIndentedString(scheduledDate)).append("\n");
+    sb.append("    totalCount: ").append(toIndentedString(totalCount)).append("\n");
+    sb.append("    completedCount: ").append(toIndentedString(completedCount)).append("\n");
     sb.append("}");
     return sb.toString();
   }

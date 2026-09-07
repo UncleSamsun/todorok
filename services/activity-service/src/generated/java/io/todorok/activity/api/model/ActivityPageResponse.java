@@ -60,7 +60,7 @@ public class ActivityPageResponse {
    * Get items
    * @return items
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("items")
   public List<@Valid ActivityResponse> getItems() {
     return items;
@@ -80,7 +80,7 @@ public class ActivityPageResponse {
    * Get nextCursor
    * @return nextCursor
    */
-  
+
   @JsonProperty("nextCursor")
   public @Nullable String getNextCursor() {
     return nextCursor;

@@ -30,6 +30,8 @@ public class ActivityResponse {
 
   private UUID activityId;
 
+  private UUID commandId;
+
   private UUID taskId;
 
   private UUID userId;
@@ -52,8 +54,9 @@ public class ActivityResponse {
   /**
    * Constructor with only required parameters
    */
-  public ActivityResponse(UUID activityId, UUID taskId, UUID userId, ActivityType activityType, OffsetDateTime performedAt, Map<String, Object> detail, ActivityStatus status, Long version) {
+  public ActivityResponse(UUID activityId, UUID commandId, UUID taskId, UUID userId, ActivityType activityType, OffsetDateTime performedAt, Map<String, Object> detail, ActivityStatus status, Long version) {
     this.activityId = activityId;
+    this.commandId = commandId;
     this.taskId = taskId;
     this.userId = userId;
     this.activityType = activityType;
@@ -72,7 +75,7 @@ public class ActivityResponse {
    * Get activityId
    * @return activityId
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("activityId")
   public UUID getActivityId() {
     return activityId;
@@ -81,6 +84,26 @@ public class ActivityResponse {
   @JsonProperty("activityId")
   public void setActivityId(UUID activityId) {
     this.activityId = activityId;
+  }
+
+  public ActivityResponse commandId(UUID commandId) {
+    this.commandId = commandId;
+    return this;
+  }
+
+  /**
+   * Get commandId
+   * @return commandId
+   */
+  @NotNull @Valid
+  @JsonProperty("commandId")
+  public UUID getCommandId() {
+    return commandId;
+  }
+
+  @JsonProperty("commandId")
+  public void setCommandId(UUID commandId) {
+    this.commandId = commandId;
   }
 
   public ActivityResponse taskId(UUID taskId) {
@@ -92,7 +115,7 @@ public class ActivityResponse {
    * Get taskId
    * @return taskId
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("taskId")
   public UUID getTaskId() {
     return taskId;
@@ -112,7 +135,7 @@ public class ActivityResponse {
    * Get userId
    * @return userId
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("userId")
   public UUID getUserId() {
     return userId;
@@ -132,7 +155,7 @@ public class ActivityResponse {
    * Get activityType
    * @return activityType
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("activityType")
   public ActivityType getActivityType() {
     return activityType;
@@ -152,7 +175,7 @@ public class ActivityResponse {
    * Get performedAt
    * @return performedAt
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("performedAt")
   public OffsetDateTime getPerformedAt() {
     return performedAt;
@@ -180,7 +203,7 @@ public class ActivityResponse {
    * Get detail
    * @return detail
    */
-  @NotNull 
+  @NotNull
   @JsonProperty("detail")
   public Map<String, Object> getDetail() {
     return detail;
@@ -200,7 +223,7 @@ public class ActivityResponse {
    * Get status
    * @return status
    */
-  @NotNull @Valid 
+  @NotNull @Valid
   @JsonProperty("status")
   public ActivityStatus getStatus() {
     return status;
@@ -221,7 +244,7 @@ public class ActivityResponse {
    * minimum: 0
    * @return version
    */
-  @NotNull @Min(value = 0L) 
+  @NotNull @Min(value = 0L)
   @JsonProperty("version")
   public Long getVersion() {
     return version;
@@ -242,6 +265,7 @@ public class ActivityResponse {
     }
     ActivityResponse activityResponse = (ActivityResponse) o;
     return Objects.equals(this.activityId, activityResponse.activityId) &&
+        Objects.equals(this.commandId, activityResponse.commandId) &&
         Objects.equals(this.taskId, activityResponse.taskId) &&
         Objects.equals(this.userId, activityResponse.userId) &&
         Objects.equals(this.activityType, activityResponse.activityType) &&
@@ -253,7 +277,7 @@ public class ActivityResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(activityId, taskId, userId, activityType, performedAt, detail, status, version);
+    return Objects.hash(activityId, commandId, taskId, userId, activityType, performedAt, detail, status, version);
   }
 
   @Override
@@ -261,6 +285,7 @@ public class ActivityResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class ActivityResponse {\n");
     sb.append("    activityId: ").append(toIndentedString(activityId)).append("\n");
+    sb.append("    commandId: ").append(toIndentedString(commandId)).append("\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
     sb.append("    userId: ").append(toIndentedString(userId)).append("\n");
     sb.append("    activityType: ").append(toIndentedString(activityType)).append("\n");

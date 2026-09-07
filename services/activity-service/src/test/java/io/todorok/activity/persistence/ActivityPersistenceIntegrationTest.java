@@ -7,8 +7,9 @@ import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -23,9 +24,17 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class ActivityPersistenceIntegrationTest {
 
     @Container
-    @ServiceConnection
     static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:17.11-alpine");
+            new PostgreSQLContainer("postgres:17.11-alpine")
+                    .withDatabaseName("todorok")
+                    .withInitScript("db/activity-test-role.sql");
+
+    @DynamicPropertySource
+    static void databaseProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", () -> "activity_app");
+        registry.add("spring.datasource.password", () -> "activity-test-password");
+    }
 
     @Autowired JdbcTemplate jdbc;
     @Autowired PersistenceSampleRepository repository;
@@ -33,6 +42,8 @@ class ActivityPersistenceIntegrationTest {
 
     @Test
     void migratesOnlyActivitySchema() {
+        assertThat(jdbc.queryForObject("select current_user", String.class))
+                .isEqualTo("activity_app");
         assertThat(jdbc.queryForObject(
                 "select service_name from activity.service_metadata",
                 String.class)).isEqualTo("activity-service");

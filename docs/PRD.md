@@ -2,9 +2,9 @@
 title: TODOROK MVP PRD
 product: TODOROK
 status: approved
-version: 1.4.0
+version: 1.4.1
 created: 2026-08-31
-updated: 2026-09-01
+updated: 2026-09-07
 owner: 김민준
 ---
 
@@ -131,6 +131,7 @@ owner: 김민준
 
 - 공통 header에 사용자, 원본 Task, 유형, 실제 수행 날짜, 생성 시각, 상태, 완료 기록 메모와 command ID를 저장한다.
 - 상태는 `COMPLETED`, `PARTIAL`, `VOIDED`를 사용한다.
+- Activity 생성 요청은 재시도 멱등성을 위한 UUID `commandId`와 `COMPLETED` 또는 `PARTIAL`인 `completionStatus`를 반드시 포함한다.
 - 운동·공부·클라이밍 detail table을 공통 header와 같은 ID로 연결한다.
 - 운동 세트와 클라이밍 라운드는 관계형으로, 공부 자유 값과 snapshot만 JSONB로 저장한다.
 - `PARTIAL`은 Task를 완료하지 않고 `VOIDED`는 기존 완료를 되돌리는 이벤트를 발생시킨다.
@@ -399,6 +400,8 @@ PostgreSQL
 
 ### 16.4 이벤트 후보
 
+- 모든 event envelope는 schema version인 `version`과 별도로 aggregate의 변경 순서를 나타내는 0 이상의 `aggregateVersion`을 포함한다. consumer는 더 낮은 aggregate version의 재전달로 최신 projection을 덮어쓰지 않는다.
+
 - `TaskScheduled`
 - `TaskRolledOver`
 - `ActivityCompleted`
@@ -511,6 +514,7 @@ PostgreSQL
 - 오늘 화면의 첫 사용 가능 상태는 일반 네트워크에서 2초 이내를 목표로 한다.
 - 메모 입력은 500ms debounce 자동 저장을 사용한다.
 - 달력 range summary는 최대 42일이며 선택 날짜 detail과 분리한다.
+- 달력 range summary는 날짜별 전체 완료 수와 함께 `GENERAL`, `WORKOUT`, `STUDY`, `CLIMBING` 카테고리별 전체 수·완료 수를 반환한다.
 - Activity 상세는 사용자가 열 때 지연 조회하고 긴 이력은 keyset pagination을 사용한다.
 - Spring Boot의 Hikari·Tomcat·Kafka consumer 기본 동시성 값으로 시작하고 metric에서 포화가 확인될 때 조정한다.
 - PostgreSQL replication slot WAL은 2GB로 제한하고 slot 비활성·safe WAL·디스크 사용률을 감시한다.

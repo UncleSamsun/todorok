@@ -73,7 +73,7 @@ public class ProblemDetails {
    * Get type
    * @return type
    */
-  @NotNull 
+  @NotNull
   @JsonProperty("type")
   public String getType() {
     return type;
@@ -93,7 +93,7 @@ public class ProblemDetails {
    * Get title
    * @return title
    */
-  @NotNull 
+  @NotNull
   @JsonProperty("title")
   public String getTitle() {
     return title;
@@ -115,7 +115,7 @@ public class ProblemDetails {
    * maximum: 599
    * @return status
    */
-  @NotNull @Min(value = 400) @Max(value = 599) 
+  @NotNull @Min(value = 400) @Max(value = 599)
   @JsonProperty("status")
   public Integer getStatus() {
     return status;
@@ -135,7 +135,7 @@ public class ProblemDetails {
    * Get detail
    * @return detail
    */
-  
+
   @JsonProperty("detail")
   public @Nullable String getDetail() {
     return detail;
@@ -156,7 +156,7 @@ public class ProblemDetails {
    * Get instance
    * @return instance
    */
-  
+
   @JsonProperty("instance")
   public @Nullable String getInstance() {
     return instance;
@@ -177,7 +177,7 @@ public class ProblemDetails {
    * Get code
    * @return code
    */
-  @NotNull @Pattern(regexp = "^[A-Z][A-Z0-9_]+$") 
+  @NotNull @Pattern(regexp = "^[A-Z][A-Z0-9_]+$")
   @JsonProperty("code")
   public String getCode() {
     return code;
@@ -197,7 +197,7 @@ public class ProblemDetails {
    * Get traceId
    * @return traceId
    */
-  @NotNull @Size(min = 1) 
+  @NotNull @Size(min = 1)
   @JsonProperty("traceId")
   public String getTraceId() {
     return traceId;
@@ -217,7 +217,7 @@ public class ProblemDetails {
    * Get retryable
    * @return retryable
    */
-  @NotNull 
+  @NotNull
   @JsonProperty("retryable")
   public Boolean getRetryable() {
     return retryable;
@@ -245,7 +245,7 @@ public class ProblemDetails {
    * Get fieldErrors
    * @return fieldErrors
    */
-  @Valid 
+  @Valid
   @JsonProperty("fieldErrors")
   public List<@Valid ProblemDetailsFieldErrorsInner> getFieldErrors() {
     return fieldErrors;

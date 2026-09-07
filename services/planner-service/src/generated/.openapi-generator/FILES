@@ -4,6 +4,7 @@ java/io/todorok/planner/api/CalendarApi.java
 java/io/todorok/planner/api/TaskApi.java
 java/io/todorok/planner/api/model/CalendarDaySummary.java
 java/io/todorok/planner/api/model/CalendarSummaryResponse.java
+java/io/todorok/planner/api/model/CategoryProgress.java
 java/io/todorok/planner/api/model/CreateTaskRequest.java
 java/io/todorok/planner/api/model/DayDetailResponse.java
 java/io/todorok/planner/api/model/LoginRequest.java

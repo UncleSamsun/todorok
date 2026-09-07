@@ -8,6 +8,7 @@ public record EventEnvelope<T>(
         UUID eventId,
         EventType type,
         int version,
+        long aggregateVersion,
         @JsonFormat(shape = JsonFormat.Shape.STRING)
         Instant occurredAt,
         UUID userId,
@@ -22,6 +23,9 @@ public record EventEnvelope<T>(
         }
         if (version < 1) {
             throw new IllegalArgumentException("version must be at least 1");
+        }
+        if (aggregateVersion < 0) {
+            throw new IllegalArgumentException("aggregateVersion must not be negative");
         }
         if (occurredAt == null) {
             throw new IllegalArgumentException("occurredAt must not be null");

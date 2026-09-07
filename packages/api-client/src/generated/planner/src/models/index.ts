@@ -2,6 +2,7 @@
 /* eslint-disable */
 export * from './CalendarDaySummary';
 export * from './CalendarSummaryResponse';
+export * from './CategoryProgress';
 export * from './CreateTaskRequest';
 export * from './DayDetailResponse';
 export * from './LoginRequest';

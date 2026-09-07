@@ -2,6 +2,7 @@
   "eventId": "00000000-0000-0000-0000-000000000011",
   "type": "TASK_CHANGED",
   "version": 1,
+  "aggregateVersion": 2,
   "occurredAt": "2026-09-02T00:01:00Z",
   "userId": "00000000-0000-0000-0000-000000000012",
   "payload": {

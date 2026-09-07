@@ -1,6 +1,7 @@
 .npmignore
 README.md
 docs/ActivityApi.md
+docs/ActivityCompletionStatus.md
 docs/ActivityPageResponse.md
 docs/ActivityResponse.md
 docs/ActivityStatus.md
@@ -13,6 +14,7 @@ package.json
 src/apis/ActivityApi.ts
 src/apis/index.ts
 src/index.ts
+src/models/ActivityCompletionStatus.ts
 src/models/ActivityPageResponse.ts
 src/models/ActivityResponse.ts
 src/models/ActivityStatus.ts

@@ -2,6 +2,7 @@
   "eventId": "00000000-0000-0000-0000-000000000031",
   "type": "ACTIVITY_VOIDED",
   "version": 1,
+  "aggregateVersion": 2,
   "occurredAt": "2026-09-02T00:03:00Z",
   "userId": "00000000-0000-0000-0000-000000000032",
   "payload": {

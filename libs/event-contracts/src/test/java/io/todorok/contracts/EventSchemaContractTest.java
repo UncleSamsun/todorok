@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class EventSchemaContractTest {
 
@@ -45,6 +46,20 @@ class EventSchemaContractTest {
     @MethodSource("serializedEvents")
     void serializedJavaRecordMatchesSchema(String directory, EventEnvelope<?> envelope) throws Exception {
         assertThat(validate(schema(directory), MAPPER.writeValueAsString(envelope))).isEmpty();
+    }
+
+    @Test
+    void eventEnvelopeExposesAggregateVersionSeparatelyFromSchemaVersion() {
+        var serialized = MAPPER.valueToTree(envelope(
+                EventType.TASK_SCHEDULED,
+                new TaskScheduled(
+                        UUID.fromString("00000000-0000-0000-0000-000000000003"),
+                        "GENERAL",
+                        LocalDate.parse("2026-09-02"),
+                        "PLANNED")));
+
+        assertThat(serialized.path("version").asInt()).isEqualTo(1);
+        assertThat(serialized.path("aggregateVersion").asLong()).isEqualTo(1L);
     }
 
     private static Stream<Arguments> eventContracts() {
@@ -91,6 +106,7 @@ class EventSchemaContractTest {
         return new EventEnvelope<>(
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
                 type,
+                1,
                 1,
                 Instant.parse("2026-09-02T00:00:00Z"),
                 UUID.fromString("00000000-0000-0000-0000-000000000002"),

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { access, mkdir, mkdtemp, stat, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -29,4 +29,27 @@ test('네 계약 생성기가 결정된 출력 루트를 만든다', async () =>
     access(path.join(outputRoot, 'packages/api-client/src/generated/planner/.gitignore')),
     { code: 'ENOENT' },
   )
+
+  for (const generatedRoot of [
+    'services/planner-service/src/generated',
+    'services/activity-service/src/generated',
+    'packages/api-client/src/generated/planner',
+    'packages/api-client/src/generated/activity',
+  ]) {
+    for (const file of await filesUnder(path.join(outputRoot, generatedRoot))) {
+      const content = await readFile(file, 'utf8')
+      assert.doesNotMatch(content, /[ \t]+$/m, `${file}에 행 끝 공백이 있습니다.`)
+    }
+  }
 })
+
+async function filesUnder(directory) {
+  const entries = await readdir(directory, { withFileTypes: true })
+  const files = []
+  for (const entry of entries) {
+    const target = path.join(directory, entry.name)
+    if (entry.isDirectory()) files.push(...await filesUnder(target))
+    else files.push(target)
+  }
+  return files
+}

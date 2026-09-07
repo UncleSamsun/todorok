@@ -20,13 +20,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 public enum TaskStatus {
-  
+
   PLANNED("PLANNED"),
-  
+
   COMPLETED("COMPLETED"),
-  
+
   SKIPPED("SKIPPED"),
-  
+
   DELETED("DELETED");
 
   private final String value;

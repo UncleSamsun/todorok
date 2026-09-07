@@ -213,7 +213,7 @@ services:
       planner-migration:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/api/planner/v1/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -243,7 +243,7 @@ services:
       activity-migration:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8082/actuator/health"]
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8082/api/activity/v1/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 20

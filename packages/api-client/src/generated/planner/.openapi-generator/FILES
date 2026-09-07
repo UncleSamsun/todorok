@@ -4,6 +4,7 @@ docs/AuthApi.md
 docs/CalendarApi.md
 docs/CalendarDaySummary.md
 docs/CalendarSummaryResponse.md
+docs/CategoryProgress.md
 docs/CreateTaskRequest.md
 docs/DayDetailResponse.md
 docs/LoginRequest.md
@@ -24,6 +25,7 @@ src/apis/index.ts
 src/index.ts
 src/models/CalendarDaySummary.ts
 src/models/CalendarSummaryResponse.ts
+src/models/CategoryProgress.ts
 src/models/CreateTaskRequest.ts
 src/models/DayDetailResponse.ts
 src/models/LoginRequest.ts

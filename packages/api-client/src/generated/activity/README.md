@@ -50,14 +50,15 @@ All URIs are relative to */api/activity/v1*
 
 | Class | Method | HTTP request | Description
 | ----- | ------ | ------------ | -------------
-*ActivityApi* | [**createActivity**](docs/ActivityApi.md#createactivityoperation) | **POST** /activities | 
-*ActivityApi* | [**getActivity**](docs/ActivityApi.md#getactivity) | **GET** /activities/{activityId} | 
-*ActivityApi* | [**listActivities**](docs/ActivityApi.md#listactivities) | **GET** /activities | 
-*ActivityApi* | [**voidActivity**](docs/ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void | 
+*ActivityApi* | [**createActivity**](docs/ActivityApi.md#createactivityoperation) | **POST** /activities |
+*ActivityApi* | [**getActivity**](docs/ActivityApi.md#getactivity) | **GET** /activities/{activityId} |
+*ActivityApi* | [**listActivities**](docs/ActivityApi.md#listactivities) | **GET** /activities |
+*ActivityApi* | [**voidActivity**](docs/ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |
 
 
 ### Models
 
+- [ActivityCompletionStatus](docs/ActivityCompletionStatus.md)
 - [ActivityPageResponse](docs/ActivityPageResponse.md)
 - [ActivityResponse](docs/ActivityResponse.md)
 - [ActivityStatus](docs/ActivityStatus.md)
