@@ -52,4 +52,5 @@ GitHub: https://github.com/UncleSamsun/todorok
 - `postgres-provision`은 새 DB와 기존 volume 모두에서 역할·schema·최소 권한을 idempotent하게 조정합니다. 기존 비밀번호는 기본적으로 바꾸지 않습니다.
 - DB 비밀번호를 회전할 때는 `.env`의 새 값을 저장하고 `DATABASE_CREDENTIAL_UPDATE=true`와 `CONNECTOR_CONFIG_UPDATE=true`를 함께 설정한 상태에서 Compose를 기동합니다. provision과 connector 갱신이 모두 성공한 뒤 두 플래그를 `false`로 되돌립니다. connector 갱신만 실패했다면 DB 비밀번호를 다시 바꾸지 않고 같은 새 값으로 `connect-init`을 재실행합니다.
 - Kafka 장애 복구는 broker 정상 응답을 먼저 확인한 뒤 connector와 task를 재시작하고, health 결과가 `healthy` 또는 원인이 확인된 `warning`인지 검증합니다.
-- replication slot을 재생성한 경우 connector를 resume하고 `snapshot.mode=when_needed`가 남아 있는 outbox를 다시 발행했는지 event ID로 확인합니다. consumer inbox가 중복 반영을 막으므로 inbox 기록을 먼저 정리하지 않습니다.
+- Connect worker를 교체해도 Kafka internal topic의 config·offset과 PostgreSQL slot에서 이어서 처리합니다. 통합 테스트는 기존 worker container를 제거하고 새 worker로 이벤트 수신을 확인합니다.
+- replication slot을 재생성한 경우 connector를 중지하고 slot이 없는 동안 저장된 outbox까지 `snapshot.mode=when_needed`로 다시 발행됐는지 event ID로 확인합니다. consumer inbox가 중복 반영을 막으므로 inbox 기록을 먼저 정리하지 않습니다.

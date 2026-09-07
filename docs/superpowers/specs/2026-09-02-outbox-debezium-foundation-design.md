@@ -17,7 +17,7 @@
 - Outbox Event Router를 통한 topic routing과 JSON payload 확장
 - Kafka domain topic·dead-letter topic의 보존 상한
 - consumer retry·dead-letter 공통 factory
-- Connect 중단·재시작, 중복 event ID, Kafka 복구, slot 유실 복구 테스트
+- Connect 일시 중단·실제 worker 교체, 중복 event ID, Kafka 복구, slot 유실 snapshot 복구 테스트
 - WAL·connector·consumer lag·outbox/inbox 적체 점검 명령
 
 ## 비범위
@@ -285,9 +285,10 @@ outbox가 7일, inbox가 30일보다 오래되면 삭제하지 않고 warning을
 - planner outbox INSERT → `todorok.task.v1` envelope 수신
 - activity outbox INSERT → `todorok.activity.v1` envelope 수신
 - 같은 aggregate ID event 순서 유지
-- Connect 중단 중 INSERT → 재시작 후 누락 없이 수신
+- Connect pause 중 INSERT → resume 후 누락 없이 수신
+- Connect worker container 제거 중 INSERT → 새 worker가 Kafka internal offset을 읽고 누락 없이 수신
 - Kafka 일시 중단 뒤 Connect 복구 → 누락 없이 수신
-- Connect 중단, slot 삭제·재생성, `when_needed` snapshot → 중복 가능하지만 event ID 보존
+- connector 중단, slot 삭제, outbox INSERT, slot 재생성, `when_needed` snapshot → streaming 범위 이전 event 수신과 event ID 보존·inbox 중복 억제
 - outbox 이외 table 변경이 topic에 나타나지 않음
 
 통합 테스트는 container reuse와 host의 기존 Compose volume을 사용하지 않는다. 타임아웃은 조건 polling으로 처리하고 고정 sleep을 사용하지 않는다.
@@ -296,7 +297,8 @@ outbox가 7일, inbox가 30일보다 오래되면 삭제하지 않고 warning을
 
 - domain transaction rollback: outbox row 없음
 - outbox ID 충돌: producer transaction 실패
-- Connect 중단: slot이 WAL 보존, 재시작 후 offset부터 재개
+- Connect pause: slot이 WAL을 보존하고 resume 후 offset부터 재개
+- Connect worker 교체: Kafka internal topic의 connector config·offset으로 새 worker가 재개
 - Kafka 중단: Connect task 실패 또는 backoff, broker 복구 후 재개
 - malformed payload: connector fail-fast, 운영자 수정 전 진행하지 않음
 - consumer 업무 오류: 3회 재시도 후 dead-letter
@@ -308,7 +310,7 @@ outbox가 7일, inbox가 30일보다 오래되면 삭제하지 않고 warning을
 ## 수용 기준 대응
 
 - DB commit 이후 Kafka 발행: outbox writer와 전체 CDC 왕복 테스트
-- Connect·Kafka·consumer 재시작과 중복 전달: 장애 통합 테스트와 inbox transaction 테스트
+- Connect worker 교체·Kafka 일시 단절·consumer 재시작과 중복 전달: 장애 통합 테스트와 inbox transaction 테스트
 - WAL·topic 상한과 outbox·inbox 적체: PostgreSQL command, topic init, read-only inspection, health script
 - Connect 중단·재시작: persistent slot과 offset internal topic 검증
 - dead-letter 이동: consumer failure handler Kafka 테스트

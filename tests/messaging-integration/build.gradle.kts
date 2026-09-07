@@ -13,6 +13,7 @@ sourceSets.test {
 }
 
 dependencies {
+    testImplementation(project(":libs:messaging-support"))
     testImplementation(platform("org.springframework.boot:spring-boot-dependencies:4.1.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core")
