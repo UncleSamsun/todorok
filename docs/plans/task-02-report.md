@@ -55,3 +55,13 @@
 
 구현 커밋: `d00d84d` — `feat(auth): 최초 계정과 회전형 세션 인증 구현`.
 이 보고서는 별도 문서 커밋으로 기록한다. 원격 push/merge는 실행하지 않았다.
+
+## 조립 검증 후속 수정
+
+전체 Compose build에서 웹 소비자의 TypeScript 검사 실패가 발견됐다. API client는 TypeScript source를 export하고 내부에서 `.ts` 경로를 사용하지만, `apps/web/tsconfig.json`에는 이를 허용하는 옵션이 없었다. `noEmit`과 Bundler 해석을 사용하는 웹 설정에 `allowImportingTsExtensions=true`를 추가했다. 기존 타입 검사는 그대로 유지한다.
+
+- RED: `pnpm build:web` — `transport.ts(1,29)`, `transport.ts(31,47)`의 TS5097로 종료 코드 1.
+- GREEN: `pnpm build:web` — TypeScript 검사와 production/PWA build 완료, 종료 코드 0.
+- GREEN: `pnpm --filter @todorok/api-client test` — 런타임 5개 테스트와 타입 검사 통과, 종료 코드 0.
+
+이 수정은 전체 Compose 재실행 이전의 웹 빌드 검증 결과이며 전체 조립 성공을 의미하지 않는다.
