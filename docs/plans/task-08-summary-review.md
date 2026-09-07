@@ -21,6 +21,10 @@
 - DB 윤년/서울 경계/read-only 행렬은 별도 검증 담당이 보강 중이다.
 - PWA old-chunk fallback은 작업14 필수 항목으로 추적하며 이번 수정 라운드에서 SW 설계를 확대하지 않는다.
 
+## 라운드 1 결과
+
+`e88b885` 보완을 독립 재리뷰해 중요 항목 1–7과 44px 터치 영역을 모두 해결한 것으로 판정했다. 새 Critical/Important 문제는 없었다. 원본 편집 기준 고정, 공통 APPLIED 처리와 낮은 revision 보호, 완료 기록 cursor 탐색, 확정·불확실 요청 분리, 정확한 timestamp/revision 비교, planner 등록 캐시 갱신, 원본 시간 보존을 각각 확인했다. 이 판정은 UI 범위이며 별도 DB 테스트 검증 2건은 포함하지 않는다.
+
 ## 보완 검증 요구
 
 - v4 폼→background v5→저장 expectedVersion4·409초안 유지.

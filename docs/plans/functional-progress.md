@@ -45,6 +45,14 @@
 - 08 중요리뷰: 요구미충족/수정필요. 편집version혼합·수정/void동기화미연결·완료Task신규폼·400옛snapshot재전송·불확실응답시간비교누락·등록캐시미갱신·메모수정시간초손실7건,재시도44px1건을 `task-08-summary-review.md`에기록했다. DB검증작업완료후UI담당수정라운드1로순차전달한다. 서버SQL중요결함은발견되지않았다.
 - 08 DB경계 `9424f97`: 실제PostgreSQL추가5개exit0·XML5/0/0/0부모확인. 윤년/UTC동일시각·다중세트·두유형상태/owner·소수초·조회전체행불변통과. 보강test읽기전용리뷰착수. UI라운드1은 `task-08-summary-fix-brief.md`로직전담당에게전달했으며유일한구현작업이다.
 - 08 DB보강리뷰:실행은통과했지만서울/UTC경계동일시간상쇄와Activity없는Taskreference누락2건으로검증미충족. `task-08-summary-boundary-review.md`에기록하고현재UI작업후순차보완한다. 테스트가녹색인것을요구증명과동일시하지않는다.
+- 08 UI라운드1중간:집중15개중완료Task/등록갱신포함12개통과. 정밀timestamp본문이generated경계에서이중JSON직렬화되는3실패를확인해최종middleware단계본문교체로보완중이다. tsc통과후집중12개10907실행중. 전체라운드완료아님.
+- 08 UI라운드1검증:10907 correction12/12,31287 추가6/6(sub-ms/시간직접편집/불확실초안재진입/lateGET/void충돌)통과보고. api-client build/tsc통과. 최종웹전체65495실행중이고실제완료Task정확ID/등록증분/수정APPLIED/실패재시도44px브라우저검증예정이다.
+- 08 UI라운드1후속:65495웹91/91(14files)/build통과;8292실제등록5→6·완료Task두경로exactID·41분수정APPLIED·요약요청abort/44px재시도복구PASS. 부모harness/캡처확인. 저장전시작GET의저장후도착상태역행경계를46653으로추가검증중이며결과후커밋/재리뷰한다.
+- 08 UI라운드1최종보강:46653은저장v5/PENDING후늦은GETv4의캐시역행을RED로확인했다. 낮은revision/동일revisionPENDING역행보호후48445 correction19+lifecycle23=42/42통과. 이전91/91과코드시점을구분한다. 최종build75749·native짧은확인후보고/커밋예정.
+- 08 UI라운드1 `e88b885`:최종build/native최신entry읽기확인후커밋. 7개Important+44px재리뷰착수. DB검증라운드1(서울경계상쇄/unlinkedreference2건)은유일한구현worker로순차착수했다.
+- 08 UI재리뷰통과:Important7+44px모두해결,새중요결함없음. 전용runtime down81120 exit0,컨테이너/volume/network0확인·소유browser3session종료·임시credential/key4파일삭제. harness/캡처는보존. DBtest2건보강은계속진행중이므로전체08완료아님.
+- 08 DB라운드1 `dd544ea`:focused2/2실제PG·XML2/0/0/0부모확인. 잘못된UTC집계720초와정상서울300초구별,owner전체reference/orphan상태변경탐지보강. scoped재리뷰착수했으며결과전전체08완료보류.
+- 08 최종완료:서버correction/snapshot/Kafka검증과UI `e88b885` 중요재리뷰통과,DB `dd544ea` 두검증재리뷰통과를합쳐판정. 실제과거저장/수정/void·월요약·완료상세·등록갱신·모바일검증증거는각보고서에있다. PWA배포전환은14필수항목으로유지. 09는승인된템플릿요구의계약/버전/일정연결세부설계부터착수한다. 10–16미완료.
 - 03 실제 브라우저에서 native fetch의 잘못된 receiver로 Illegal invocation이 발생해 서버 요청이 없음을 재현했다. local 함수 호출로 수정하고 receiver-sensitive 회귀 테스트·build 통과 후 실제 브라우저를 재검증 중이다. 단위 테스트 통과를 실제 로그인 성공으로 대체하지 않는다.
 - 새 worktree의 event-contracts Gradle gate 성공(캐시 재사용). 작업 01 runtime 테스트 결과는 위 완료 증거를 따른다.
 - PRD AC-3를 §10.4의 반복 조건표와 일치시키는 문서 정정을 반영했다. 월말/집계 신규 규칙과 구분한다.

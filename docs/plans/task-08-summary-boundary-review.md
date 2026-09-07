@@ -2,6 +2,8 @@
 
 범위 `3e8fe6d..9424f97`. 판정: 수정 필요. 실제 실행 XML5/0/0/0은 확인됐으나 다음 검증 사각지대가 남는다. 제품 결함 지적이 아니라 요구를 증명하는 테스트의 결함이다.
 
+후속 판정: `dd544ea`의 보완 범위를 재리뷰해 두 건 모두 해결됐음을 확인했다. 새 Critical/Important 문제는 없었다. 정상 서울 범위 300초와 잘못된 UTC 범위 720초를 구별하고, 소유자의 전체 Task reference 및 Activity에 연결되지 않은 fixture의 변경 탐지를 확인했다. 실제 집중 테스트 XML의 tests/failures/errors/skipped = 2/0/0/0 증거와 합쳐 검증 보강 완료로 판정한다.
+
 ## Important 1 — 서울/UTC 경계의 합계 상쇄
 
 `ActivityPersistenceIntegrationTest.java:104,130–133`: 네 경계 fixture가 모두1분이고 합계2회/120초만 단언한다. 잘못된UTC2월집계가서울2월시작을제외하고서울3월시작을대신포함해도같은합계라통과한다.
