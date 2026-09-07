@@ -2,14 +2,17 @@ package io.todorok.activity.api.model;
 
 import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.Nulls;
+import io.todorok.activity.api.model.ActivityDetail;
 import io.todorok.activity.api.model.ActivityStatus;
+import io.todorok.activity.api.model.ActivitySyncState;
 import io.todorok.activity.api.model.ActivityType;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.lang.Nullable;
@@ -41,11 +44,28 @@ public class ActivityResponse {
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private OffsetDateTime performedAt;
 
-  private Map<String, Object> detail = new HashMap<>();
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  private @Nullable OffsetDateTime startedAt;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  private @Nullable OffsetDateTime endedAt;
+
+  private ActivityDetail detail;
 
   private ActivityStatus status;
 
   private Long version;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String note;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable ActivitySyncState syncState;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String syncReason;
 
   public ActivityResponse() {
     super();
@@ -54,7 +74,7 @@ public class ActivityResponse {
   /**
    * Constructor with only required parameters
    */
-  public ActivityResponse(UUID activityId, UUID commandId, UUID taskId, UUID userId, ActivityType activityType, OffsetDateTime performedAt, Map<String, Object> detail, ActivityStatus status, Long version) {
+  public ActivityResponse(UUID activityId, UUID commandId, UUID taskId, UUID userId, ActivityType activityType, OffsetDateTime performedAt, ActivityDetail detail, ActivityStatus status, Long version) {
     this.activityId = activityId;
     this.commandId = commandId;
     this.taskId = taskId;
@@ -186,16 +206,50 @@ public class ActivityResponse {
     this.performedAt = performedAt;
   }
 
-  public ActivityResponse detail(Map<String, Object> detail) {
-    this.detail = detail;
+  public ActivityResponse startedAt(@Nullable OffsetDateTime startedAt) {
+    this.startedAt = startedAt;
     return this;
   }
 
-  public ActivityResponse putDetailItem(String key, Object detailItem) {
-    if (this.detail == null) {
-      this.detail = new HashMap<>();
-    }
-    this.detail.put(key, detailItem);
+  /**
+   * Get startedAt
+   * @return startedAt
+   */
+  @Valid
+  @JsonProperty("startedAt")
+  public @Nullable OffsetDateTime getStartedAt() {
+    return startedAt;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("startedAt")
+  public void setStartedAt(@Nullable OffsetDateTime startedAt) {
+    this.startedAt = startedAt;
+  }
+
+  public ActivityResponse endedAt(@Nullable OffsetDateTime endedAt) {
+    this.endedAt = endedAt;
+    return this;
+  }
+
+  /**
+   * Get endedAt
+   * @return endedAt
+   */
+  @Valid
+  @JsonProperty("endedAt")
+  public @Nullable OffsetDateTime getEndedAt() {
+    return endedAt;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("endedAt")
+  public void setEndedAt(@Nullable OffsetDateTime endedAt) {
+    this.endedAt = endedAt;
+  }
+
+  public ActivityResponse detail(ActivityDetail detail) {
+    this.detail = detail;
     return this;
   }
 
@@ -203,14 +257,14 @@ public class ActivityResponse {
    * Get detail
    * @return detail
    */
-  @NotNull
+  @NotNull @Valid
   @JsonProperty("detail")
-  public Map<String, Object> getDetail() {
+  public ActivityDetail getDetail() {
     return detail;
   }
 
   @JsonProperty("detail")
-  public void setDetail(Map<String, Object> detail) {
+  public void setDetail(ActivityDetail detail) {
     this.detail = detail;
   }
 
@@ -255,6 +309,69 @@ public class ActivityResponse {
     this.version = version;
   }
 
+  public ActivityResponse note(@Nullable String note) {
+    this.note = note;
+    return this;
+  }
+
+  /**
+   * Get note
+   * @return note
+   */
+
+  @JsonProperty("note")
+  public @Nullable String getNote() {
+    return note;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("note")
+  public void setNote(@Nullable String note) {
+    this.note = note;
+  }
+
+  public ActivityResponse syncState(@Nullable ActivitySyncState syncState) {
+    this.syncState = syncState;
+    return this;
+  }
+
+  /**
+   * Get syncState
+   * @return syncState
+   */
+  @Valid
+  @JsonProperty("syncState")
+  public @Nullable ActivitySyncState getSyncState() {
+    return syncState;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("syncState")
+  public void setSyncState(@Nullable ActivitySyncState syncState) {
+    this.syncState = syncState;
+  }
+
+  public ActivityResponse syncReason(@Nullable String syncReason) {
+    this.syncReason = syncReason;
+    return this;
+  }
+
+  /**
+   * Get syncReason
+   * @return syncReason
+   */
+
+  @JsonProperty("syncReason")
+  public @Nullable String getSyncReason() {
+    return syncReason;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("syncReason")
+  public void setSyncReason(@Nullable String syncReason) {
+    this.syncReason = syncReason;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -270,14 +387,19 @@ public class ActivityResponse {
         Objects.equals(this.userId, activityResponse.userId) &&
         Objects.equals(this.activityType, activityResponse.activityType) &&
         Objects.equals(this.performedAt, activityResponse.performedAt) &&
+        Objects.equals(this.startedAt, activityResponse.startedAt) &&
+        Objects.equals(this.endedAt, activityResponse.endedAt) &&
         Objects.equals(this.detail, activityResponse.detail) &&
         Objects.equals(this.status, activityResponse.status) &&
-        Objects.equals(this.version, activityResponse.version);
+        Objects.equals(this.version, activityResponse.version) &&
+        Objects.equals(this.note, activityResponse.note) &&
+        Objects.equals(this.syncState, activityResponse.syncState) &&
+        Objects.equals(this.syncReason, activityResponse.syncReason);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(activityId, commandId, taskId, userId, activityType, performedAt, detail, status, version);
+    return Objects.hash(activityId, commandId, taskId, userId, activityType, performedAt, startedAt, endedAt, detail, status, version, note, syncState, syncReason);
   }
 
   @Override
@@ -290,9 +412,14 @@ public class ActivityResponse {
     sb.append("    userId: ").append(toIndentedString(userId)).append("\n");
     sb.append("    activityType: ").append(toIndentedString(activityType)).append("\n");
     sb.append("    performedAt: ").append(toIndentedString(performedAt)).append("\n");
+    sb.append("    startedAt: ").append(toIndentedString(startedAt)).append("\n");
+    sb.append("    endedAt: ").append(toIndentedString(endedAt)).append("\n");
     sb.append("    detail: ").append(toIndentedString(detail)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    note: ").append(toIndentedString(note)).append("\n");
+    sb.append("    syncState: ").append(toIndentedString(syncState)).append("\n");
+    sb.append("    syncReason: ").append(toIndentedString(syncReason)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -11,6 +11,10 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from Task t where t.id=:id and t.userId=:owner")
+    Optional<Task> lockIncludingDeleted(UUID owner, UUID id);
+
     @Query("select t.seriesId from Task t where t.id=:id and t.userId=:owner")
     Optional<UUID> seriesId(UUID owner, UUID id);
 
@@ -36,12 +40,12 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     Optional<Task> owned(UUID owner, UUID id);
 
     @Query(
-        "select new io.todorok.planner.task.TaskView(t.id,t.userId,t.title,t.taskType,t.scheduledDate,t.status,t.version,t.seriesId,t.occurrenceDate,t.note) from Task t where t.userId=:owner and t.scheduledDate=:date and t.status<>io.todorok.planner.api.model.TaskStatus.DELETED order by t.id"
+        "select new io.todorok.planner.task.TaskView(t.id,t.userId,t.title,t.taskType,t.scheduledDate,t.status,t.version,t.seriesId,t.occurrenceDate,t.note,t.activityId,t.performedAt,t.completionSummary,t.startedAt,t.endedAt) from Task t where t.userId=:owner and t.scheduledDate=:date and t.status<>io.todorok.planner.api.model.TaskStatus.DELETED order by t.id"
     )
     List<TaskView> day(UUID owner, LocalDate date);
 
     @Query(
-        "select new io.todorok.planner.task.TaskView(t.id,t.userId,t.title,t.taskType,t.scheduledDate,t.status,t.version,t.seriesId,t.occurrenceDate,t.note) from Task t where t.userId=:owner and t.id=:id and t.status<>io.todorok.planner.api.model.TaskStatus.DELETED"
+        "select new io.todorok.planner.task.TaskView(t.id,t.userId,t.title,t.taskType,t.scheduledDate,t.status,t.version,t.seriesId,t.occurrenceDate,t.note,t.activityId,t.performedAt,t.completionSummary,t.startedAt,t.endedAt) from Task t where t.userId=:owner and t.id=:id and t.status<>io.todorok.planner.api.model.TaskStatus.DELETED"
     )
     Optional<TaskView> detail(UUID owner, UUID id);
 

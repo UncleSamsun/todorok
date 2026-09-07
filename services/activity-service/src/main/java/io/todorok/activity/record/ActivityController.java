@@ -1,0 +1,58 @@
+package io.todorok.activity.record;
+
+import io.todorok.activity.api.ActivityApi;
+import io.todorok.activity.api.model.*;
+import java.time.LocalDate;
+import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@ConditionalOnWebApplication
+public class ActivityController implements ActivityApi {
+
+    private final ActivityService activities;
+
+    public ActivityController(ActivityService activities) {
+        this.activities = activities;
+    }
+
+    private UUID owner() {
+        return (UUID) SecurityContextHolder.getContext()
+            .getAuthentication()
+            .getPrincipal();
+    }
+
+    @Override
+    public ResponseEntity<ActivityResponse> createActivity(
+        CreateActivityRequest request
+    ) {
+        return ResponseEntity.status(201).body(
+            activities.create(owner(), request)
+        );
+    }
+
+    @Override
+    public ResponseEntity<ActivityResponse> getActivity(UUID id) {
+        return ResponseEntity.ok(activities.get(owner(), id));
+    }
+
+    @Override
+    public ResponseEntity<ActivityPageResponse> listActivities(
+        LocalDate date,
+        String cursor,
+        Integer limit
+    ) {
+        return ResponseEntity.ok(activities.list(owner(), date, cursor, limit));
+    }
+
+    @Override
+    public ResponseEntity<ActivityResponse> voidActivity(
+        UUID id,
+        VoidActivityRequest request
+    ) {
+        return ResponseEntity.ok(activities.voidRecord(owner(), id, request));
+    }
+}

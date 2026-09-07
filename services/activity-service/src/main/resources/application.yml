@@ -1,6 +1,21 @@
 spring:
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+      accept-float-as-int: false
+    mapper:
+      allow-coercion-of-scalars: false
   application:
     name: activity-service
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/todorok?currentSchema=activity}
     username: ${SPRING_DATASOURCE_USERNAME:activity_app}
@@ -34,6 +49,8 @@ management:
         enabled: true
 
 todorok:
+  messaging:
+    enabled: ${MESSAGING_ENABLED:false}
   auth:
     issuer: ${AUTH_ISSUER:todorok}
     audience: ${AUTH_AUDIENCE:todorok-api}

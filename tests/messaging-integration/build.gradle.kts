@@ -3,6 +3,7 @@ plugins {
 }
 
 tasks.test {
+    testLogging { events("passed", "failed", "skipped") }
     systemProperty("todorok.repository.root", rootProject.projectDir.absolutePath)
     inputs.file(rootProject.file(
         "infra/docker/postgres/init/001-create-service-roles.sh"))
@@ -13,6 +14,12 @@ sourceSets.test {
 }
 
 dependencies {
+    testImplementation(project(":services:planner-service"))
+    testImplementation(project(":services:activity-service"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.kafka:spring-kafka")
+    testImplementation("org.flywaydb:flyway-core")
+    testImplementation("org.springframework.security:spring-security-oauth2-jose")
     testImplementation(project(":libs:messaging-support"))
     testImplementation(platform("org.springframework.boot:spring-boot-dependencies:4.1.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")

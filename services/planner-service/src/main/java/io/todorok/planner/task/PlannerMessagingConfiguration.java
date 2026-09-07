@@ -11,12 +11,30 @@ import tools.jackson.databind.ObjectMapper;
 public class PlannerMessagingConfiguration {
 
     @Bean
+    org.springframework.kafka.listener.CommonErrorHandler plannerFailureHandler(
+        org.springframework.kafka.core.KafkaTemplate<Object, Object> kafka
+    ) {
+        return new io.todorok.messaging.DefaultConsumerFailureHandlerFactory().create(
+            kafka,
+            "todorok.activity.v1.dlt"
+        );
+    }
+
+    @Bean
+    io.todorok.messaging.InboxEventGuard plannerInbox(JdbcTemplate jdbc) {
+        return new io.todorok.messaging.JdbcInboxEventGuard(jdbc);
+    }
+
+    @Bean
     java.time.Clock plannerClock() {
         return java.time.Clock.systemUTC();
     }
 
     @Bean
-    OutboxEventWriter outboxEventWriter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    OutboxEventWriter outboxEventWriter(
+        JdbcTemplate jdbc,
+        ObjectMapper mapper
+    ) {
         return new JdbcOutboxEventWriter(jdbc, mapper);
     }
 }

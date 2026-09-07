@@ -25,7 +25,8 @@ public final class BootstrapCommand {
 
     @Configuration(proxyBeanMethods = false)
     @Profile("bootstrap")
-    @EnableAutoConfiguration(exclude = {HibernateJpaAutoConfiguration.class, DataJpaRepositoriesAutoConfiguration.class})
+    @EnableAutoConfiguration(exclude = {HibernateJpaAutoConfiguration.class, DataJpaRepositoriesAutoConfiguration.class,
+            org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration.class})
     public static class BootstrapConfiguration {
         @Bean UserAccount userAccount(JdbcTemplate jdbc) { return new UserAccount(jdbc); }
     }

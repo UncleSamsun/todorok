@@ -27,6 +27,20 @@ import {
     ActivityTypeToJSON,
     ActivityTypeToJSONTyped,
 } from './ActivityType';
+import type { ActivityDetail } from './ActivityDetail';
+import {
+    ActivityDetailFromJSON,
+    ActivityDetailFromJSONTyped,
+    ActivityDetailToJSON,
+    ActivityDetailToJSONTyped,
+} from './ActivityDetail';
+import type { ActivitySyncState } from './ActivitySyncState';
+import {
+    ActivitySyncStateFromJSON,
+    ActivitySyncStateFromJSONTyped,
+    ActivitySyncStateToJSON,
+    ActivitySyncStateToJSONTyped,
+} from './ActivitySyncState';
 
 /**
  *
@@ -72,10 +86,22 @@ export interface ActivityResponse {
     performedAt: Date;
     /**
      *
-     * @type {{ [key: string]: any; }}
+     * @type {Date}
      * @memberof ActivityResponse
      */
-    detail: { [key: string]: any; };
+    startedAt?: Date;
+    /**
+     *
+     * @type {Date}
+     * @memberof ActivityResponse
+     */
+    endedAt?: Date;
+    /**
+     *
+     * @type {ActivityDetail}
+     * @memberof ActivityResponse
+     */
+    detail: ActivityDetail;
     /**
      *
      * @type {ActivityStatus}
@@ -88,6 +114,24 @@ export interface ActivityResponse {
      * @memberof ActivityResponse
      */
     version: number;
+    /**
+     *
+     * @type {string}
+     * @memberof ActivityResponse
+     */
+    note?: string;
+    /**
+     *
+     * @type {ActivitySyncState}
+     * @memberof ActivityResponse
+     */
+    syncState?: ActivitySyncState;
+    /**
+     *
+     * @type {string}
+     * @memberof ActivityResponse
+     */
+    syncReason?: string;
 }
 
 
@@ -124,9 +168,14 @@ export function ActivityResponseFromJSONTyped(json: any, ignoreDiscriminator: bo
         'userId': json['userId'],
         'activityType': ActivityTypeFromJSON(json['activityType']),
         'performedAt': (new Date(json['performedAt'])),
-        'detail': json['detail'],
+        'startedAt': json['startedAt'] == null ? undefined : (new Date(json['startedAt'])),
+        'endedAt': json['endedAt'] == null ? undefined : (new Date(json['endedAt'])),
+        'detail': ActivityDetailFromJSON(json['detail']),
         'status': ActivityStatusFromJSON(json['status']),
         'version': json['version'],
+        'note': json['note'] == null ? undefined : json['note'],
+        'syncState': json['syncState'] == null ? undefined : ActivitySyncStateFromJSON(json['syncState']),
+        'syncReason': json['syncReason'] == null ? undefined : json['syncReason'],
     };
 }
 
@@ -147,8 +196,13 @@ export function ActivityResponseToJSONTyped(value?: ActivityResponse | null, ign
         'userId': value['userId'],
         'activityType': ActivityTypeToJSON(value['activityType']),
         'performedAt': value['performedAt'].toISOString(),
-        'detail': value['detail'],
+        'startedAt': value['startedAt'] == null ? value['startedAt'] : value['startedAt'].toISOString(),
+        'endedAt': value['endedAt'] == null ? value['endedAt'] : value['endedAt'].toISOString(),
+        'detail': ActivityDetailToJSON(value['detail']),
         'status': ActivityStatusToJSON(value['status']),
         'version': value['version'],
+        'note': value['note'],
+        'syncState': ActivitySyncStateToJSON(value['syncState']),
+        'syncReason': value['syncReason'],
     };
 }

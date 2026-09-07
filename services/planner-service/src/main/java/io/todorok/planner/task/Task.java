@@ -31,6 +31,21 @@ public class Task {
 
     String note;
 
+    @Column(name = "activity_id")
+    UUID activityId;
+
+    @Column(name = "performed_at")
+    java.time.OffsetDateTime performedAt;
+
+    @Column(name = "started_at")
+    java.time.OffsetDateTime startedAt;
+
+    @Column(name = "ended_at")
+    java.time.OffsetDateTime endedAt;
+
+    @Column(name = "completion_summary")
+    String completionSummary;
+
     @Column(nullable = false, length = 120)
     String title;
 
@@ -61,10 +76,23 @@ public class Task {
     }
 
     TaskResponse response() {
-        return new TaskResponse(id, userId, title, taskType, scheduledDate, status, version)
+        return new TaskResponse(
+            id,
+            userId,
+            title,
+            taskType,
+            scheduledDate,
+            status,
+            version
+        )
             .seriesId(seriesId)
             .occurrenceDate(occurrenceDate)
-            .note(note);
+            .note(note)
+            .activityId(activityId)
+            .performedAt(performedAt)
+            .completionSummary(completionSummary)
+            .startedAt(startedAt)
+            .endedAt(endedAt);
     }
 
     public static Task occurrence(

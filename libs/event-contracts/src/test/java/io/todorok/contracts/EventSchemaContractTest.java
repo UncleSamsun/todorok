@@ -74,6 +74,8 @@ class EventSchemaContractTest {
         var taskId = UUID.fromString("00000000-0000-0000-0000-000000000003");
         var activityId = UUID.fromString("00000000-0000-0000-0000-000000000004");
         return Stream.of(
+                Arguments.of("activity-sync-result", envelope(EventType.ACTIVITY_SYNC_RESULT,
+                        new io.todorok.contracts.events.ActivitySyncResult(activityId, taskId, "CONFLICT", "TASK_DELETED"))),
                 Arguments.of("task-scheduled", envelope(
                         EventType.TASK_SCHEDULED,
                         new TaskScheduled(taskId, "WORKOUT", LocalDate.parse("2026-09-02"), "PLANNED"))),

@@ -227,6 +227,7 @@ services:
     <<: *planner-image
     restart: unless-stopped
     environment:
+      MESSAGING_ENABLED: "true"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=planner
       SPRING_DATASOURCE_USERNAME: planner_app
@@ -282,6 +283,7 @@ services:
     <<: *activity-image
     restart: unless-stopped
     environment:
+      MESSAGING_ENABLED: "true"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=activity
       SPRING_DATASOURCE_USERNAME: activity_app

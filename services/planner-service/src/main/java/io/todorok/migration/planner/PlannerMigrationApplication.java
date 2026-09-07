@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @EnableAutoConfiguration(exclude = {
+        org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration.class,
         HibernateJpaAutoConfiguration.class,
         DataJpaRepositoriesAutoConfiguration.class
 })

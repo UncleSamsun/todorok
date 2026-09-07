@@ -11,7 +11,10 @@ Name | Type
 `activityType` | [ActivityType](ActivityType.md)
 `completionStatus` | [ActivityCompletionStatus](ActivityCompletionStatus.md)
 `performedAt` | Date
-`detail` | { [key: string]: any; }
+`startedAt` | Date
+`endedAt` | Date
+`note` | string
+`detail` | [ActivityDetail](ActivityDetail.md)
 
 ## Example
 
@@ -25,6 +28,9 @@ const example = {
   "activityType": null,
   "completionStatus": null,
   "performedAt": null,
+  "startedAt": null,
+  "endedAt": null,
+  "note": null,
   "detail": null,
 } satisfies CreateActivityRequest
 

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.Nulls;
 import io.todorok.planner.api.model.TaskStatus;
 import io.todorok.planner.api.model.TaskType;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.lang.Nullable;
@@ -30,6 +31,24 @@ import jakarta.annotation.Generated;
 public class TaskResponse {
 
   private UUID taskId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable UUID activityId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  private @Nullable OffsetDateTime performedAt;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String completionSummary;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  private @Nullable OffsetDateTime startedAt;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  private @Nullable OffsetDateTime endedAt;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private @Nullable UUID seriesId;
@@ -90,6 +109,116 @@ public class TaskResponse {
   @JsonProperty("taskId")
   public void setTaskId(UUID taskId) {
     this.taskId = taskId;
+  }
+
+  public TaskResponse activityId(@Nullable UUID activityId) {
+    this.activityId = activityId;
+    return this;
+  }
+
+  /**
+   * Get activityId
+   * @return activityId
+   */
+  @Valid
+
+  @JsonProperty("activityId")
+  public @Nullable UUID getActivityId() {
+    return activityId;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("activityId")
+  public void setActivityId(@Nullable UUID activityId) {
+    this.activityId = activityId;
+  }
+
+  public TaskResponse performedAt(@Nullable OffsetDateTime performedAt) {
+    this.performedAt = performedAt;
+    return this;
+  }
+
+  /**
+   * Get performedAt
+   * @return performedAt
+   */
+  @Valid
+
+  @JsonProperty("performedAt")
+  public @Nullable OffsetDateTime getPerformedAt() {
+    return performedAt;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("performedAt")
+  public void setPerformedAt(@Nullable OffsetDateTime performedAt) {
+    this.performedAt = performedAt;
+  }
+
+  public TaskResponse completionSummary(@Nullable String completionSummary) {
+    this.completionSummary = completionSummary;
+    return this;
+  }
+
+  /**
+   * Get completionSummary
+   * @return completionSummary
+   */
+
+
+  @JsonProperty("completionSummary")
+  public @Nullable String getCompletionSummary() {
+    return completionSummary;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("completionSummary")
+  public void setCompletionSummary(@Nullable String completionSummary) {
+    this.completionSummary = completionSummary;
+  }
+
+  public TaskResponse startedAt(@Nullable OffsetDateTime startedAt) {
+    this.startedAt = startedAt;
+    return this;
+  }
+
+  /**
+   * Get startedAt
+   * @return startedAt
+   */
+  @Valid
+
+  @JsonProperty("startedAt")
+  public @Nullable OffsetDateTime getStartedAt() {
+    return startedAt;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("startedAt")
+  public void setStartedAt(@Nullable OffsetDateTime startedAt) {
+    this.startedAt = startedAt;
+  }
+
+  public TaskResponse endedAt(@Nullable OffsetDateTime endedAt) {
+    this.endedAt = endedAt;
+    return this;
+  }
+
+  /**
+   * Get endedAt
+   * @return endedAt
+   */
+  @Valid
+
+  @JsonProperty("endedAt")
+  public @Nullable OffsetDateTime getEndedAt() {
+    return endedAt;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("endedAt")
+  public void setEndedAt(@Nullable OffsetDateTime endedAt) {
+    this.endedAt = endedAt;
   }
 
   public TaskResponse seriesId(@Nullable UUID seriesId) {
@@ -295,6 +424,11 @@ public class TaskResponse {
     }
     TaskResponse taskResponse = (TaskResponse) o;
     return Objects.equals(this.taskId, taskResponse.taskId) &&
+        Objects.equals(this.activityId, taskResponse.activityId) &&
+        Objects.equals(this.performedAt, taskResponse.performedAt) &&
+        Objects.equals(this.completionSummary, taskResponse.completionSummary) &&
+        Objects.equals(this.startedAt, taskResponse.startedAt) &&
+        Objects.equals(this.endedAt, taskResponse.endedAt) &&
         Objects.equals(this.seriesId, taskResponse.seriesId) &&
         Objects.equals(this.occurrenceDate, taskResponse.occurrenceDate) &&
         Objects.equals(this.note, taskResponse.note) &&
@@ -308,7 +442,7 @@ public class TaskResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(taskId, seriesId, occurrenceDate, note, userId, title, taskType, scheduledDate, status, version);
+    return Objects.hash(taskId, activityId, performedAt, completionSummary, startedAt, endedAt, seriesId, occurrenceDate, note, userId, title, taskType, scheduledDate, status, version);
   }
 
   @Override
@@ -316,6 +450,11 @@ public class TaskResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class TaskResponse {\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
+    sb.append("    activityId: ").append(toIndentedString(activityId)).append("\n");
+    sb.append("    performedAt: ").append(toIndentedString(performedAt)).append("\n");
+    sb.append("    completionSummary: ").append(toIndentedString(completionSummary)).append("\n");
+    sb.append("    startedAt: ").append(toIndentedString(startedAt)).append("\n");
+    sb.append("    endedAt: ").append(toIndentedString(endedAt)).append("\n");
     sb.append("    seriesId: ").append(toIndentedString(seriesId)).append("\n");
     sb.append("    occurrenceDate: ").append(toIndentedString(occurrenceDate)).append("\n");
     sb.append("    note: ").append(toIndentedString(note)).append("\n");

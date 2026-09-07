@@ -63,14 +63,21 @@ All URIs are relative to */api/activity/v1*
 ### Models
 
 - [ActivityCompletionStatus](docs/ActivityCompletionStatus.md)
+- [ActivityDetail](docs/ActivityDetail.md)
 - [ActivityPageResponse](docs/ActivityPageResponse.md)
 - [ActivityResponse](docs/ActivityResponse.md)
 - [ActivityStatus](docs/ActivityStatus.md)
+- [ActivitySyncState](docs/ActivitySyncState.md)
 - [ActivityType](docs/ActivityType.md)
+- [ClimbingDetail](docs/ClimbingDetail.md)
+- [ClimbingRound](docs/ClimbingRound.md)
 - [CreateActivityRequest](docs/CreateActivityRequest.md)
 - [ProblemDetails](docs/ProblemDetails.md)
 - [ProblemDetailsFieldErrorsInner](docs/ProblemDetailsFieldErrorsInner.md)
+- [StudyDetail](docs/StudyDetail.md)
 - [VoidActivityRequest](docs/VoidActivityRequest.md)
+- [WorkoutDetail](docs/WorkoutDetail.md)
+- [WorkoutSet](docs/WorkoutSet.md)
 
 ### Authorization
 

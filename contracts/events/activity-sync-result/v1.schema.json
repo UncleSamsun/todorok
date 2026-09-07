@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://todorok.app/schemas/events/activity-sync-result/v1",
+  "title": "Activity synchronization result v1",
+  "type": "object",
+  "allOf": [
+    { "$ref": "https://todorok.app/schemas/events/envelope/v1" },
+    { "properties": {
+      "type": { "const": "ACTIVITY_SYNC_RESULT" },
+      "version": { "const": 1 },
+      "payload": {
+        "type": "object", "additionalProperties": false,
+        "required": ["activityId", "taskId", "state", "reason"],
+        "properties": {
+          "activityId": { "type": "string", "format": "uuid" },
+          "taskId": { "type": "string", "format": "uuid" },
+          "state": { "enum": ["APPLIED", "CONFLICT"] },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    } }
+  ]
+}

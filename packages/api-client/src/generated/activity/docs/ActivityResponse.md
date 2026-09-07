@@ -12,9 +12,14 @@ Name | Type
 `userId` | string
 `activityType` | [ActivityType](ActivityType.md)
 `performedAt` | Date
-`detail` | { [key: string]: any; }
+`startedAt` | Date
+`endedAt` | Date
+`detail` | [ActivityDetail](ActivityDetail.md)
 `status` | [ActivityStatus](ActivityStatus.md)
 `version` | number
+`note` | string
+`syncState` | [ActivitySyncState](ActivitySyncState.md)
+`syncReason` | string
 
 ## Example
 
@@ -29,9 +34,14 @@ const example = {
   "userId": null,
   "activityType": null,
   "performedAt": null,
+  "startedAt": null,
+  "endedAt": null,
   "detail": null,
   "status": null,
   "version": null,
+  "note": null,
+  "syncState": null,
+  "syncReason": null,
 } satisfies ActivityResponse
 
 console.log(example)

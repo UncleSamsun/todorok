@@ -27,6 +27,13 @@ import {
     ActivityCompletionStatusToJSON,
     ActivityCompletionStatusToJSONTyped,
 } from './ActivityCompletionStatus';
+import type { ActivityDetail } from './ActivityDetail';
+import {
+    ActivityDetailFromJSON,
+    ActivityDetailFromJSONTyped,
+    ActivityDetailToJSON,
+    ActivityDetailToJSONTyped,
+} from './ActivityDetail';
 
 /**
  *
@@ -65,11 +72,29 @@ export interface CreateActivityRequest {
      */
     performedAt: Date;
     /**
-     *
-     * @type {{ [key: string]: any; }}
+     * Optional actual interval start; requires endedAt and same Seoul date as performedAt.
+     * @type {Date}
      * @memberof CreateActivityRequest
      */
-    detail: { [key: string]: any; };
+    startedAt?: Date;
+    /**
+     * Optional actual interval end; must follow startedAt on the same Seoul date.
+     * @type {Date}
+     * @memberof CreateActivityRequest
+     */
+    endedAt?: Date;
+    /**
+     *
+     * @type {string}
+     * @memberof CreateActivityRequest
+     */
+    note?: string;
+    /**
+     *
+     * @type {ActivityDetail}
+     * @memberof CreateActivityRequest
+     */
+    detail: ActivityDetail;
 }
 
 
@@ -102,7 +127,10 @@ export function CreateActivityRequestFromJSONTyped(json: any, ignoreDiscriminato
         'activityType': ActivityTypeFromJSON(json['activityType']),
         'completionStatus': ActivityCompletionStatusFromJSON(json['completionStatus']),
         'performedAt': (new Date(json['performedAt'])),
-        'detail': json['detail'],
+        'startedAt': json['startedAt'] == null ? undefined : (new Date(json['startedAt'])),
+        'endedAt': json['endedAt'] == null ? undefined : (new Date(json['endedAt'])),
+        'note': json['note'] == null ? undefined : json['note'],
+        'detail': ActivityDetailFromJSON(json['detail']),
     };
 }
 
@@ -122,6 +150,9 @@ export function CreateActivityRequestToJSONTyped(value?: CreateActivityRequest |
         'activityType': ActivityTypeToJSON(value['activityType']),
         'completionStatus': ActivityCompletionStatusToJSON(value['completionStatus']),
         'performedAt': value['performedAt'].toISOString(),
-        'detail': value['detail'],
+        'startedAt': value['startedAt'] == null ? value['startedAt'] : value['startedAt'].toISOString(),
+        'endedAt': value['endedAt'] == null ? value['endedAt'] : value['endedAt'].toISOString(),
+        'note': value['note'],
+        'detail': ActivityDetailToJSON(value['detail']),
     };
 }

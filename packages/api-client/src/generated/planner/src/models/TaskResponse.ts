@@ -45,6 +45,36 @@ export interface TaskResponse {
      * @type {string}
      * @memberof TaskResponse
      */
+    activityId?: string;
+    /**
+     *
+     * @type {Date}
+     * @memberof TaskResponse
+     */
+    performedAt?: Date;
+    /**
+     *
+     * @type {string}
+     * @memberof TaskResponse
+     */
+    completionSummary?: string;
+    /**
+     *
+     * @type {Date}
+     * @memberof TaskResponse
+     */
+    startedAt?: Date;
+    /**
+     *
+     * @type {Date}
+     * @memberof TaskResponse
+     */
+    endedAt?: Date;
+    /**
+     *
+     * @type {string}
+     * @memberof TaskResponse
+     */
     seriesId?: string;
     /**
      *
@@ -123,6 +153,11 @@ export function TaskResponseFromJSONTyped(json: any, ignoreDiscriminator: boolea
     return {
 
         'taskId': json['taskId'],
+        'activityId': json['activityId'] == null ? undefined : json['activityId'],
+        'performedAt': json['performedAt'] == null ? undefined : (new Date(json['performedAt'])),
+        'completionSummary': json['completionSummary'] == null ? undefined : json['completionSummary'],
+        'startedAt': json['startedAt'] == null ? undefined : (new Date(json['startedAt'])),
+        'endedAt': json['endedAt'] == null ? undefined : (new Date(json['endedAt'])),
         'seriesId': json['seriesId'] == null ? undefined : json['seriesId'],
         'occurrenceDate': json['occurrenceDate'] == null ? undefined : json['occurrenceDate'],
         'note': json['note'] == null ? undefined : json['note'],
@@ -147,6 +182,11 @@ export function TaskResponseToJSONTyped(value?: TaskResponse | null, ignoreDiscr
     return {
 
         'taskId': value['taskId'],
+        'activityId': value['activityId'],
+        'performedAt': value['performedAt'] == null ? value['performedAt'] : value['performedAt'].toISOString(),
+        'completionSummary': value['completionSummary'],
+        'startedAt': value['startedAt'] == null ? value['startedAt'] : value['startedAt'].toISOString(),
+        'endedAt': value['endedAt'] == null ? value['endedAt'] : value['endedAt'].toISOString(),
         'seriesId': value['seriesId'],
         'occurrenceDate': value['occurrenceDate'],
         'note': value['note'],

@@ -14,12 +14,30 @@ public record TaskView(
     Long version,
     UUID series,
     LocalDate occurrence,
-    String note
+    String note,
+    UUID activityId,
+    java.time.OffsetDateTime performedAt,
+    String completionSummary,
+    java.time.OffsetDateTime startedAt,
+    java.time.OffsetDateTime endedAt
 ) {
     TaskResponse response() {
-        return new TaskResponse(id, owner, title, type, scheduled, status, version)
+        return new TaskResponse(
+            id,
+            owner,
+            title,
+            type,
+            scheduled,
+            status,
+            version
+        )
             .seriesId(series)
             .occurrenceDate(occurrence)
-            .note(note);
+            .note(note)
+            .activityId(activityId)
+            .performedAt(performedAt)
+            .completionSummary(completionSummary)
+            .startedAt(startedAt)
+            .endedAt(endedAt);
     }
 }

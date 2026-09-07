@@ -7,6 +7,11 @@
 Name | Type
 ------------ | -------------
 `taskId` | string
+`activityId` | string
+`performedAt` | Date
+`completionSummary` | string
+`startedAt` | Date
+`endedAt` | Date
 `seriesId` | string
 `occurrenceDate` | string
 `note` | string
@@ -25,6 +30,11 @@ import type { TaskResponse } from '@todorok/api-client'
 // TODO: Update the object below with actual values
 const example = {
   "taskId": null,
+  "activityId": null,
+  "performedAt": null,
+  "completionSummary": null,
+  "startedAt": null,
+  "endedAt": null,
   "seriesId": null,
   "occurrenceDate": null,
   "note": null,

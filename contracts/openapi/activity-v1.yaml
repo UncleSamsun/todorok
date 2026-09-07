@@ -122,7 +122,55 @@ components:
       enum: [COMPLETED, PARTIAL]
     ActivityDetail:
       type: object
-      additionalProperties: true
+      additionalProperties: false
+      description: Optional typed detail. Only the member matching activityType is accepted; an empty object is valid.
+      properties:
+        workout: { $ref: '#/components/schemas/WorkoutDetail' }
+        study: { $ref: '#/components/schemas/StudyDetail' }
+        climbing: { $ref: '#/components/schemas/ClimbingDetail' }
+    WorkoutDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        sets:
+          type: array
+          maxItems: 500
+          items: { $ref: '#/components/schemas/WorkoutSet' }
+    WorkoutSet:
+      type: object
+      additionalProperties: false
+      properties:
+        exercise: { type: string, maxLength: 120 }
+        reps: { type: integer, minimum: 0, maximum: 100000 }
+        weightKg: { type: number, minimum: 0, maximum: 10000 }
+        durationSeconds: { type: integer, minimum: 0, maximum: 604800 }
+    StudyDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        subject: { type: string, maxLength: 120 }
+        durationMinutes: { type: integer, minimum: 0, maximum: 10080 }
+        values: { type: object, additionalProperties: true }
+        snapshot: { type: object, additionalProperties: true }
+    ClimbingDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        durationSeconds: { type: integer, minimum: 0, maximum: 604800 }
+        rounds:
+          type: array
+          maxItems: 500
+          items: { $ref: '#/components/schemas/ClimbingRound' }
+    ClimbingRound:
+      type: object
+      additionalProperties: false
+      properties:
+        grade: { type: string, maxLength: 40 }
+        attempts: { type: integer, minimum: 0, maximum: 100000 }
+        completed: { type: boolean }
+    ActivitySyncState:
+      type: string
+      enum: [PENDING, APPLIED, CONFLICT, NOT_REQUIRED]
     CreateActivityRequest:
       type: object
       additionalProperties: false
@@ -133,6 +181,9 @@ components:
         activityType: { $ref: '#/components/schemas/ActivityType' }
         completionStatus: { $ref: '#/components/schemas/ActivityCompletionStatus' }
         performedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time, description: Optional actual interval start; requires endedAt and same Seoul date as performedAt. }
+        endedAt: { type: string, format: date-time, description: Optional actual interval end; must follow startedAt on the same Seoul date. }
+        note: { type: string, maxLength: 20000 }
         detail: { $ref: '#/components/schemas/ActivityDetail' }
     VoidActivityRequest:
       type: object
@@ -152,9 +203,14 @@ components:
         userId: { type: string, format: uuid }
         activityType: { $ref: '#/components/schemas/ActivityType' }
         performedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
         detail: { $ref: '#/components/schemas/ActivityDetail' }
         status: { $ref: '#/components/schemas/ActivityStatus' }
         version: { type: integer, format: int64, minimum: 0 }
+        note: { type: string }
+        syncState: { $ref: '#/components/schemas/ActivitySyncState' }
+        syncReason: { type: string }
     ActivityPageResponse:
       type: object
       additionalProperties: false

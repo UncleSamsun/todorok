@@ -496,6 +496,11 @@ components:
       required: [taskId, userId, title, taskType, scheduledDate, status, version]
       properties:
         taskId: { type: string, format: uuid }
+        activityId: { type: string, format: uuid }
+        performedAt: { type: string, format: date-time }
+        completionSummary: { type: string }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
         seriesId: { type: string, format: uuid }
         occurrenceDate: { type: string, format: date }
         note: { type: string }

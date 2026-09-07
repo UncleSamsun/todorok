@@ -87,6 +87,13 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
         return fixture;
     }
 
+    String jdbcUrl(String schema) {
+        return postgres.getJdbcUrl() + (postgres.getJdbcUrl().contains("?") ? "&" : "?")
+                + "currentSchema=" + schema;
+    }
+    String bootstrapServers() { return kafka.getBootstrapServers(); }
+    JdbcTemplate database() { return jdbc; }
+
     private static GenericContainer<?> createConnectContainer(Network network) {
         return new GenericContainer<>("quay.io/debezium/connect:3.6.2.Final")
                 .withNetwork(network)
