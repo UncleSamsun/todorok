@@ -49,7 +49,7 @@ export interface AuthApiInterface {
     loginRequestOpts(requestParameters: LoginOperationRequest): Promise<runtime.RequestOpts>;
 
     /**
-     *
+     * 허용 목록에 있는 Origin 헤더가 필수다. 성공 시 todorok_refresh cookie를 발급한다. cookie는 HttpOnly, Secure, SameSite=Lax, Path=/api/planner/v1/auth이며 유효기간은 30일이다. local profile의 HTTP 개발에서만 Secure=false를 명시적으로 허용한다. 계정당 1분에 5회, 서버가 관측한 원격 주소당 30회까지 로그인 요청을 허용한다.
      * @param {LoginRequest} loginRequest
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -58,6 +58,7 @@ export interface AuthApiInterface {
     loginRaw(requestParameters: LoginOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SessionResponse>>;
 
     /**
+     * 허용 목록에 있는 Origin 헤더가 필수다. 성공 시 todorok_refresh cookie를 발급한다. cookie는 HttpOnly, Secure, SameSite=Lax, Path=/api/planner/v1/auth이며 유효기간은 30일이다. local profile의 HTTP 개발에서만 Secure=false를 명시적으로 허용한다. 계정당 1분에 5회, 서버가 관측한 원격 주소당 30회까지 로그인 요청을 허용한다.
      */
     login(requestParameters: LoginOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SessionResponse>;
 
@@ -69,7 +70,7 @@ export interface AuthApiInterface {
     logoutRequestOpts(): Promise<runtime.RequestOpts>;
 
     /**
-     *
+     * bearer access token과 허용된 Origin이 필수다. 현재 사용자의 todorok_refresh cookie에 해당하는 family를 폐기하고 발급과 동일한 cookie 속성으로 삭제한다. 다른 사용자 family는 변경하지 않는다.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof AuthApiInterface
@@ -77,6 +78,7 @@ export interface AuthApiInterface {
     logoutRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
 
     /**
+     * bearer access token과 허용된 Origin이 필수다. 현재 사용자의 todorok_refresh cookie에 해당하는 family를 폐기하고 발급과 동일한 cookie 속성으로 삭제한다. 다른 사용자 family는 변경하지 않는다.
      */
     logout(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
 
@@ -88,7 +90,7 @@ export interface AuthApiInterface {
     refreshSessionRequestOpts(): Promise<runtime.RequestOpts>;
 
     /**
-     *
+     * 허용된 Origin 헤더와 todorok_refresh cookie가 필수다. 성공할 때마다 cookie를 회전한다. 재사용하면 session family 전체를 폐기한다. 실패 시 같은 cookie 속성으로 삭제한다.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof AuthApiInterface
@@ -96,6 +98,7 @@ export interface AuthApiInterface {
     refreshSessionRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SessionResponse>>;
 
     /**
+     * 허용된 Origin 헤더와 todorok_refresh cookie가 필수다. 성공할 때마다 cookie를 회전한다. 재사용하면 session family 전체를 폐기한다. 실패 시 같은 cookie 속성으로 삭제한다.
      */
     refreshSession(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SessionResponse>;
 
@@ -136,6 +139,7 @@ export class AuthApi extends runtime.BaseAPI implements AuthApiInterface {
     }
 
     /**
+     * 허용 목록에 있는 Origin 헤더가 필수다. 성공 시 todorok_refresh cookie를 발급한다. cookie는 HttpOnly, Secure, SameSite=Lax, Path=/api/planner/v1/auth이며 유효기간은 30일이다. local profile의 HTTP 개발에서만 Secure=false를 명시적으로 허용한다. 계정당 1분에 5회, 서버가 관측한 원격 주소당 30회까지 로그인 요청을 허용한다.
      */
     async loginRaw(requestParameters: LoginOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SessionResponse>> {
         const requestOptions = await this.loginRequestOpts(requestParameters);
@@ -145,6 +149,7 @@ export class AuthApi extends runtime.BaseAPI implements AuthApiInterface {
     }
 
     /**
+     * 허용 목록에 있는 Origin 헤더가 필수다. 성공 시 todorok_refresh cookie를 발급한다. cookie는 HttpOnly, Secure, SameSite=Lax, Path=/api/planner/v1/auth이며 유효기간은 30일이다. local profile의 HTTP 개발에서만 Secure=false를 명시적으로 허용한다. 계정당 1분에 5회, 서버가 관측한 원격 주소당 30회까지 로그인 요청을 허용한다.
      */
     async login(requestParameters: LoginOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SessionResponse> {
         const response = await this.loginRaw(requestParameters, initOverrides);
@@ -179,6 +184,7 @@ export class AuthApi extends runtime.BaseAPI implements AuthApiInterface {
     }
 
     /**
+     * bearer access token과 허용된 Origin이 필수다. 현재 사용자의 todorok_refresh cookie에 해당하는 family를 폐기하고 발급과 동일한 cookie 속성으로 삭제한다. 다른 사용자 family는 변경하지 않는다.
      */
     async logoutRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         const requestOptions = await this.logoutRequestOpts();
@@ -188,6 +194,7 @@ export class AuthApi extends runtime.BaseAPI implements AuthApiInterface {
     }
 
     /**
+     * bearer access token과 허용된 Origin이 필수다. 현재 사용자의 todorok_refresh cookie에 해당하는 family를 폐기하고 발급과 동일한 cookie 속성으로 삭제한다. 다른 사용자 family는 변경하지 않는다.
      */
     async logout(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.logoutRaw(initOverrides);
@@ -213,6 +220,7 @@ export class AuthApi extends runtime.BaseAPI implements AuthApiInterface {
     }
 
     /**
+     * 허용된 Origin 헤더와 todorok_refresh cookie가 필수다. 성공할 때마다 cookie를 회전한다. 재사용하면 session family 전체를 폐기한다. 실패 시 같은 cookie 속성으로 삭제한다.
      */
     async refreshSessionRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SessionResponse>> {
         const requestOptions = await this.refreshSessionRequestOpts();
@@ -222,6 +230,7 @@ export class AuthApi extends runtime.BaseAPI implements AuthApiInterface {
     }
 
     /**
+     * 허용된 Origin 헤더와 todorok_refresh cookie가 필수다. 성공할 때마다 cookie를 회전한다. 재사용하면 session family 전체를 폐기한다. 실패 시 같은 cookie 속성으로 삭제한다.
      */
     async refreshSession(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SessionResponse> {
         const response = await this.refreshSessionRaw(initOverrides);

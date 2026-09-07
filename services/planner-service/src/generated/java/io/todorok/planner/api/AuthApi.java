@@ -27,11 +27,14 @@ public interface AuthApi {
     String PATH_LOGIN = "/auth/login";
     /**
      * POST /auth/login
+     * 허용 목록에 있는 Origin 헤더가 필수다. 성공 시 todorok_refresh cookie를 발급한다. cookie는 HttpOnly, Secure, SameSite&#x3D;Lax, Path&#x3D;/api/planner/v1/auth이며 유효기간은 30일이다. local profile의 HTTP 개발에서만 Secure&#x3D;false를 명시적으로 허용한다. 계정당 1분에 5회, 서버가 관측한 원격 주소당 30회까지 로그인 요청을 허용한다.
      *
      * @param loginRequest  (required)
      * @return 세션 발급 성공 (status code 200)
      *         or 잘못된 요청 (status code 400)
      *         or 인증 실패 (status code 401)
+     *         or 허용되지 않은 Origin 또는 접근 거절 (status code 403)
+     *         or 인증 요청 제한 초과 (status code 429)
      */
     @RequestMapping(
         method = RequestMethod.POST,
@@ -47,9 +50,11 @@ public interface AuthApi {
     String PATH_LOGOUT = "/auth/logout";
     /**
      * POST /auth/logout
+     * bearer access token과 허용된 Origin이 필수다. 현재 사용자의 todorok_refresh cookie에 해당하는 family를 폐기하고 발급과 동일한 cookie 속성으로 삭제한다. 다른 사용자 family는 변경하지 않는다.
      *
      * @return 로그아웃 성공 (status code 204)
      *         or 인증 실패 (status code 401)
+     *         or 허용되지 않은 Origin 또는 접근 거절 (status code 403)
      */
     @RequestMapping(
         method = RequestMethod.POST,
@@ -64,9 +69,12 @@ public interface AuthApi {
     String PATH_REFRESH_SESSION = "/auth/refresh";
     /**
      * POST /auth/refresh
+     * 허용된 Origin 헤더와 todorok_refresh cookie가 필수다. 성공할 때마다 cookie를 회전한다. 재사용하면 session family 전체를 폐기한다. 실패 시 같은 cookie 속성으로 삭제한다.
      *
      * @return 세션 발급 성공 (status code 200)
      *         or 인증 실패 (status code 401)
+     *         or 허용되지 않은 Origin 또는 접근 거절 (status code 403)
+     *         or 인증 요청 제한 초과 (status code 429)
      */
     @RequestMapping(
         method = RequestMethod.POST,

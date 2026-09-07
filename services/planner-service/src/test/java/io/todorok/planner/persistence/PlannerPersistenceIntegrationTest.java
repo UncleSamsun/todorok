@@ -18,7 +18,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.MountableFile;
 
 @Testcontainers
-@SpringBootTest(properties = {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
         "spring.flyway.enabled=true",
         "spring.flyway.create-schemas=false",
         "spring.flyway.locations=classpath:db/migration,classpath:db/test-migration"
@@ -71,7 +71,7 @@ class PlannerPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from planner.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(3);
+                Integer.class)).isEqualTo(4);
         assertThat(jdbc.queryForList(
                 "select schema_name from information_schema.schemata "
                         + "where schema_name in ('planner','activity','notification') "
@@ -85,7 +85,7 @@ class PlannerPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from planner.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(3);
+                Integer.class)).isEqualTo(4);
     }
 
     @Test

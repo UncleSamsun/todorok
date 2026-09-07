@@ -5,6 +5,10 @@ plugins {
 dependencies {
     implementation(platform("org.springframework.boot:spring-boot-dependencies:4.1.1"))
     api("org.springframework:spring-webmvc")
+    api("org.springframework.security:spring-security-config")
+    api("org.springframework.security:spring-security-oauth2-resource-server")
+    api("org.springframework.security:spring-security-oauth2-jose")
+    implementation("tools.jackson.core:jackson-databind")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework:spring-context")
     implementation("org.springframework:spring-tx")

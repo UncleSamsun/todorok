@@ -32,3 +32,14 @@ management:
     health:
       probes:
         enabled: true
+
+todorok:
+  auth:
+    issuer: ${AUTH_ISSUER:todorok}
+    audience: ${AUTH_AUDIENCE:todorok-api}
+    public-key: ${AUTH_PUBLIC_KEY:}
+    public-key-location: ${AUTH_PUBLIC_KEY_LOCATION:}
+    private-key: ${AUTH_PRIVATE_KEY:}
+    private-key-location: ${AUTH_PRIVATE_KEY_LOCATION:}
+    allowed-origins: ${AUTH_ALLOWED_ORIGINS:}
+    cookie-secure: ${AUTH_COOKIE_SECURE:true}

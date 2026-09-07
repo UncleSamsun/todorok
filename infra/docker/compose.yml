@@ -232,6 +232,13 @@ services:
       SPRING_DATASOURCE_USERNAME: planner_app
       SPRING_DATASOURCE_PASSWORD: ${PLANNER_DB_PASSWORD}
       SPRING_FLYWAY_ENABLED: "false"
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      AUTH_ISSUER: ${AUTH_ISSUER:-todorok}
+      AUTH_AUDIENCE: ${AUTH_AUDIENCE:-todorok-api}
+      AUTH_PUBLIC_KEY_LOCATION: file:/run/secrets/auth_public_key
+      AUTH_PRIVATE_KEY_LOCATION: file:/run/secrets/auth_private_key
+      AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:-}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
       JAVA_TOOL_OPTIONS: >-
         -XX:InitialRAMPercentage=20
         -XX:MaxRAMPercentage=60
@@ -252,6 +259,24 @@ services:
       retries: 20
       start_period: 20s
     mem_limit: 512m
+    secrets: [auth_public_key, auth_private_key]
+
+  planner-bootstrap:
+    <<: *planner-image
+    profiles: [bootstrap]
+    restart: "no"
+    entrypoint: ["java", "-jar", "/app/bootstrap.jar"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=planner
+      SPRING_DATASOURCE_USERNAME: planner_app
+      SPRING_DATASOURCE_PASSWORD: ${PLANNER_DB_PASSWORD}
+      TODOROK_BOOTSTRAP_EMAIL: ${TODOROK_BOOTSTRAP_EMAIL:-}
+      TODOROK_BOOTSTRAP_PASSWORD: ${TODOROK_BOOTSTRAP_PASSWORD:-}
+      JAVA_TOOL_OPTIONS: -XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=60
+    depends_on:
+      planner-migration:
+        condition: service_completed_successfully
+    mem_limit: 384m
 
   activity-service:
     <<: *activity-image
@@ -262,6 +287,9 @@ services:
       SPRING_DATASOURCE_USERNAME: activity_app
       SPRING_DATASOURCE_PASSWORD: ${ACTIVITY_DB_PASSWORD}
       SPRING_FLYWAY_ENABLED: "false"
+      AUTH_ISSUER: ${AUTH_ISSUER:-todorok}
+      AUTH_AUDIENCE: ${AUTH_AUDIENCE:-todorok-api}
+      AUTH_PUBLIC_KEY_LOCATION: file:/run/secrets/auth_public_key
       JAVA_TOOL_OPTIONS: >-
         -XX:InitialRAMPercentage=20
         -XX:MaxRAMPercentage=60
@@ -282,6 +310,7 @@ services:
       retries: 20
       start_period: 20s
     mem_limit: 640m
+    secrets: [auth_public_key]
 
   notification-service:
     <<: *notification-image
@@ -292,6 +321,9 @@ services:
       SPRING_DATASOURCE_USERNAME: notification_app
       SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
       SPRING_FLYWAY_ENABLED: "false"
+      AUTH_ISSUER: ${AUTH_ISSUER:-todorok}
+      AUTH_AUDIENCE: ${AUTH_AUDIENCE:-todorok-api}
+      AUTH_PUBLIC_KEY_LOCATION: file:/run/secrets/auth_public_key
       JAVA_TOOL_OPTIONS: >-
         -XX:InitialRAMPercentage=20
         -XX:MaxRAMPercentage=60
@@ -312,6 +344,7 @@ services:
       retries: 20
       start_period: 20s
     mem_limit: 384m
+    secrets: [auth_public_key]
 
   nginx:
     image: todorok/nginx:local
@@ -336,3 +369,9 @@ services:
 volumes:
   postgres-data:
   kafka-data:
+
+secrets:
+  auth_public_key:
+    file: ${AUTH_PUBLIC_KEY_FILE:-../../.local/auth/public.pem}
+  auth_private_key:
+    file: ${AUTH_PRIVATE_KEY_FILE:-../../.local/auth/private.pem}

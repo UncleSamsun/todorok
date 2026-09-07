@@ -18,7 +18,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.MountableFile;
 
 @Testcontainers
-@SpringBootTest(properties = {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
         "spring.flyway.enabled=true",
         "spring.flyway.create-schemas=false",
         "spring.flyway.locations=classpath:db/migration,classpath:db/test-migration"

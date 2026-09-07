@@ -35,3 +35,4 @@ logs/
 # Test artifacts
 test-results/
 playwright-report/
+.local/

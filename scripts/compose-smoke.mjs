@@ -1,8 +1,22 @@
 import { spawnSync } from 'node:child_process'
+import { generateKeyPairSync } from 'node:crypto'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+export async function provisionSmokeAuth(directory) {
+  const pair = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+  })
+  const privateKeyFile = path.join(directory, 'private.pem')
+  const publicKeyFile = path.join(directory, 'public.pem')
+  await writeFile(privateKeyFile, pair.privateKey, { mode: 0o600 })
+  await writeFile(publicKeyFile, pair.publicKey)
+  return { privateKeyFile, publicKeyFile, origin: 'http://localhost' }
+}
 
 export function buildSmokePlan({ projectName, envFile }) {
   const baseArgs = [
@@ -118,6 +132,7 @@ export async function runComposeSmoke() {
   const projectName = `todorok-smoke-${process.pid}-${Date.now()}`.toLowerCase()
   const plan = buildSmokePlan({ projectName, envFile })
   const skipBuild = process.argv.includes('--skip-build')
+  const auth = await provisionSmokeAuth(directory)
   await writeFile(envFile, [
     'POSTGRES_DB=todorok',
     'POSTGRES_USER=postgres',
@@ -128,6 +143,11 @@ export async function runComposeSmoke() {
     'DEBEZIUM_DB_PASSWORD=smoke-debezium-password',
     'DATABASE_CREDENTIAL_UPDATE=false',
     'CONNECTOR_CONFIG_UPDATE=false',
+    `AUTH_PRIVATE_KEY_FILE=${auth.privateKeyFile.replaceAll('\\', '/')}`,
+    `AUTH_PUBLIC_KEY_FILE=${auth.publicKeyFile.replaceAll('\\', '/')}`,
+    `AUTH_ALLOWED_ORIGINS=${auth.origin}`,
+    'AUTH_COOKIE_SECURE=false',
+    'SPRING_PROFILES_ACTIVE=local',
     '',
   ].join('\n'))
 

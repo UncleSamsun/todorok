@@ -20,6 +20,15 @@ tasks.register<BootJar>("migrationBootJar") {
 
 tasks.named("assemble") {
     dependsOn("migrationBootJar")
+    dependsOn("bootstrapBootJar")
+}
+
+tasks.register<BootJar>("bootstrapBootJar") {
+    group = "build"
+    archiveClassifier.set("bootstrap")
+    targetJavaVersion.set(JavaVersion.VERSION_25)
+    mainClass.set("io.todorok.planner.auth.BootstrapCommand")
+    classpath(sourceSets.main.get().runtimeClasspath)
 }
 
 dependencies {
@@ -27,6 +36,7 @@ dependencies {
     implementation(project(":libs:messaging-support"))
     implementation(project(":libs:web-support"))
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
