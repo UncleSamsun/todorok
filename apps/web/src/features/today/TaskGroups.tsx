@@ -55,6 +55,8 @@ export function TaskGroups({
                   {task.title}
                   {task.seriesId && <small> · 반복</small>}
                   {task.status === 'SKIPPED' && <small> · 건너뜀</small>}
+                  {task.completionSummary && <small className="completion-summary">{task.completionSummary}</small>}
+                  {task.startedAt && task.endedAt && <small className="time-block">{task.startedAt.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Seoul' })}–{task.endedAt.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Seoul' })}</small>}
                 </button>
               </div>
             ))}

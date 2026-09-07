@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import {
   BrowserRouter,
   Navigate,
@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../features/auth/AuthProvider'
 import { LoginPage } from '../features/auth/LoginPage'
 import { TodayPage } from '../features/today/TodayPage'
+import { RecordPage } from '../features/activity/RecordPage'
 export { seoulToday } from '@todorok/client-domain'
 const Workout = lazy(() => import('../features/workout/WorkoutPage'))
 const Study = lazy(() => import('../features/study/StudyPage'))
@@ -64,9 +65,9 @@ function ProtectedShell() {
         <Suspense fallback={<p role="status">화면을 불러오는 중…</p>}>
           <Routes>
             <Route path="/today" element={<TodayPage />} />
-            <Route path="/workout" element={<Workout />} />
-            <Route path="/study" element={<Study />} />
-            <Route path="/climbing" element={<Climbing />} />
+            <Route path="/workout" element={<DomainOrRecord type="WORKOUT" fallback={<Workout />} />} />
+            <Route path="/study" element={<DomainOrRecord type="STUDY" fallback={<Study />} />} />
+            <Route path="/climbing" element={<DomainOrRecord type="CLIMBING" fallback={<Climbing />} />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/today" replace />} />
           </Routes>
@@ -108,6 +109,10 @@ function EnterSession({
     onEnter(generation)
   }, [generation, onEnter, navigate])
   return <p role="status">오늘을 여는 중…</p>
+}
+function DomainOrRecord({ type, fallback }: { type: 'WORKOUT' | 'STUDY' | 'CLIMBING'; fallback: ReactNode }) {
+  const taskId = new URLSearchParams(location.search).get('taskId')
+  return taskId ? <RecordPage key={taskId} type={type} /> : fallback
 }
 export function AppRouter() {
   return (

@@ -17,6 +17,7 @@ import { TaskGroups } from './TaskGroups'
 import { TaskEditor } from './TaskEditor'
 import { SeriesEditor } from './SeriesEditor'
 import { StickyNote } from './StickyNote'
+import { ActivityReturnStatus } from '../activity/ActivityReturnStatus'
 import type { Task } from './model'
 const apiDate = (value: string) => value
 export function TodayPage() {
@@ -35,7 +36,7 @@ export function TodayPage() {
       notes: new planner.NoteApi(config),
     }
   }, [session])
-  const [selected, setSelected] = useState(seoulToday),
+  const [selected, setSelected] = useState(() => new URLSearchParams(location.search).get('date') ?? seoulToday()),
     [view, setView] = useState(() => {
       try {
         return localStorage.getItem('todorok.calendar-view') === 'month'
@@ -64,7 +65,7 @@ export function TodayPage() {
         if (!result.today) throw new Error('Missing server date')
         if (cancelled) return
         setToday(result.today)
-        setSelected(result.today)
+        if (!new URLSearchParams(location.search).has('date')) setSelected(result.today)
         await queries.invalidateQueries({ queryKey: ['calendar'] })
         await queries.invalidateQueries({ queryKey: ['task'] })
         if (!cancelled) setRolloverState('ready')
@@ -273,6 +274,7 @@ export function TodayPage() {
         <h2>
           <time dateTime={selected}>{selected}</time>
         </h2>
+        {new URLSearchParams(location.search).get('activityId') && <ActivityReturnStatus activityId={new URLSearchParams(location.search).get('activityId')!} />}
         {rolloverState === 'pending' && (
           <p role="status">지난 할 일을 이월하는 중…</p>
         )}
