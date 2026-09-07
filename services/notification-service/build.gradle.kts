@@ -41,3 +41,9 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+tasks.test {
+    systemProperty("todorok.repository.root", rootProject.projectDir.absolutePath)
+    inputs.file(rootProject.file(
+        "infra/docker/postgres/init/001-create-service-roles.sh"))
+}

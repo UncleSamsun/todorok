@@ -52,3 +52,9 @@ sourceSets {
 tasks.named("compileJava") {
     dependsOn(rootProject.tasks.named("generateContracts"))
 }
+
+tasks.test {
+    systemProperty("todorok.repository.root", rootProject.projectDir.absolutePath)
+    inputs.file(rootProject.file(
+        "infra/docker/postgres/init/001-create-service-roles.sh"))
+}

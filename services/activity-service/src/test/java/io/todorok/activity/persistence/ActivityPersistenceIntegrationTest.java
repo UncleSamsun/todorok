@@ -2,6 +2,7 @@ package io.todorok.activity.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Path;
 import java.util.List;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
@@ -14,11 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.MountableFile;
 
 @Testcontainers
 @SpringBootTest(properties = {
         "spring.flyway.enabled=true",
-        "spring.flyway.create-schemas=true",
+        "spring.flyway.create-schemas=false",
         "spring.flyway.locations=classpath:db/migration,classpath:db/test-migration"
 })
 class ActivityPersistenceIntegrationTest {
@@ -27,13 +29,26 @@ class ActivityPersistenceIntegrationTest {
     static final PostgreSQLContainer POSTGRES =
             new PostgreSQLContainer("postgres:17.11-alpine")
                     .withDatabaseName("todorok")
-                    .withInitScript("db/activity-test-role.sql");
+                    .withUsername("postgres")
+                    .withPassword("admin-password")
+                    .withEnv("PLANNER_DB_PASSWORD", "planner-test-password")
+                    .withEnv("ACTIVITY_DB_PASSWORD", "activity-test-password")
+                    .withEnv("NOTIFICATION_DB_PASSWORD", "notification-test-password")
+                    .withEnv("DEBEZIUM_DB_PASSWORD", "debezium-test-password")
+                    .withCopyFileToContainer(
+                            MountableFile.forHostPath(roleScript()),
+                            "/docker-entrypoint-initdb.d/001-create-service-roles.sh");
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", () -> "activity_app");
         registry.add("spring.datasource.password", () -> "activity-test-password");
+    }
+
+    private static Path roleScript() {
+        return Path.of(System.getProperty("todorok.repository.root"))
+                .resolve("infra/docker/postgres/init/001-create-service-roles.sh");
     }
 
     @Autowired JdbcTemplate jdbc;
@@ -44,6 +59,12 @@ class ActivityPersistenceIntegrationTest {
     void migratesOnlyActivitySchema() {
         assertThat(jdbc.queryForObject("select current_user", String.class))
                 .isEqualTo("activity_app");
+        assertThat(jdbc.queryForObject(
+                "select has_database_privilege(current_user, current_database(), 'CREATE')",
+                Boolean.class)).isFalse();
+        assertThat(jdbc.queryForObject(
+                "select has_schema_privilege(current_user, 'planner', 'USAGE')",
+                Boolean.class)).isFalse();
         assertThat(jdbc.queryForObject(
                 "select service_name from activity.service_metadata",
                 String.class)).isEqualTo("activity-service");

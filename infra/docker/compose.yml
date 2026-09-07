@@ -52,6 +52,26 @@ services:
       retries: 20
     mem_limit: 512m
 
+  postgres-provision:
+    image: postgres:17.11-alpine
+    restart: "no"
+    entrypoint: ["bash", "/provision/001-create-service-roles.sh"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PLANNER_DB_PASSWORD: ${PLANNER_DB_PASSWORD}
+      ACTIVITY_DB_PASSWORD: ${ACTIVITY_DB_PASSWORD}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      DEBEZIUM_DB_PASSWORD: ${DEBEZIUM_DB_PASSWORD}
+      DATABASE_CREDENTIAL_UPDATE: ${DATABASE_CREDENTIAL_UPDATE:-false}
+    volumes:
+      - ./postgres/init:/provision:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   kafka:
     image: apache/kafka:4.3.1
     restart: unless-stopped
@@ -99,8 +119,8 @@ services:
       SPRING_DATASOURCE_USERNAME: planner_app
       SPRING_DATASOURCE_PASSWORD: ${PLANNER_DB_PASSWORD}
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres-provision:
+        condition: service_completed_successfully
 
   activity-migration:
     <<: *activity-image
@@ -111,8 +131,8 @@ services:
       SPRING_DATASOURCE_USERNAME: activity_app
       SPRING_DATASOURCE_PASSWORD: ${ACTIVITY_DB_PASSWORD}
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres-provision:
+        condition: service_completed_successfully
 
   notification-migration:
     <<: *notification-image
@@ -123,8 +143,8 @@ services:
       SPRING_DATASOURCE_USERNAME: notification_app
       SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres-provision:
+        condition: service_completed_successfully
 
   replication-init:
     image: postgres:17.11-alpine
