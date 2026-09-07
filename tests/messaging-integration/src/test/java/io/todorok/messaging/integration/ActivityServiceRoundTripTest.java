@@ -26,6 +26,184 @@ import tools.jackson.databind.json.JsonMapper;
 /** Actual HTTP -> service DB -> Debezium -> Kafka -> service listener -> ack -> HTTP. */
 class ActivityServiceRoundTripTest {
 
+    static String correction(long version, String detail) {
+        return "{\"expectedVersion\":" + version + ",\"performedAt\":\"2026-08-31T10:00:00+09:00\",\"note\":\"수정 메모\",\"detail\":" + detail + "}";
+    }
+
+    @Test
+    void pastRecordsRespectActiveArchivedPastFutureAndPartialSeriesPolicy() throws Exception {
+        var today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        var past = today.minusDays(14);
+        for (String scenario : List.of("PAST", "FUTURE", "ARCHIVED", "ENDED", "PARTIAL")) {
+            UUID owner = UUID.randomUUID();
+            int interval = scenario.equals("FUTURE") ? 30 : 1;
+            String body = "{\"title\":\"지난 반복\",\"taskType\":\"STUDY\",\"startDate\":\"" + past + "\","
+                + (scenario.equals("ENDED") ? "\"endDate\":\"" + past + "\"," : "")
+                + "\"rule\":{\"frequency\":\"DAILY\",\"interval\":" + interval + ",\"weekdays\":[],\"monthDay\":1}}";
+            var series = ok(call("planner", owner, "POST", "/series", body), 201);
+            String seriesId = series.path("seriesId").asText();
+            UUID sid = UUID.fromString(seriesId);
+            String task = infra.database().queryForObject("select id::text from planner.task where series_id=?", String.class, sid);
+            await(() -> infra.database().queryForObject("select count(*) from activity.task_reference where task_id=?", Integer.class, UUID.fromString(task)) == 1);
+            if (scenario.equals("ARCHIVED")) ok(call("planner", owner, "POST", "/series/" + seriesId + "/archive", "{\"version\":" + series.path("version").asLong() + "}"), 200);
+            String status = scenario.equals("PARTIAL") ? "PARTIAL" : "COMPLETED";
+            String id = ok(call("activity", owner, "POST", "/activities", request(task, "STUDY", status, UUID.randomUUID(), "{}")
+                .replace("2026-09-08T01:00:00+09:00", past + "T10:00:00+09:00")), 201).path("activityId").asText();
+            if (!status.equals("PARTIAL")) applied(owner, id);
+            int expected = scenario.equals("PAST") || scenario.equals("FUTURE") ? 2 : 1;
+            assertThat(infra.database().queryForObject("select count(*) from planner.task where series_id=?", Integer.class, sid)).as(scenario).isEqualTo(expected);
+            if (expected == 2) {
+                var next = infra.database().queryForMap("select id,scheduled_date,occurrence_date from planner.task where series_id=? and status='PLANNED'", sid);
+                assertThat(next.get("occurrence_date").toString()).isEqualTo(past.plusDays(interval).toString());
+                assertThat(next.get("scheduled_date").toString()).isEqualTo((scenario.equals("PAST") ? today : past.plusDays(interval)).toString());
+                // A later past correction sees the existing active occurrence and must keep its ID and dates.
+                ok(call("activity", owner, "PATCH", "/activities/" + id, correction(0, "{}")), 200);
+                applied(owner, id);
+                assertThat(infra.database().queryForMap("select id,scheduled_date,occurrence_date from planner.task where series_id=? and status='PLANNED'", sid)).isEqualTo(next);
+                assertThat(infra.database().queryForObject("select count(*) from planner.task where series_id=?", Integer.class, sid)).isEqualTo(2);
+            }
+        }
+    }
+
+    @Test
+    void correctionPreservesTypedHistoryAndVersionRacesAndVoid() throws Exception {
+        UUID owner = UUID.randomUUID();
+        for (String type : List.of("WORKOUT", "STUDY", "CLIMBING")) {
+            String task = task(owner, type);
+            String originalRequest = request(task, type, "COMPLETED", UUID.randomUUID(), "{}");
+            String id = ok(call("activity", owner, "POST", "/activities",
+                originalRequest), 201).get("activityId").asText();
+            applied(owner, id);
+            String detail = switch(type) {
+                case "WORKOUT" -> "{\"workout\":{\"sets\":[{\"exercise\":\"스쿼트\",\"reps\":7,\"durationSeconds\":90}]}}";
+                case "STUDY" -> "{\"study\":{\"subject\":\"수학\",\"durationMinutes\":30}}";
+                default -> "{\"climbing\":{\"durationSeconds\":600,\"rounds\":[{\"grade\":\"V3\",\"attempts\":2}]}}";
+            };
+            String path = "/activities/" + id;
+            ok(call("activity", UUID.randomUUID(), "PATCH", path, correction(0, detail)), 404);
+            ok(call("activity", owner, "PATCH", path, correction(0, "{\"workout\":{},\"study\":{}}")), 400);
+            ok(call("activity", owner, "PATCH", path, correction(0, detail).replace("\"note\"", "\"startedAt\":\"2026-08-31T10:00:00+09:00\",\"note\"")), 400);
+            String timedCorrection = correction(0, detail).replace("\"note\"", "\"startedAt\":\"2026-08-31T10:00:00+09:00\",\"endedAt\":\"2026-08-31T11:00:00+09:00\",\"note\"");
+            var changed = ok(call("activity", owner, "PATCH", path, timedCorrection), 200);
+            assertThat(changed.path("version").asLong()).isEqualTo(1);
+            assertThat(changed.path("previousPerformedAt").asText()).startsWith("2026-09-07T16:");
+            assertThat(changed.path("detail").path(type.toLowerCase()).isObject()).isTrue();
+            applied(owner, id);
+            var replayed = ok(call("activity", owner, "POST", "/activities", originalRequest), 201);
+            assertThat(replayed.path("activityId").asText()).isEqualTo(id);
+            assertThat(replayed.path("version").asLong()).isEqualTo(1);
+            assertThat(replayed.path("note").asText()).isEqualTo("수정 메모");
+            assertThat(ok(call("planner", owner, "GET", "/tasks/" + task, null), 200).path("scheduledDate").asText()).isEqualTo("2026-08-31");
+            assertThat(OffsetDateTime.parse(ok(call("planner", owner, "GET", "/tasks/" + task, null), 200).path("startedAt").asText()).toInstant()).isEqualTo(Instant.parse("2026-08-31T01:00:00Z"));
+            assertThat(infra.database().queryForObject("select snapshot->>'note' from activity.activity_revision_history where activity_id=? and revision=0", String.class, UUID.fromString(id))).isEqualTo("완료 메모");
+            assertThatThrownBy(() -> infra.database().update("delete from activity.activity_revision_history where activity_id=?", UUID.fromString(id))).hasMessageContaining("immutable");
+            ok(call("activity", owner, "PATCH", path, correction(0, detail)), 409);
+            try (var pool = Executors.newFixedThreadPool(4)) {
+                var jobs = new ArrayList<Future<Integer>>();
+                for (int n = 0; n < 4; n++) jobs.add(pool.submit(() -> call("activity", owner, "PATCH", path, correction(1, detail)).statusCode()));
+                var statuses = new ArrayList<Integer>();
+                for (var job : jobs) statuses.add(job.get());
+                assertThat(statuses).containsExactlyInAnyOrder(200, 409, 409, 409);
+            }
+            applied(owner, id);
+            assertThat(ok(call("planner", owner, "GET", "/tasks/" + task, null), 200).hasNonNull("startedAt")).isFalse();
+            ok(call("activity", owner, "POST", path + "/void", "{\"reason\":\"취소\",\"version\":2}"), 200);
+            applied(owner, id);
+            ok(call("activity", owner, "PATCH", path, correction(3, detail)), 409);
+            assertThat(infra.database().queryForObject("select count(*) from activity.activity_revision_history where activity_id=?", Integer.class, UUID.fromString(id))).isEqualTo(3);
+            assertThat(ok(call("activity", owner, "GET", path, null), 200).path("detail")).isEqualTo(changed.path("detail"));
+        }
+    }
+
+    @Test
+    void correctionRollbackPartialAndStoppedConsumerRecovery() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String task = task(owner, "STUDY");
+        String id = ok(call("activity", owner, "POST", "/activities", request(task, "STUDY", "COMPLETED", UUID.randomUUID(), "{}")), 201).path("activityId").asText();
+        applied(owner, id);
+        String path = "/activities/" + id;
+        infra.database().execute("alter table activity.outbox_event add constraint fail_correction check(type<>'ACTIVITY_CORRECTED') not valid");
+        try { ok(call("activity", owner, "PATCH", path, correction(0, "{\"study\":{\"durationMinutes\":45}}")), 500); }
+        finally { infra.database().execute("alter table activity.outbox_event drop constraint fail_correction"); }
+        assertThat(ok(call("activity", owner, "GET", path, null), 200).path("version").asLong()).isZero();
+        assertThat(infra.database().queryForObject("select count(*) from activity.activity_revision_history where activity_id=?", Integer.class, UUID.fromString(id))).isZero();
+        assertThat(infra.database().queryForObject("select duration_minutes from activity.study_detail where activity_id=?", Integer.class, UUID.fromString(id))).isNull();
+        var listener = planner.getBean(KafkaListenerEndpointRegistry.class).getListenerContainer("planner-activity");
+        listener.stop();
+        try {
+            assertThat(ok(call("activity", owner, "PATCH", path, correction(0, "{}")), 200).path("syncState").asText()).isEqualTo("PENDING");
+            assertThat(ok(call("activity", owner, "PATCH", path, correction(1, "{\"study\":{\"durationMinutes\":45}}")), 200).path("version").asLong()).isEqualTo(2);
+            assertThat(ok(call("activity", owner, "GET", path, null), 200).path("syncState").asText()).isEqualTo("PENDING");
+            String event = infra.database().queryForObject("select payload::text from activity.outbox_event where aggregateid=? and (payload->>'aggregateVersion')::bigint=2", String.class, id);
+            UUID eventId = UUID.fromString(JSON.readTree(event).path("eventId").asText());
+            infra.database().execute("alter table planner.outbox_event add constraint fail_correction_ack check(type<>'ACTIVITY_SYNC_RESULT') not valid");
+            try {
+                assertThatThrownBy(() -> planner.getBean(io.todorok.planner.task.ActivityCompletionConsumer.class).receive(event)).isInstanceOf(RuntimeException.class);
+            } finally { infra.database().execute("alter table planner.outbox_event drop constraint fail_correction_ack"); }
+            assertThat(infra.database().queryForObject("select count(*) from planner.processed_event where event_id=?", Integer.class, eventId)).isZero();
+            assertThat(infra.database().queryForObject("select revision from planner.activity_completion_result where activity_id=?", Long.class, UUID.fromString(id))).isZero();
+            assertThat(ok(call("planner", owner, "GET", "/tasks/" + task, null), 200).path("scheduledDate").asText()).isEqualTo("2026-09-08");
+        } finally { listener.start(); }
+        applied(owner, id);
+        assertThat(ok(call("planner", owner, "GET", "/tasks/" + task, null), 200).path("completionSummary").asText()).contains("45분");
+        String partialTask = task(owner, "STUDY");
+        String partial = ok(call("activity", owner, "POST", "/activities", request(partialTask, "STUDY", "PARTIAL", UUID.randomUUID(), "{}")), 201).path("activityId").asText();
+        assertThat(ok(call("activity", owner, "PATCH", "/activities/" + partial, correction(0, "{}")), 200).path("syncState").asText()).isEqualTo("NOT_REQUIRED");
+        assertThat(infra.database().queryForObject("select count(*) from activity.outbox_event where aggregateid=?", Integer.class, partial)).isEqualTo(1);
+        String partialEvent = infra.database().queryForObject("select id::text from activity.outbox_event where aggregateid=?", String.class, partial);
+        await(() -> infra.database().queryForObject("select count(*) from planner.processed_event where event_id=?", Integer.class, UUID.fromString(partialEvent)) == 1);
+        assertThat(ok(call("activity", owner, "GET", "/activities/" + partial, null), 200).path("syncState").asText()).isEqualTo("NOT_REQUIRED");
+        assertThat(ok(call("planner", owner, "GET", "/tasks/" + partialTask, null), 200).path("status").asText()).isEqualTo("PLANNED");
+    }
+
+    @Test
+    void correctionBeforeCompletionAndOldCorrectionAfterVoidUseRevisionTombstones() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String task = task(owner, "STUDY");
+        String id = UUID.randomUUID().toString();
+        var correction = JSON.createObjectNode();
+        correction.put("eventId", UUID.randomUUID().toString()).put("type", "ACTIVITY_CORRECTED").put("version", 1)
+            .put("aggregateVersion", 2).put("occurredAt", Instant.now().toString()).put("userId", owner.toString());
+        correction.putObject("payload").put("activityId", id).put("taskId", task).put("activityType", "STUDY")
+            .put("completionStatus", "COMPLETED")
+            .put("completedAt", "2026-08-31T01:00:00Z").put("previousPerformedAt", "2026-09-01T01:00:00Z").put("outcome", "최신 수정");
+        send("todorok.activity.v1", id, correction.toString());
+        await(() -> infra.database().queryForObject("select count(*) from planner.activity_completion_result where activity_id=? and revision=2", Integer.class, UUID.fromString(id)) == 1);
+        send("todorok.activity.v1", id, correction.toString());
+        correction.put("eventId", UUID.randomUUID().toString()).put("aggregateVersion", 1);
+        ((tools.jackson.databind.node.ObjectNode) correction.get("payload")).put("outcome", "오래된 수정");
+        send("todorok.activity.v1", id, correction.toString());
+        var completion = correction.deepCopy().put("eventId", UUID.randomUUID().toString()).put("type", "ACTIVITY_COMPLETED").put("aggregateVersion", 0);
+        ((tools.jackson.databind.node.ObjectNode) completion.get("payload")).remove("previousPerformedAt");
+        ((tools.jackson.databind.node.ObjectNode) completion.get("payload")).remove("completionStatus");
+        send("todorok.activity.v1", id, completion.toString());
+        String last = completion.path("eventId").asText();
+        await(() -> infra.database().queryForObject("select count(*) from planner.processed_event where event_id=?", Integer.class, UUID.fromString(last)) == 1);
+        assertThat(ok(call("planner", owner, "GET", "/tasks/" + task, null), 200).path("completionSummary").asText()).isEqualTo("최신 수정");
+        var voided = correction.deepCopy().put("eventId", UUID.randomUUID().toString()).put("type", "ACTIVITY_VOIDED").put("aggregateVersion", 3);
+        voided.putObject("payload").put("activityId", id).put("taskId", task).put("voidedAt", Instant.now().toString()).put("reason", "취소");
+        send("todorok.activity.v1", id, voided.toString());
+        correction.put("eventId", UUID.randomUUID().toString());
+        send("todorok.activity.v1", id, correction.toString());
+        String finalId = correction.path("eventId").asText();
+        await(() -> infra.database().queryForObject("select count(*) from planner.processed_event where event_id=?", Integer.class, UUID.fromString(finalId)) == 1);
+        assertThat(ok(call("planner", owner, "GET", "/tasks/" + task, null), 200).path("status").asText()).isEqualTo("PLANNED");
+    }
+
+    @Test
+    void correctionAndVoidRaceHasOneWinnerAndPreservesOneHistoryRevision() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String task = task(owner, "WORKOUT");
+        String id = ok(call("activity", owner, "POST", "/activities", request(task, "WORKOUT", "PARTIAL", UUID.randomUUID(), "{}")), 201).path("activityId").asText();
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            var patch = pool.submit(() -> call("activity", owner, "PATCH", "/activities/" + id, correction(0, "{}")).statusCode());
+            var cancel = pool.submit(() -> call("activity", owner, "POST", "/activities/" + id + "/void", "{\"version\":0,\"reason\":\"취소\"}").statusCode());
+            assertThat(List.of(patch.get(), cancel.get())).containsExactlyInAnyOrder(200, 409);
+        }
+        assertThat(ok(call("activity", owner, "GET", "/activities/" + id, null), 200).path("version").asLong()).isEqualTo(1);
+        assertThat(infra.database().queryForObject("select count(*) from activity.activity_revision_history where activity_id=?", Integer.class, UUID.fromString(id))).isEqualTo(1);
+    }
+
     @Test
     void finiteSeriesActivityVoidAndRecompletionCannotDuplicateCompletedSuccessor()
         throws Exception {

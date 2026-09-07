@@ -132,6 +132,12 @@ export interface ActivityResponse {
      * @memberof ActivityResponse
      */
     syncReason?: string;
+    /**
+     * Performed date immediately before the latest correction; invalidate both dates and their months.
+     * @type {Date}
+     * @memberof ActivityResponse
+     */
+    previousPerformedAt?: Date;
 }
 
 
@@ -176,6 +182,7 @@ export function ActivityResponseFromJSONTyped(json: any, ignoreDiscriminator: bo
         'note': json['note'] == null ? undefined : json['note'],
         'syncState': json['syncState'] == null ? undefined : ActivitySyncStateFromJSON(json['syncState']),
         'syncReason': json['syncReason'] == null ? undefined : json['syncReason'],
+        'previousPerformedAt': json['previousPerformedAt'] == null ? undefined : (new Date(json['previousPerformedAt'])),
     };
 }
 
@@ -204,5 +211,6 @@ export function ActivityResponseToJSONTyped(value?: ActivityResponse | null, ign
         'note': value['note'],
         'syncState': ActivitySyncStateToJSON(value['syncState']),
         'syncReason': value['syncReason'],
+        'previousPerformedAt': value['previousPerformedAt'] == null ? value['previousPerformedAt'] : value['previousPerformedAt'].toISOString(),
     };
 }

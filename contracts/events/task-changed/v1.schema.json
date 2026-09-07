@@ -18,7 +18,7 @@
             "taskType": { "enum": ["GENERAL", "WORKOUT", "STUDY", "CLIMBING"] },
             "scheduledDate": { "type": "string", "format": "date" },
             "status": { "enum": ["PLANNED", "COMPLETED", "SKIPPED", "DELETED"] },
-            "changeType": { "enum": ["CREATED", "UPDATED", "COMPLETED", "SKIPPED", "REOPENED", "DELETED", "ROLLED_OVER"] }
+            "changeType": { "enum": ["CREATED", "UPDATED", "COMPLETED", "CORRECTED", "SKIPPED", "REOPENED", "DELETED", "ROLLED_OVER"] }
           }
         }
       }

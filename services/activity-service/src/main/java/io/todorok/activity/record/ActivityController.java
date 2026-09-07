@@ -35,6 +35,11 @@ public class ActivityController implements ActivityApi {
     }
 
     @Override
+    public ResponseEntity<ActivityResponse> correctActivity(UUID id, CorrectActivityRequest request) {
+        return ResponseEntity.ok(activities.correct(owner(), id, request));
+    }
+
+    @Override
     public ResponseEntity<ActivityResponse> getActivity(UUID id) {
         return ResponseEntity.ok(activities.get(owner(), id));
     }

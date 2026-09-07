@@ -169,6 +169,7 @@ public class ActivityService {
                     r.getLong("revision")
                 )
                     .note(r.getString("note"))
+                    .previousPerformedAt(r.getObject("previous_performed_at", OffsetDateTime.class))
                     .startedAt(r.getObject("started_at", OffsetDateTime.class))
                     .endedAt(r.getObject("ended_at", OffsetDateTime.class))
                     .syncState(
@@ -242,6 +243,40 @@ public class ActivityService {
     }
 
     @Transactional
+    public ActivityResponse correct(UUID owner, UUID id, CorrectActivityRequest request) {
+        jdbc.queryForList("select id from activity_record where user_id=? and id=? for update", owner, id);
+        var old = get(owner, id);
+        if (!old.getVersion().equals(request.getExpectedVersion())) throw fail("VERSION_CONFLICT", false);
+        if (old.getStatus() == ActivityStatus.VOIDED) throw fail("ACTIVITY_VOIDED", false);
+        details.validate(old.getActivityType(), request.getDetail());
+        var start = request.getStartedAt();
+        var end = request.getEndedAt();
+        var zone = ZoneId.of("Asia/Seoul");
+        var date = request.getPerformedAt().atZoneSameInstant(zone).toLocalDate();
+        if ((start == null) != (end == null) || (start != null &&
+            (!end.isAfter(start) || !start.atZoneSameInstant(zone).toLocalDate().equals(date)
+                || !end.atZoneSameInstant(zone).toLocalDate().equals(date))))
+            throw new ApiFailure(400, "INVALID_INTERVAL", "Invalid interval", "Use an ordered start/end pair on the performed Seoul date.", false);
+        archive(old);
+        boolean complete = old.getStatus() == ActivityStatus.COMPLETED;
+        jdbc.update("update activity_record set previous_performed_at=performed_at,performed_at=?,started_at=?,ended_at=?,note=?,revision=revision+1,sync_state=?,sync_reason=null where id=?",
+            request.getPerformedAt(), start, end, request.getNote(), complete ? "PENDING" : "NOT_REQUIRED", id);
+        details.replace(id, old.getActivityType(), request.getDetail());
+        var summaryRequest = new CreateActivityRequest().activityType(old.getActivityType()).detail(request.getDetail());
+        outbox.append("activity", id.toString(), new EventEnvelope<>(UUID.randomUUID(), EventType.ACTIVITY_CORRECTED,
+            1, old.getVersion() + 1, Instant.now(), owner,
+            new ActivityCorrected(id, old.getTaskId(), old.getActivityType().name(), request.getPerformedAt().toInstant(),
+                summary(summaryRequest), start == null ? null : start.toInstant(), end == null ? null : end.toInstant(),
+                old.getPerformedAt().toInstant(), old.getStatus().name())));
+        return get(owner, id);
+    }
+
+    private void archive(ActivityResponse old) {
+        jdbc.update("insert into activity_revision_history(activity_id,revision,snapshot) values (?,?,cast(? as jsonb))",
+            old.getActivityId(), old.getVersion(), mapper.writeValueAsString(old));
+    }
+
+    @Transactional
     public ActivityResponse voidRecord(
         UUID owner,
         UUID id,
@@ -259,6 +294,7 @@ public class ActivityService {
         ) throw fail("VERSION_CONFLICT", false);
         if ("VOIDED".equals(row.get("status"))) return get(owner, id);
         boolean complete = "COMPLETED".equals(row.get("status"));
+        archive(get(owner, id));
         jdbc.update(
             "update activity_record set status='VOIDED',revision=revision+1,void_reason=?,sync_state=?,sync_reason=null where id=?",
             request.getReason(),

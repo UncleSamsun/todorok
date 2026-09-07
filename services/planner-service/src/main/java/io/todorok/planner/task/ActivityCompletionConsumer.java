@@ -56,16 +56,26 @@ public class ActivityCompletionConsumer {
         var e = EventJson.read(mapper, json);
         if (
             e.type() != EventType.ACTIVITY_COMPLETED &&
+            e.type() != EventType.ACTIVITY_CORRECTED &&
             e.type() != EventType.ACTIVITY_VOIDED
         ) return;
         var p = e.payload();
         var id = EventJson.uuid(p, "activityId");
         var taskId = EventJson.uuid(p, "taskId");
-        boolean complete = e.type() == EventType.ACTIVITY_COMPLETED;
+        if (e.type() == EventType.ACTIVITY_CORRECTED) {
+            String status = EventJson.text(p, "completionStatus");
+            if (!Set.of("COMPLETED", "PARTIAL").contains(status)) throw new IllegalArgumentException("Invalid correction status");
+            if (status.equals("PARTIAL")) {
+                inbox.claim(e.eventId(), e.type().name());
+                return;
+            }
+        }
+        boolean complete = e.type() != EventType.ACTIVITY_VOIDED;
         TaskType type = null;
         OffsetDateTime performed = null;
         String summary = null;
         if (complete) {
+            if (e.type() == EventType.ACTIVITY_CORRECTED) Instant.parse(EventJson.text(p, "previousPerformedAt"));
             type = TaskType.valueOf(EventJson.text(p, "activityType"));
             if (type == TaskType.GENERAL) throw new IllegalArgumentException(
                 "Activity requires a record type"
@@ -154,7 +164,7 @@ public class ActivityCompletionConsumer {
                         .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
                         .toLocalDate();
                     tasks.flush();
-                    events.publish(task, "COMPLETED");
+                    events.publish(task, e.type() == EventType.ACTIVITY_CORRECTED ? "CORRECTED" : "COMPLETED");
                     if (task.seriesId != null) recurrence.advance(
                         e.userId(),
                         task.seriesId,

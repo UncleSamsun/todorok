@@ -7,6 +7,7 @@ package io.todorok.activity.api;
 
 import io.todorok.activity.api.model.ActivityPageResponse;
 import io.todorok.activity.api.model.ActivityResponse;
+import io.todorok.activity.api.model.CorrectActivityRequest;
 import io.todorok.activity.api.model.CreateActivityRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
@@ -29,6 +30,30 @@ import jakarta.annotation.Generated;
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 @Validated
 public interface ActivityApi {
+
+    String PATH_CORRECT_ACTIVITY = "/activities/{activityId}";
+    /**
+     * PATCH /activities/{activityId}
+     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     *
+     * @param activityId  (required)
+     * @param correctActivityRequest  (required)
+     * @return Corrected record with incremented revision (status code 200)
+     *         or 잘못된 요청 (status code 400)
+     *         or 대상을 찾을 수 없음 (status code 404)
+     *         or 버전 또는 상태 충돌 (status code 409)
+     */
+    @RequestMapping(
+        method = RequestMethod.PATCH,
+        value = ActivityApi.PATH_CORRECT_ACTIVITY,
+        produces = { "application/json", "application/problem+json" },
+        consumes = { "application/json" }
+    )
+    ResponseEntity<ActivityResponse> correctActivity(
+         @PathVariable("activityId") UUID activityId,
+         @Valid @RequestBody CorrectActivityRequest correctActivityRequest
+    );
+
 
     String PATH_CREATE_ACTIVITY = "/activities";
     /**

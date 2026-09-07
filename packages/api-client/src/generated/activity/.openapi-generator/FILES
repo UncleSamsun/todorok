@@ -10,6 +10,7 @@ docs/ActivitySyncState.md
 docs/ActivityType.md
 docs/ClimbingDetail.md
 docs/ClimbingRound.md
+docs/CorrectActivityRequest.md
 docs/CreateActivityRequest.md
 docs/ProblemDetails.md
 docs/ProblemDetailsFieldErrorsInner.md
@@ -30,6 +31,7 @@ src/models/ActivitySyncState.ts
 src/models/ActivityType.ts
 src/models/ClimbingDetail.ts
 src/models/ClimbingRound.ts
+src/models/CorrectActivityRequest.ts
 src/models/CreateActivityRequest.ts
 src/models/ProblemDetails.ts
 src/models/ProblemDetailsFieldErrorsInner.ts

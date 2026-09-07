@@ -48,6 +48,13 @@ public class ActivityDetailStore {
         );
     }
 
+    public void replace(UUID id, ActivityType type, ActivityDetail detail) {
+        // The caller archives the old header and typed detail before replacing current rows.
+        for (String table : List.of("workout_set", "climbing_round", "workout_detail", "study_detail", "climbing_detail"))
+            jdbc.update("delete from " + table + " where activity_id=?", id);
+        save(id, type, detail);
+    }
+
     public void save(UUID id, ActivityType type, ActivityDetail detail) {
         switch (type) {
             case WORKOUT -> {

@@ -9,6 +9,7 @@ java/io/todorok/activity/api/model/ActivitySyncState.java
 java/io/todorok/activity/api/model/ActivityType.java
 java/io/todorok/activity/api/model/ClimbingDetail.java
 java/io/todorok/activity/api/model/ClimbingRound.java
+java/io/todorok/activity/api/model/CorrectActivityRequest.java
 java/io/todorok/activity/api/model/CreateActivityRequest.java
 java/io/todorok/activity/api/model/ProblemDetails.java
 java/io/todorok/activity/api/model/ProblemDetailsFieldErrorsInner.java

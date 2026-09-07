@@ -1,0 +1,17 @@
+{
+  "eventId": "00000000-0000-0000-0000-000000000001",
+  "type": "ACTIVITY_CORRECTED",
+  "version": 1,
+  "aggregateVersion": 2,
+  "occurredAt": "2026-09-07T00:00:00Z",
+  "userId": "00000000-0000-0000-0000-000000000002",
+  "payload": {
+    "activityId": "00000000-0000-0000-0000-000000000003",
+    "taskId": "00000000-0000-0000-0000-000000000004",
+    "activityType": "STUDY",
+    "completionStatus": "COMPLETED",
+    "completedAt": "2026-08-31T00:00:00Z",
+    "previousPerformedAt": "2026-09-01T00:00:00Z",
+    "outcome": "공부 기록 · 30분"
+  }
+}

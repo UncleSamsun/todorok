@@ -50,6 +50,26 @@ paths:
               schema: { $ref: '#/components/schemas/ActivityPageResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
   /activities/{activityId}:
+    patch:
+      tags: [Activity]
+      operationId: correctActivity
+      description: Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+      parameters:
+        - { $ref: '#/components/parameters/ActivityIdPath' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CorrectActivityRequest' }
+      responses:
+        '200':
+          description: Corrected record with incremented revision
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActivityResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
     get:
       tags: [Activity]
       operationId: getActivity
@@ -185,6 +205,17 @@ components:
         endedAt: { type: string, format: date-time, description: Optional actual interval end; must follow startedAt on the same Seoul date. }
         note: { type: string, maxLength: 20000 }
         detail: { $ref: '#/components/schemas/ActivityDetail' }
+    CorrectActivityRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, performedAt, detail]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        performedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+        note: { type: string, maxLength: 20000 }
+        detail: { $ref: '#/components/schemas/ActivityDetail' }
     VoidActivityRequest:
       type: object
       additionalProperties: false
@@ -211,6 +242,7 @@ components:
         note: { type: string }
         syncState: { $ref: '#/components/schemas/ActivitySyncState' }
         syncReason: { type: string }
+        previousPerformedAt: { type: string, format: date-time, description: Performed date immediately before the latest correction; invalidate both dates and their months. }
     ActivityPageResponse:
       type: object
       additionalProperties: false

@@ -67,6 +67,7 @@ class EventSchemaContractTest {
                 Arguments.of("task-scheduled", "TASK_SCHEDULED"),
                 Arguments.of("task-changed", "TASK_CHANGED"),
                 Arguments.of("activity-completed", "ACTIVITY_COMPLETED"),
+                Arguments.of("activity-corrected", "ACTIVITY_CORRECTED"),
                 Arguments.of("activity-voided", "ACTIVITY_VOIDED"));
     }
 
@@ -76,6 +77,8 @@ class EventSchemaContractTest {
         return Stream.of(
                 Arguments.of("activity-sync-result", envelope(EventType.ACTIVITY_SYNC_RESULT,
                         new io.todorok.contracts.events.ActivitySyncResult(activityId, taskId, "CONFLICT", "TASK_DELETED"))),
+                Arguments.of("activity-corrected", envelope(EventType.ACTIVITY_CORRECTED,
+                        new io.todorok.contracts.events.ActivityCorrected(activityId, taskId, "STUDY", Instant.parse("2026-09-02T00:00:00Z"), "공부 기록", null, null, Instant.parse("2026-09-01T00:00:00Z"), "COMPLETED"))),
                 Arguments.of("task-scheduled", envelope(
                         EventType.TASK_SCHEDULED,
                         new TaskScheduled(taskId, "WORKOUT", LocalDate.parse("2026-09-02"), "PLANNED"))),

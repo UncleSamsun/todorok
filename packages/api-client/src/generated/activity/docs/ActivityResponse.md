@@ -20,6 +20,7 @@ Name | Type
 `note` | string
 `syncState` | [ActivitySyncState](ActivitySyncState.md)
 `syncReason` | string
+`previousPerformedAt` | Date
 
 ## Example
 
@@ -42,6 +43,7 @@ const example = {
   "note": null,
   "syncState": null,
   "syncReason": null,
+  "previousPerformedAt": null,
 } satisfies ActivityResponse
 
 console.log(example)

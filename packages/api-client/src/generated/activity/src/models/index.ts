@@ -9,6 +9,7 @@ export * from './ActivitySyncState';
 export * from './ActivityType';
 export * from './ClimbingDetail';
 export * from './ClimbingRound';
+export * from './CorrectActivityRequest';
 export * from './CreateActivityRequest';
 export * from './ProblemDetails';
 export * from './ProblemDetailsFieldErrorsInner';

@@ -18,7 +18,7 @@ import {
   Configuration,
   ActivityApi,
 } from '@todorok/api-client';
-import type { CreateActivityOperationRequest } from '@todorok/api-client';
+import type { CorrectActivityOperationRequest } from '@todorok/api-client';
 
 async function example() {
   console.log("🚀 Testing @todorok/api-client SDK...");
@@ -29,12 +29,14 @@ async function example() {
   const api = new ActivityApi(config);
 
   const body = {
-    // CreateActivityRequest
-    createActivityRequest: ...,
-  } satisfies CreateActivityOperationRequest;
+    // string
+    activityId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
+    // CorrectActivityRequest
+    correctActivityRequest: ...,
+  } satisfies CorrectActivityOperationRequest;
 
   try {
-    const data = await api.createActivity(body);
+    const data = await api.correctActivity(body);
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -54,6 +56,7 @@ All URIs are relative to */api/activity/v1*
 
 | Class | Method | HTTP request | Description
 | ----- | ------ | ------------ | -------------
+*ActivityApi* | [**correctActivity**](docs/ActivityApi.md#correctactivityoperation) | **PATCH** /activities/{activityId} |
 *ActivityApi* | [**createActivity**](docs/ActivityApi.md#createactivityoperation) | **POST** /activities |
 *ActivityApi* | [**getActivity**](docs/ActivityApi.md#getactivity) | **GET** /activities/{activityId} |
 *ActivityApi* | [**listActivities**](docs/ActivityApi.md#listactivities) | **GET** /activities |
@@ -71,6 +74,7 @@ All URIs are relative to */api/activity/v1*
 - [ActivityType](docs/ActivityType.md)
 - [ClimbingDetail](docs/ClimbingDetail.md)
 - [ClimbingRound](docs/ClimbingRound.md)
+- [CorrectActivityRequest](docs/CorrectActivityRequest.md)
 - [CreateActivityRequest](docs/CreateActivityRequest.md)
 - [ProblemDetails](docs/ProblemDetails.md)
 - [ProblemDetailsFieldErrorsInner](docs/ProblemDetailsFieldErrorsInner.md)

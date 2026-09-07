@@ -168,6 +168,7 @@ owner: 김민준
 - 반복 중단(archive)은 이후 회차 생성을 중단한다. 기존 활성 Task는 유지하며 삭제는 별도 command다.
 - 기록형 완료 취소는 Activity를 삭제하지 않고 `VOIDED`로 바꾸며 Task와 프로그램 진행을 재계산한다.
 - Activity 값 수정은 revision을 증가시키고 correction 이벤트를 발행한다.
+- Activity PATCH는 expectedVersion과 수행일·typed detail 전체 값을 받고, 생략한 메모·실제 시간 구간은 비운다. 상태·Task·유형은 변경하지 않는다. 이전 revision의 header와 detail은 변경 불가능한 이력으로 보존한다. VOIDED 기록은 수정하지 않는다. 완료 correction은 전체 최신 요약과 시간·수행일을 planner에 전달하고 해당 revision의 실제 ack까지 PENDING이다. 반복 occurrenceDate는 최초 규칙 날짜이므로 수행일 수정으로 바뀌지 않으며, 기존 활성 회차와 이미 수행된 후속 회차를 유지한다.
 
 ### 10.3 자동 이월
 

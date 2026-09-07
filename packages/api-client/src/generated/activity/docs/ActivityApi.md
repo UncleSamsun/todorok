@@ -4,11 +4,89 @@ All URIs are relative to */api/activity/v1*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
+| [**correctActivity**](ActivityApi.md#correctactivityoperation) | **PATCH** /activities/{activityId} |  |
 | [**createActivity**](ActivityApi.md#createactivityoperation) | **POST** /activities |  |
 | [**getActivity**](ActivityApi.md#getactivity) | **GET** /activities/{activityId} |  |
 | [**listActivities**](ActivityApi.md#listactivities) | **GET** /activities |  |
 | [**voidActivity**](ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |  |
 
+
+
+## correctActivity
+
+> ActivityResponse correctActivity(activityId, correctActivityRequest)
+
+
+
+Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+
+### Example
+
+```ts
+import {
+  Configuration,
+  ActivityApi,
+} from '@todorok/api-client';
+import type { CorrectActivityOperationRequest } from '@todorok/api-client';
+
+async function example() {
+  console.log("🚀 Testing @todorok/api-client SDK...");
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
+
+  const body = {
+    // string
+    activityId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
+    // CorrectActivityRequest
+    correctActivityRequest: ...,
+  } satisfies CorrectActivityOperationRequest;
+
+  try {
+    const data = await api.correctActivity(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **activityId** | `string` |  | [Defaults to `undefined`] |
+| **correctActivityRequest** | [CorrectActivityRequest](CorrectActivityRequest.md) |  | |
+
+### Return type
+
+[**ActivityResponse**](ActivityResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`, `application/problem+json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Corrected record with incremented revision |  -  |
+| **400** | 잘못된 요청 |  -  |
+| **404** | 대상을 찾을 수 없음 |  -  |
+| **409** | 버전 또는 상태 충돌 |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
 
 ## createActivity

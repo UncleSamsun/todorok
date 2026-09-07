@@ -67,6 +67,10 @@ public class ActivityResponse {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private @Nullable String syncReason;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  private @Nullable OffsetDateTime previousPerformedAt;
+
   public ActivityResponse() {
     super();
   }
@@ -372,6 +376,27 @@ public class ActivityResponse {
     this.syncReason = syncReason;
   }
 
+  public ActivityResponse previousPerformedAt(@Nullable OffsetDateTime previousPerformedAt) {
+    this.previousPerformedAt = previousPerformedAt;
+    return this;
+  }
+
+  /**
+   * Performed date immediately before the latest correction; invalidate both dates and their months.
+   * @return previousPerformedAt
+   */
+  @Valid
+  @JsonProperty("previousPerformedAt")
+  public @Nullable OffsetDateTime getPreviousPerformedAt() {
+    return previousPerformedAt;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("previousPerformedAt")
+  public void setPreviousPerformedAt(@Nullable OffsetDateTime previousPerformedAt) {
+    this.previousPerformedAt = previousPerformedAt;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -394,12 +419,13 @@ public class ActivityResponse {
         Objects.equals(this.version, activityResponse.version) &&
         Objects.equals(this.note, activityResponse.note) &&
         Objects.equals(this.syncState, activityResponse.syncState) &&
-        Objects.equals(this.syncReason, activityResponse.syncReason);
+        Objects.equals(this.syncReason, activityResponse.syncReason) &&
+        Objects.equals(this.previousPerformedAt, activityResponse.previousPerformedAt);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(activityId, commandId, taskId, userId, activityType, performedAt, startedAt, endedAt, detail, status, version, note, syncState, syncReason);
+    return Objects.hash(activityId, commandId, taskId, userId, activityType, performedAt, startedAt, endedAt, detail, status, version, note, syncState, syncReason, previousPerformedAt);
   }
 
   @Override
@@ -420,6 +446,7 @@ public class ActivityResponse {
     sb.append("    note: ").append(toIndentedString(note)).append("\n");
     sb.append("    syncState: ").append(toIndentedString(syncState)).append("\n");
     sb.append("    syncReason: ").append(toIndentedString(syncReason)).append("\n");
+    sb.append("    previousPerformedAt: ").append(toIndentedString(previousPerformedAt)).append("\n");
     sb.append("}");
     return sb.toString();
   }

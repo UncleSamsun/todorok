@@ -24,6 +24,11 @@ import {
     ActivityResponseToJSON,
 } from '../models/ActivityResponse';
 import {
+    type CorrectActivityRequest,
+    CorrectActivityRequestFromJSON,
+    CorrectActivityRequestToJSON,
+} from '../models/CorrectActivityRequest';
+import {
     type CreateActivityRequest,
     CreateActivityRequestFromJSON,
     CreateActivityRequestToJSON,
@@ -38,6 +43,11 @@ import {
     VoidActivityRequestFromJSON,
     VoidActivityRequestToJSON,
 } from '../models/VoidActivityRequest';
+
+export interface CorrectActivityOperationRequest {
+    activityId: string;
+    correctActivityRequest: CorrectActivityRequest;
+}
 
 export interface CreateActivityOperationRequest {
     createActivityRequest: CreateActivityRequest;
@@ -65,6 +75,30 @@ export interface VoidActivityOperationRequest {
  * @interface ActivityApiInterface
  */
 export interface ActivityApiInterface {
+    /**
+     * Creates request options for correctActivity without sending the request
+     * @param {string} activityId
+     * @param {CorrectActivityRequest} correctActivityRequest
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    correctActivityRequestOpts(requestParameters: CorrectActivityOperationRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     * @param {string} activityId
+     * @param {CorrectActivityRequest} correctActivityRequest
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    correctActivityRaw(requestParameters: CorrectActivityOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ActivityResponse>>;
+
+    /**
+     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     */
+    correctActivity(requestParameters: CorrectActivityOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityResponse>;
+
     /**
      * Creates request options for createActivity without sending the request
      * @param {CreateActivityRequest} createActivityRequest
@@ -161,6 +195,69 @@ export interface ActivityApiInterface {
  *
  */
 export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface {
+
+    /**
+     * Creates request options for correctActivity without sending the request
+     */
+    async correctActivityRequestOpts(requestParameters: CorrectActivityOperationRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['activityId'] == null) {
+            throw new runtime.RequiredError(
+                'activityId',
+                'Required parameter "activityId" was null or undefined when calling correctActivity().'
+            );
+        }
+
+        if (requestParameters['correctActivityRequest'] == null) {
+            throw new runtime.RequiredError(
+                'correctActivityRequest',
+                'Required parameter "correctActivityRequest" was null or undefined when calling correctActivity().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/activities/{activityId}`;
+        urlPath = urlPath.replace('{activityId}', encodeURIComponent(String(requestParameters['activityId'])));
+
+        return {
+            path: urlPath,
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: CorrectActivityRequestToJSON(requestParameters['correctActivityRequest']),
+        };
+    }
+
+    /**
+     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     */
+    async correctActivityRaw(requestParameters: CorrectActivityOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ActivityResponse>> {
+        const requestOptions = await this.correctActivityRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ActivityResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Replace editable values. Status, task and type are immutable. Omitted note or interval clears them. Invalidate all cached activity lists and planner days/months for this user after saving and after synchronization; the prior performed date is returned.
+     */
+    async correctActivity(requestParameters: CorrectActivityOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityResponse> {
+        const response = await this.correctActivityRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates request options for createActivity without sending the request
