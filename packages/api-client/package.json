@@ -6,7 +6,7 @@
   "exports": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "tsc -p tsconfig.json --noEmit"
+    "test": "node --experimental-strip-types --test src/problem.test.ts && tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "typescript": "7.0.2"

@@ -21,6 +21,7 @@ rootProject.name = "todorok"
 include(
     "libs:event-contracts",
     "libs:messaging-support",
+    "libs:web-support",
     "services:planner-service",
     "services:activity-service",
     "services:notification-service",

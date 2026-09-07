@@ -1,3 +1,6 @@
 export * as activity from './generated/activity/src'
 export * as planner from './generated/planner/src'
+export { FetchApiTransport } from './transport'
 export type { ApiRequest, ApiTransport } from './transport'
+export { classifyApiError, requestJson } from './problem'
+export type { ApiProblem, ClassifiedApiError, FieldProblem } from './problem'
