@@ -77,7 +77,7 @@ class NotificationPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from notification.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(4);
+                Integer.class)).isEqualTo(5);
         assertThat(jdbc.queryForList(
                 "select schema_name from information_schema.schemata "
                         + "where schema_name in ('planner','activity','notification') "
@@ -91,7 +91,7 @@ class NotificationPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from notification.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(4);
+                Integer.class)).isEqualTo(5);
     }
 
     @Test

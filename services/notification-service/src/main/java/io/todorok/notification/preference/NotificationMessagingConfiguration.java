@@ -12,11 +12,13 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Map;
+import java.time.Clock;
 
 @Configuration
 @EnableKafka
 public class NotificationMessagingConfiguration {
     @Bean InboxEventGuard notificationInbox(JdbcTemplate jdbc) { return new JdbcInboxEventGuard(jdbc); }
+    @Bean Clock notificationClock() { return Clock.systemUTC(); }
     @Bean ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
         @Value("${spring.kafka.bootstrap-servers}") String bootstrapServers
     ) {
