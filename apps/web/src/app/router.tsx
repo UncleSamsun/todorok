@@ -15,6 +15,7 @@ import { RecordPage } from '../features/activity/RecordPage'
 import { RecordDraftProvider } from '../features/activity/RecordDrafts'
 import { ActivityMonthProvider } from '../features/activity/ActivityMonth'
 import { CompletedTaskRecord } from '../features/activity/CompletedTaskRecord'
+import { ThemeProvider } from '../features/settings/ThemeProvider'
 export { seoulToday } from '@todorok/client-domain'
 const Workout = lazy(() => import('../features/workout/WorkoutPage'))
 const Study = lazy(() => import('../features/study/StudyPage'))
@@ -40,7 +41,7 @@ function ProtectedShell() {
     }
   }
   return (
-    <div className="workspace-shell">
+    <ThemeProvider><div className="workspace-shell">
       <header className="app-header">
         <div>
           <span className="brand">토도록</span>
@@ -80,7 +81,7 @@ function ProtectedShell() {
         </Suspense>
         </ActivityMonthProvider>
       </main>
-    </div>
+    </div></ThemeProvider>
   )
 }
 function SessionRoutes() {

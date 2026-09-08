@@ -57,6 +57,8 @@ All URIs are relative to */api/planner/v1*
 *CalendarApi* | [**getDayDetail**](docs/CalendarApi.md#getdaydetail) | **GET** /calendar/{date} |
 *NoteApi* | [**getDailyNote**](docs/NoteApi.md#getdailynote) | **GET** /notes/{date} |
 *NoteApi* | [**updateDailyNote**](docs/NoteApi.md#updatedailynoteoperation) | **PATCH** /notes/{date} |
+*PreferenceApi* | [**getPreferences**](docs/PreferenceApi.md#getpreferences) | **GET** /preferences |
+*PreferenceApi* | [**updatePreferences**](docs/PreferenceApi.md#updatepreferences) | **PUT** /preferences |
 *SeriesApi* | [**archiveSeries**](docs/SeriesApi.md#archiveseries) | **POST** /series/{seriesId}/archive |
 *SeriesApi* | [**createSeries**](docs/SeriesApi.md#createseriesoperation) | **POST** /series |
 *SeriesApi* | [**getSeries**](docs/SeriesApi.md#getseries) | **GET** /series/{seriesId} |
@@ -92,9 +94,12 @@ All URIs are relative to */api/planner/v1*
 - [TaskType](docs/TaskType.md)
 - [TemplateLink](docs/TemplateLink.md)
 - [TemplateSelection](docs/TemplateSelection.md)
+- [ThemeMode](docs/ThemeMode.md)
 - [UpdateDailyNoteRequest](docs/UpdateDailyNoteRequest.md)
 - [UpdateSeriesRequest](docs/UpdateSeriesRequest.md)
 - [UpdateTaskRequest](docs/UpdateTaskRequest.md)
+- [UpdateUserPreferencesRequest](docs/UpdateUserPreferencesRequest.md)
+- [UserPreferencesResponse](docs/UserPreferencesResponse.md)
 - [VersionCommand](docs/VersionCommand.md)
 
 ### Authorization

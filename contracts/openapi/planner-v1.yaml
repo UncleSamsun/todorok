@@ -10,7 +10,34 @@ tags:
   - name: Auth
   - name: Calendar
   - name: Task
+  - name: Preference
 paths:
+  /preferences:
+    get:
+      tags: [Preference]
+      operationId: getPreferences
+      responses:
+        '200':
+          description: Authenticated account preferences.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserPreferencesResponse' }
+    put:
+      tags: [Preference]
+      operationId: updatePreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUserPreferencesRequest' }
+      responses:
+        '200':
+          description: Updated preferences.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserPreferencesResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /notes/{date}:
     parameters:
       - name: date
@@ -420,6 +447,23 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/ProblemDetails' }
   schemas:
+    ThemeMode:
+      type: string
+      enum: [SYSTEM, LIGHT, DARK]
+    UserPreferencesResponse:
+      type: object
+      additionalProperties: false
+      required: [theme, revision]
+      properties:
+        theme: { $ref: '#/components/schemas/ThemeMode' }
+        revision: { type: integer, format: int64, minimum: 0 }
+    UpdateUserPreferencesRequest:
+      type: object
+      additionalProperties: false
+      required: [theme, expectedRevision]
+      properties:
+        theme: { $ref: '#/components/schemas/ThemeMode' }
+        expectedRevision: { type: integer, format: int64, minimum: 0 }
     TemplateSelection:
       $ref: './common-v1.yaml#/components/schemas/TemplateSelection'
     TemplateLink:

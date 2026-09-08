@@ -705,8 +705,16 @@ select {
   border-radius: 8px;
   padding: 12px;
 }
+:root[data-theme='dark'] {
+  --color-background: #1d2023;
+  --color-surface: #1d2023;
+  --color-text: #eef0f2;
+  --line: #41474c;
+  --muted: #aeb6bd;
+  --selected: #303438;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --color-background: #1d2023;
     --color-surface: #1d2023;
     --color-text: #eef0f2;

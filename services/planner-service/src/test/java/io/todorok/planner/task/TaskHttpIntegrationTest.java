@@ -170,6 +170,18 @@ class TaskHttpIntegrationTest {
     }
 
     @Test
+    void savesThemePreferencePerOwnerWithOptimisticRevision() throws Exception {
+        UUID owner = UUID.randomUUID(), other = UUID.randomUUID();
+        assertThat(body(call(owner, "GET", "/preferences", null)).path("theme").asText()).isEqualTo("SYSTEM");
+        var saved = body(call(owner, "PUT", "/preferences", "{\"theme\":\"DARK\",\"expectedRevision\":0}"));
+        assertThat(saved.path("theme").asText()).isEqualTo("DARK");
+        assertThat(saved.path("revision").asLong()).isZero();
+        assertThat(body(call(other, "GET", "/preferences", null)).path("theme").asText()).isEqualTo("SYSTEM");
+        assertThat(call(owner, "PUT", "/preferences", "{\"theme\":\"LIGHT\",\"expectedRevision\":0}").statusCode()).isEqualTo(200);
+        assertThat(call(owner, "PUT", "/preferences", "{\"theme\":\"SYSTEM\",\"expectedRevision\":0}").statusCode()).isEqualTo(409);
+    }
+
+    @Test
     void concurrentFirstNoteWriteHasOneWinner() throws Exception {
         UUID owner = UUID.randomUUID();
         var start = new java.util.concurrent.CountDownLatch(1);
