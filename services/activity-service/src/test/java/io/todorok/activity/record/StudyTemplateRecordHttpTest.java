@@ -137,6 +137,7 @@ class StudyTemplateRecordHttpTest {
         assertThat(jdbc.queryForObject("select status from program_enrollment where id=?", String.class, enrollment.id())).isEqualTo("COMPLETED");
         assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrollment.id())).isEqualTo(6);
         assertThat(jdbc.queryForObject("select count(*) from outbox_event where aggregatetype='program-session' and payload->'payload'->>'enrollmentId'=?", Integer.class, enrollment.id().toString())).isEqualTo(6);
+        assertThat(ok(send("GET", "/program-enrollments/" + enrollment.id(), null, owner), 200).path("status").asText()).isEqualTo("COMPLETED");
     }
 
     @Test void voidedProgramResultRecalculatesWithoutDeletingAnAlreadyCreatedFollowup() throws Exception {

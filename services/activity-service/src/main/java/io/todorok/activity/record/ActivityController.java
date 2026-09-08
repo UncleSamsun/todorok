@@ -98,7 +98,7 @@ public class ActivityController implements ActivityApi {
     }
 
     private ProgramEnrollmentResponse response(ProgramEnrollmentService.Enrollment value) {
-        return new ProgramEnrollmentResponse(value.id(), value.catalogKey(), value.catalogVersion(), value.recommendedWeek(), value.startWeek(), value.currentWeek(), value.currentSession(), ProgramEnrollmentResponse.StatusEnum.ACTIVE,
+        return new ProgramEnrollmentResponse(value.id(), value.catalogKey(), value.catalogVersion(), value.recommendedWeek(), value.startWeek(), value.currentWeek(), value.currentSession(), ProgramEnrollmentResponse.StatusEnum.fromValue(value.status()),
             new ProgramSessionTarget(value.sessionId(), value.currentWeek(), value.currentSession(), value.targetSets()));
     }
 }

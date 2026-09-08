@@ -15,7 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class ProgramEnrollmentService {
-    public record Enrollment(UUID id, String catalogKey, long catalogVersion, int recommendedWeek, int startWeek, int currentWeek, int currentSession, UUID sessionId, List<Integer> targetSets) {}
+    public record Enrollment(UUID id, String catalogKey, long catalogVersion, int recommendedWeek, int startWeek, int currentWeek, int currentSession, String status, UUID sessionId, List<Integer> targetSets) {}
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final ProgramCatalogImporter importer;
@@ -47,7 +47,7 @@ public class ProgramEnrollmentService {
         var date = LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul")));
         outbox.append("program-session", sessionId.toString(), new EventEnvelope<>(UUID.randomUUID(), EventType.PROGRAM_SESSION_REQUESTED, 1, 0, clock.instant(), owner,
             Map.of("enrollmentId", id.toString(), "sessionId", sessionId.toString(), "taskId", taskId.toString(), "title", catalog.name() + " · " + start + "주차 " + first.session() + "회", "scheduledDate", date.toString(), "targetSets", first.sets())));
-        return new Enrollment(id, key, version, recommended, start, start, first.session(), sessionId, first.sets());
+        return new Enrollment(id, key, version, recommended, start, start, first.session(), "ACTIVE", sessionId, first.sets());
     }
 
     @Transactional(readOnly = true)
@@ -91,7 +91,7 @@ public class ProgramEnrollmentService {
         var session = jdbc.queryForMap("select id,target_sets::text as target_sets from program_session where enrollment_id=? and cycle=? and session=?", id, enrollment.get("current_cycle"), enrollment.get("current_session"));
         var sets = mapper.readTree(String.valueOf(session.get("target_sets")));
         var targets = new ArrayList<Integer>(); sets.forEach(value -> targets.add(value.asInt()));
-        return new Enrollment(id, (String) enrollment.get("catalog_key"), ((Number) enrollment.get("catalog_version")).longValue(), ((Number) enrollment.get("recommended_week")).intValue(), ((Number) enrollment.get("start_week")).intValue(), ((Number) enrollment.get("current_week")).intValue(), ((Number) enrollment.get("current_session")).intValue(), (UUID) session.get("id"), List.copyOf(targets));
+        return new Enrollment(id, (String) enrollment.get("catalog_key"), ((Number) enrollment.get("catalog_version")).longValue(), ((Number) enrollment.get("recommended_week")).intValue(), ((Number) enrollment.get("start_week")).intValue(), ((Number) enrollment.get("current_week")).intValue(), ((Number) enrollment.get("current_session")).intValue(), (String) enrollment.get("status"), (UUID) session.get("id"), List.copyOf(targets));
     }
     private String fingerprint(String key, long version, int initial, Integer override) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest((key + "|" + version + "|" + initial + "|" + Objects.toString(override, "-")).getBytes(StandardCharsets.UTF_8))); }
