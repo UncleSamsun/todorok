@@ -4,6 +4,7 @@ import io.todorok.activity.api.model.*;
 import io.todorok.contracts.*;
 import io.todorok.contracts.events.*;
 import io.todorok.messaging.OutboxEventWriter;
+import io.todorok.activity.program.ProgramEnrollmentService;
 import io.todorok.web.ApiFailure;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -60,6 +61,7 @@ public class ActivityService {
     private final ObjectMapper mapper;
     private final Clock clock;
     private final ActivityTemplateRecords templates;
+    private final ProgramEnrollmentService programs;
 
     public ActivityService(
         JdbcTemplate jdbc,
@@ -68,12 +70,25 @@ public class ActivityService {
         ObjectMapper mapper,
         Clock clock
     ) {
+        this(jdbc, details, outbox, mapper, clock, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ActivityService(
+        JdbcTemplate jdbc,
+        ActivityDetailStore details,
+        OutboxEventWriter outbox,
+        ObjectMapper mapper,
+        Clock clock,
+        ProgramEnrollmentService programs
+    ) {
         this.jdbc = jdbc;
         this.details = details;
         this.outbox = outbox;
         this.mapper = mapper;
         this.clock = clock;
         this.templates = new ActivityTemplateRecords(jdbc);
+        this.programs = programs;
     }
 
     @Transactional
@@ -176,6 +191,11 @@ public class ActivityService {
             template == null ? null : mapper.writeValueAsString(template)
         );
         details.save(id, request.getActivityType(), request.getDetail(), template, template == null ? null : templateValues);
+        if (complete && request.getActivityType() == ActivityType.WORKOUT && programs != null) {
+            int repetitions = request.getDetail().getWorkout() == null || request.getDetail().getWorkout().getSets() == null ? 0
+                : request.getDetail().getWorkout().getSets().stream().mapToInt(set -> set.getReps() == null ? 0 : set.getReps()).sum();
+            programs.recordOutcome(request.getTaskId(), id, repetitions, false);
+        }
         if (complete) outbox.append(
             "activity",
             id.toString(),
