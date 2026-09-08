@@ -10,6 +10,52 @@ tags:
   - name: Activity
   - name: Template
 paths:
+  /programs:
+    get:
+      tags: [Activity]
+      operationId: listPrograms
+      responses:
+        '200':
+          description: Imported immutable program catalog summaries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ProgramCatalogSummary' }
+  /program-enrollments:
+    post:
+      tags: [Activity]
+      operationId: enrollProgram
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EnrollProgramRequest' }
+      responses:
+        '201':
+          description: Enrollment pinned to one catalog version with its first target session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProgramEnrollmentResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /program-enrollments/{enrollmentId}:
+    get:
+      tags: [Activity]
+      operationId: getProgramEnrollment
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Current enrollment progress and target session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProgramEnrollmentResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /tasks/{taskId}/record-template:
     get:
       tags: [Template]
@@ -323,6 +369,53 @@ components:
         template: { $ref: '#/components/schemas/TemplateResponse' }
     ProblemDetails:
       $ref: './common-v1.yaml#/components/schemas/ProblemDetails'
+    ProgramCatalogSummary:
+      type: object
+      additionalProperties: false
+      required: [catalogKey, catalogVersion, checksum, name, sessionsPerWeek, totalWeeks]
+      properties:
+        catalogKey: { type: string }
+        catalogVersion: { type: integer, format: int64, minimum: 1 }
+        checksum: { type: string }
+        name: { type: string }
+        sessionsPerWeek: { type: integer, minimum: 1 }
+        totalWeeks: { type: integer, minimum: 1 }
+    EnrollProgramRequest:
+      type: object
+      additionalProperties: false
+      required: [commandId, catalogKey, catalogVersion, initialTestValue]
+      properties:
+        commandId: { type: string, format: uuid }
+        catalogKey: { type: string, minLength: 1, maxLength: 120 }
+        catalogVersion: { type: integer, format: int64, minimum: 1 }
+        initialTestValue: { type: integer, minimum: 0 }
+        startWeek: { type: integer, minimum: 1 }
+    ProgramSessionTarget:
+      type: object
+      additionalProperties: false
+      required: [sessionId, week, session, targetSets]
+      properties:
+        sessionId: { type: string, format: uuid }
+        week: { type: integer, minimum: 1 }
+        session: { type: integer, minimum: 1 }
+        targetSets:
+          type: array
+          minItems: 1
+          items: { type: integer, minimum: 1 }
+    ProgramEnrollmentResponse:
+      type: object
+      additionalProperties: false
+      required: [enrollmentId, catalogKey, catalogVersion, recommendedWeek, startWeek, currentWeek, currentSession, status, target]
+      properties:
+        enrollmentId: { type: string, format: uuid }
+        catalogKey: { type: string }
+        catalogVersion: { type: integer, format: int64, minimum: 1 }
+        recommendedWeek: { type: integer, minimum: 1 }
+        startWeek: { type: integer, minimum: 1 }
+        currentWeek: { type: integer, minimum: 1 }
+        currentSession: { type: integer, minimum: 1 }
+        status: { type: string, enum: [ACTIVE, COMPLETED] }
+        target: { $ref: '#/components/schemas/ProgramSessionTarget' }
     TemplateDomain:
       type: string
       enum: [STUDY, WORKOUT, CLIMBING]

@@ -6,9 +6,12 @@ All URIs are relative to */api/activity/v1*
 |------------- | ------------- | -------------|
 | [**correctActivity**](ActivityApi.md#correctactivityoperation) | **PATCH** /activities/{activityId} |  |
 | [**createActivity**](ActivityApi.md#createactivityoperation) | **POST** /activities |  |
+| [**enrollProgram**](ActivityApi.md#enrollprogramoperation) | **POST** /program-enrollments |  |
 | [**getActivity**](ActivityApi.md#getactivity) | **GET** /activities/{activityId} |  |
 | [**getMonthlyActivitySummary**](ActivityApi.md#getmonthlyactivitysummary) | **GET** /activities/summary |  |
+| [**getProgramEnrollment**](ActivityApi.md#getprogramenrollment) | **GET** /program-enrollments/{enrollmentId} |  |
 | [**listActivities**](ActivityApi.md#listactivities) | **GET** /activities |  |
+| [**listPrograms**](ActivityApi.md#listprograms) | **GET** /programs |  |
 | [**voidActivity**](ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |  |
 
 
@@ -165,6 +168,78 @@ example().catch(console.error);
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
 
+## enrollProgram
+
+> ProgramEnrollmentResponse enrollProgram(enrollProgramRequest)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  ActivityApi,
+} from '@todorok/api-client';
+import type { EnrollProgramOperationRequest } from '@todorok/api-client';
+
+async function example() {
+  console.log("🚀 Testing @todorok/api-client SDK...");
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
+
+  const body = {
+    // EnrollProgramRequest
+    enrollProgramRequest: ...,
+  } satisfies EnrollProgramOperationRequest;
+
+  try {
+    const data = await api.enrollProgram(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **enrollProgramRequest** | [EnrollProgramRequest](EnrollProgramRequest.md) |  | |
+
+### Return type
+
+[**ProgramEnrollmentResponse**](ProgramEnrollmentResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`, `application/problem+json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **201** | Enrollment pinned to one catalog version with its first target session. |  -  |
+| **400** | 잘못된 요청 |  -  |
+| **404** | 대상을 찾을 수 없음 |  -  |
+| **409** | 버전 또는 상태 충돌 |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
 ## getActivity
 
 > ActivityResponse getActivity(activityId)
@@ -310,6 +385,76 @@ example().catch(console.error);
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
 
+## getProgramEnrollment
+
+> ProgramEnrollmentResponse getProgramEnrollment(enrollmentId)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  ActivityApi,
+} from '@todorok/api-client';
+import type { GetProgramEnrollmentRequest } from '@todorok/api-client';
+
+async function example() {
+  console.log("🚀 Testing @todorok/api-client SDK...");
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
+
+  const body = {
+    // string
+    enrollmentId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
+  } satisfies GetProgramEnrollmentRequest;
+
+  try {
+    const data = await api.getProgramEnrollment(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **enrollmentId** | `string` |  | [Defaults to `undefined`] |
+
+### Return type
+
+[**ProgramEnrollmentResponse**](ProgramEnrollmentResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`, `application/problem+json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Current enrollment progress and target session. |  -  |
+| **404** | 대상을 찾을 수 없음 |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
 ## listActivities
 
 > ActivityPageResponse listActivities(date, cursor, limit)
@@ -382,6 +527,67 @@ example().catch(console.error);
 |-------------|-------------|------------------|
 | **200** | Activity 목록 |  -  |
 | **400** | 잘못된 요청 |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## listPrograms
+
+> Array&lt;ProgramCatalogSummary&gt; listPrograms()
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  ActivityApi,
+} from '@todorok/api-client';
+import type { ListProgramsRequest } from '@todorok/api-client';
+
+async function example() {
+  console.log("🚀 Testing @todorok/api-client SDK...");
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
+
+  try {
+    const data = await api.listPrograms();
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**Array&lt;ProgramCatalogSummary&gt;**](ProgramCatalogSummary.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Imported immutable program catalog summaries. |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

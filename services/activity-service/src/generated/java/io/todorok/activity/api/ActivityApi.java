@@ -11,10 +11,13 @@ import io.todorok.activity.api.model.ActivityType;
 import io.todorok.activity.api.model.CorrectActivityRequest;
 import io.todorok.activity.api.model.CreateActivityRequest;
 import org.springframework.format.annotation.DateTimeFormat;
+import io.todorok.activity.api.model.EnrollProgramRequest;
 import java.time.LocalDate;
 import io.todorok.activity.api.model.MonthlyActivitySummaryResponse;
 import org.springframework.lang.Nullable;
 import io.todorok.activity.api.model.ProblemDetails;
+import io.todorok.activity.api.model.ProgramCatalogSummary;
+import io.todorok.activity.api.model.ProgramEnrollmentResponse;
 import java.util.UUID;
 import io.todorok.activity.api.model.VoidActivityRequest;
 import org.springframework.http.ResponseEntity;
@@ -81,6 +84,27 @@ public interface ActivityApi {
     );
 
 
+    String PATH_ENROLL_PROGRAM = "/program-enrollments";
+    /**
+     * POST /program-enrollments
+     *
+     * @param enrollProgramRequest  (required)
+     * @return Enrollment pinned to one catalog version with its first target session. (status code 201)
+     *         or 잘못된 요청 (status code 400)
+     *         or 대상을 찾을 수 없음 (status code 404)
+     *         or 버전 또는 상태 충돌 (status code 409)
+     */
+    @RequestMapping(
+        method = RequestMethod.POST,
+        value = ActivityApi.PATH_ENROLL_PROGRAM,
+        produces = { "application/json", "application/problem+json" },
+        consumes = { "application/json" }
+    )
+    ResponseEntity<ProgramEnrollmentResponse> enrollProgram(
+         @Valid @RequestBody EnrollProgramRequest enrollProgramRequest
+    );
+
+
     String PATH_GET_ACTIVITY = "/activities/{activityId}";
     /**
      * GET /activities/{activityId}
@@ -120,6 +144,24 @@ public interface ActivityApi {
     );
 
 
+    String PATH_GET_PROGRAM_ENROLLMENT = "/program-enrollments/{enrollmentId}";
+    /**
+     * GET /program-enrollments/{enrollmentId}
+     *
+     * @param enrollmentId  (required)
+     * @return Current enrollment progress and target session. (status code 200)
+     *         or 대상을 찾을 수 없음 (status code 404)
+     */
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = ActivityApi.PATH_GET_PROGRAM_ENROLLMENT,
+        produces = { "application/json", "application/problem+json" }
+    )
+    ResponseEntity<ProgramEnrollmentResponse> getProgramEnrollment(
+         @PathVariable("enrollmentId") UUID enrollmentId
+    );
+
+
     String PATH_LIST_ACTIVITIES = "/activities";
     /**
      * GET /activities
@@ -139,6 +181,22 @@ public interface ActivityApi {
          @Valid @RequestParam(value = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @Nullable LocalDate date,
          @Valid @RequestParam(value = "cursor", required = false) @Nullable String cursor,
         @Min(value = 1) @Max(value = 100)  @Valid @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit
+    );
+
+
+    String PATH_LIST_PROGRAMS = "/programs";
+    /**
+     * GET /programs
+     *
+     * @return Imported immutable program catalog summaries. (status code 200)
+     */
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = ActivityApi.PATH_LIST_PROGRAMS,
+        produces = { "application/json" }
+    )
+    ResponseEntity<List<ProgramCatalogSummary>> listPrograms(
+
     );
 
 

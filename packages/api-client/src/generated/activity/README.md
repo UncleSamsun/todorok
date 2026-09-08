@@ -58,9 +58,12 @@ All URIs are relative to */api/activity/v1*
 | ----- | ------ | ------------ | -------------
 *ActivityApi* | [**correctActivity**](docs/ActivityApi.md#correctactivityoperation) | **PATCH** /activities/{activityId} |
 *ActivityApi* | [**createActivity**](docs/ActivityApi.md#createactivityoperation) | **POST** /activities |
+*ActivityApi* | [**enrollProgram**](docs/ActivityApi.md#enrollprogramoperation) | **POST** /program-enrollments |
 *ActivityApi* | [**getActivity**](docs/ActivityApi.md#getactivity) | **GET** /activities/{activityId} |
 *ActivityApi* | [**getMonthlyActivitySummary**](docs/ActivityApi.md#getmonthlyactivitysummary) | **GET** /activities/summary |
+*ActivityApi* | [**getProgramEnrollment**](docs/ActivityApi.md#getprogramenrollment) | **GET** /program-enrollments/{enrollmentId} |
 *ActivityApi* | [**listActivities**](docs/ActivityApi.md#listactivities) | **GET** /activities |
+*ActivityApi* | [**listPrograms**](docs/ActivityApi.md#listprograms) | **GET** /programs |
 *ActivityApi* | [**voidActivity**](docs/ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |
 *TemplateApi* | [**archiveTemplate**](docs/TemplateApi.md#archivetemplateoperation) | **POST** /templates/{templateId}/archive |
 *TemplateApi* | [**createTemplate**](docs/TemplateApi.md#createtemplateoperation) | **POST** /templates |
@@ -90,6 +93,7 @@ All URIs are relative to */api/activity/v1*
 - [CreateTemplateRequest](docs/CreateTemplateRequest.md)
 - [CreateTemplateVersionRequest](docs/CreateTemplateVersionRequest.md)
 - [DetailFormat](docs/DetailFormat.md)
+- [EnrollProgramRequest](docs/EnrollProgramRequest.md)
 - [FieldDefinition](docs/FieldDefinition.md)
 - [FieldDefinitionInput](docs/FieldDefinitionInput.md)
 - [FieldInput](docs/FieldInput.md)
@@ -97,6 +101,9 @@ All URIs are relative to */api/activity/v1*
 - [MonthlyActivitySummaryResponse](docs/MonthlyActivitySummaryResponse.md)
 - [ProblemDetails](docs/ProblemDetails.md)
 - [ProblemDetailsFieldErrorsInner](docs/ProblemDetailsFieldErrorsInner.md)
+- [ProgramCatalogSummary](docs/ProgramCatalogSummary.md)
+- [ProgramEnrollmentResponse](docs/ProgramEnrollmentResponse.md)
+- [ProgramSessionTarget](docs/ProgramSessionTarget.md)
 - [StudyDetail](docs/StudyDetail.md)
 - [StudyDetailResponse](docs/StudyDetailResponse.md)
 - [TaskRecordTemplateResponse](docs/TaskRecordTemplateResponse.md)

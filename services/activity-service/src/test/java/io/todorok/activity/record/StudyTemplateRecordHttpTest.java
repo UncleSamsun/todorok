@@ -89,6 +89,21 @@ class StudyTemplateRecordHttpTest {
             .extracting(error -> ((ApiFailure) error).code()).isEqualTo("COMMAND_CONFLICT");
     }
 
+    @Test void exposesImportedCatalogAndEnrollmentOverOwnerScopedHttp() throws Exception {
+        var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        catalogs.importCatalog(catalog);
+        UUID owner = UUID.randomUUID(), command = UUID.randomUUID();
+        var programs = ok(send("GET", "/programs", null, owner), 200);
+        assertThat(programs.get(0).path("catalogKey").asText()).isEqualTo("synthetic-pushup");
+        var body = Map.of("commandId", command, "catalogKey", "synthetic-pushup", "catalogVersion", 1, "initialTestValue", 9, "startWeek", 2);
+        var enrolled = ok(send("POST", "/program-enrollments", body, owner), 201);
+        assertThat(enrolled.path("startWeek").asInt()).isEqualTo(2);
+        assertThat(enrolled.path("target").path("targetSets")).isEqualTo(mapper.readTree("[4,3,3]"));
+        assertThat(ok(send("POST", "/program-enrollments", body, owner), 201)).isEqualTo(enrolled);
+        assertThat(ok(send("GET", "/program-enrollments/" + enrolled.path("enrollmentId").asText(), null, owner), 200)).isEqualTo(enrolled);
+        assertThat(send("GET", "/program-enrollments/" + enrolled.path("enrollmentId").asText(), null, UUID.randomUUID()).statusCode()).isEqualTo(404);
+    }
+
     @Test void workoutTemplateKeepsRelationalSetsAndCustomValuesAcrossCorrection() throws Exception {
         UUID owner = UUID.randomUUID(), task = UUID.randomUUID();
         var numberId = UUID.randomUUID();

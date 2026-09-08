@@ -41,6 +41,13 @@ public class ProgramEnrollmentService {
         return new Enrollment(id, key, version, recommended, start, start, first.session(), sessionId, first.sets());
     }
 
+    @Transactional(readOnly = true)
+    public Enrollment get(UUID owner, UUID id) {
+        var rows = jdbc.queryForList("select id from program_enrollment where id=? and user_id=?", id, owner);
+        if (rows.isEmpty()) throw new ApiFailure(404, "NOT_FOUND", "Not found", "Program enrollment was not found.", false);
+        return read(id);
+    }
+
     private Enrollment read(UUID id) {
         var enrollment = jdbc.queryForMap("select * from program_enrollment where id=?", id);
         var session = jdbc.queryForMap("select id,target_sets::text as target_sets from program_session where enrollment_id=? and cycle=1 and session=?", id, enrollment.get("current_session"));

@@ -18,6 +18,7 @@ docs/CreateActivityRequest.md
 docs/CreateTemplateRequest.md
 docs/CreateTemplateVersionRequest.md
 docs/DetailFormat.md
+docs/EnrollProgramRequest.md
 docs/FieldDefinition.md
 docs/FieldDefinitionInput.md
 docs/FieldInput.md
@@ -25,6 +26,9 @@ docs/LegacyStudyPayload.md
 docs/MonthlyActivitySummaryResponse.md
 docs/ProblemDetails.md
 docs/ProblemDetailsFieldErrorsInner.md
+docs/ProgramCatalogSummary.md
+docs/ProgramEnrollmentResponse.md
+docs/ProgramSessionTarget.md
 docs/StudyDetail.md
 docs/StudyDetailResponse.md
 docs/TaskRecordTemplateResponse.md
@@ -61,6 +65,7 @@ src/models/CreateActivityRequest.ts
 src/models/CreateTemplateRequest.ts
 src/models/CreateTemplateVersionRequest.ts
 src/models/DetailFormat.ts
+src/models/EnrollProgramRequest.ts
 src/models/FieldDefinition.ts
 src/models/FieldDefinitionInput.ts
 src/models/FieldInput.ts
@@ -68,6 +73,9 @@ src/models/LegacyStudyPayload.ts
 src/models/MonthlyActivitySummaryResponse.ts
 src/models/ProblemDetails.ts
 src/models/ProblemDetailsFieldErrorsInner.ts
+src/models/ProgramCatalogSummary.ts
+src/models/ProgramEnrollmentResponse.ts
+src/models/ProgramSessionTarget.ts
 src/models/StudyDetail.ts
 src/models/StudyDetailResponse.ts
 src/models/TaskRecordTemplateResponse.ts

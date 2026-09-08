@@ -39,6 +39,11 @@ import {
     CreateActivityRequestToJSON,
 } from '../models/CreateActivityRequest';
 import {
+    type EnrollProgramRequest,
+    EnrollProgramRequestFromJSON,
+    EnrollProgramRequestToJSON,
+} from '../models/EnrollProgramRequest';
+import {
     type MonthlyActivitySummaryResponse,
     MonthlyActivitySummaryResponseFromJSON,
     MonthlyActivitySummaryResponseToJSON,
@@ -48,6 +53,16 @@ import {
     ProblemDetailsFromJSON,
     ProblemDetailsToJSON,
 } from '../models/ProblemDetails';
+import {
+    type ProgramCatalogSummary,
+    ProgramCatalogSummaryFromJSON,
+    ProgramCatalogSummaryToJSON,
+} from '../models/ProgramCatalogSummary';
+import {
+    type ProgramEnrollmentResponse,
+    ProgramEnrollmentResponseFromJSON,
+    ProgramEnrollmentResponseToJSON,
+} from '../models/ProgramEnrollmentResponse';
 import {
     type VoidActivityRequest,
     VoidActivityRequestFromJSON,
@@ -63,6 +78,10 @@ export interface CreateActivityOperationRequest {
     createActivityRequest: CreateActivityRequest;
 }
 
+export interface EnrollProgramOperationRequest {
+    enrollProgramRequest: EnrollProgramRequest;
+}
+
 export interface GetActivityRequest {
     activityId: string;
 }
@@ -70,6 +89,10 @@ export interface GetActivityRequest {
 export interface GetMonthlyActivitySummaryRequest {
     month: string;
     activityType: ActivityType;
+}
+
+export interface GetProgramEnrollmentRequest {
+    enrollmentId: string;
 }
 
 export interface ListActivitiesRequest {
@@ -136,6 +159,27 @@ export interface ActivityApiInterface {
     createActivity(requestParameters: CreateActivityOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityResponse>;
 
     /**
+     * Creates request options for enrollProgram without sending the request
+     * @param {EnrollProgramRequest} enrollProgramRequest
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    enrollProgramRequestOpts(requestParameters: EnrollProgramOperationRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     *
+     * @param {EnrollProgramRequest} enrollProgramRequest
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    enrollProgramRaw(requestParameters: EnrollProgramOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProgramEnrollmentResponse>>;
+
+    /**
+     */
+    enrollProgram(requestParameters: EnrollProgramOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProgramEnrollmentResponse>;
+
+    /**
      * Creates request options for getActivity without sending the request
      * @param {string} activityId
      * @throws {RequiredError}
@@ -181,6 +225,27 @@ export interface ActivityApiInterface {
     getMonthlyActivitySummary(requestParameters: GetMonthlyActivitySummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MonthlyActivitySummaryResponse>;
 
     /**
+     * Creates request options for getProgramEnrollment without sending the request
+     * @param {string} enrollmentId
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    getProgramEnrollmentRequestOpts(requestParameters: GetProgramEnrollmentRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     *
+     * @param {string} enrollmentId
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    getProgramEnrollmentRaw(requestParameters: GetProgramEnrollmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProgramEnrollmentResponse>>;
+
+    /**
+     */
+    getProgramEnrollment(requestParameters: GetProgramEnrollmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProgramEnrollmentResponse>;
+
+    /**
      * Creates request options for listActivities without sending the request
      * @param {string} [date]
      * @param {string} [cursor]
@@ -204,6 +269,25 @@ export interface ActivityApiInterface {
     /**
      */
     listActivities(requestParameters: ListActivitiesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityPageResponse>;
+
+    /**
+     * Creates request options for listPrograms without sending the request
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    listProgramsRequestOpts(): Promise<runtime.RequestOpts>;
+
+    /**
+     *
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    listProgramsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ProgramCatalogSummary>>>;
+
+    /**
+     */
+    listPrograms(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ProgramCatalogSummary>>;
 
     /**
      * Creates request options for voidActivity without sending the request
@@ -352,6 +436,59 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
     }
 
     /**
+     * Creates request options for enrollProgram without sending the request
+     */
+    async enrollProgramRequestOpts(requestParameters: EnrollProgramOperationRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['enrollProgramRequest'] == null) {
+            throw new runtime.RequiredError(
+                'enrollProgramRequest',
+                'Required parameter "enrollProgramRequest" was null or undefined when calling enrollProgram().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/program-enrollments`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: EnrollProgramRequestToJSON(requestParameters['enrollProgramRequest']),
+        };
+    }
+
+    /**
+     */
+    async enrollProgramRaw(requestParameters: EnrollProgramOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProgramEnrollmentResponse>> {
+        const requestOptions = await this.enrollProgramRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ProgramEnrollmentResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async enrollProgram(requestParameters: EnrollProgramOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProgramEnrollmentResponse> {
+        const response = await this.enrollProgramRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for getActivity without sending the request
      */
     async getActivityRequestOpts(requestParameters: GetActivityRequest): Promise<runtime.RequestOpts> {
@@ -470,6 +607,57 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
     }
 
     /**
+     * Creates request options for getProgramEnrollment without sending the request
+     */
+    async getProgramEnrollmentRequestOpts(requestParameters: GetProgramEnrollmentRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['enrollmentId'] == null) {
+            throw new runtime.RequiredError(
+                'enrollmentId',
+                'Required parameter "enrollmentId" was null or undefined when calling getProgramEnrollment().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/program-enrollments/{enrollmentId}`;
+        urlPath = urlPath.replace('{enrollmentId}', encodeURIComponent(String(requestParameters['enrollmentId'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async getProgramEnrollmentRaw(requestParameters: GetProgramEnrollmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProgramEnrollmentResponse>> {
+        const requestOptions = await this.getProgramEnrollmentRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ProgramEnrollmentResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getProgramEnrollment(requestParameters: GetProgramEnrollmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProgramEnrollmentResponse> {
+        const response = await this.getProgramEnrollmentRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for listActivities without sending the request
      */
     async listActivitiesRequestOpts(requestParameters: ListActivitiesRequest): Promise<runtime.RequestOpts> {
@@ -521,6 +709,49 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
      */
     async listActivities(requestParameters: ListActivitiesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityPageResponse> {
         const response = await this.listActivitiesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for listPrograms without sending the request
+     */
+    async listProgramsRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/programs`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async listProgramsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ProgramCatalogSummary>>> {
+        const requestOptions = await this.listProgramsRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ProgramCatalogSummaryFromJSON));
+    }
+
+    /**
+     */
+    async listPrograms(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ProgramCatalogSummary>> {
+        const response = await this.listProgramsRaw(initOverrides);
         return await response.value();
     }
 

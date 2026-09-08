@@ -18,6 +18,7 @@ java/io/todorok/activity/api/model/CreateActivityRequest.java
 java/io/todorok/activity/api/model/CreateTemplateRequest.java
 java/io/todorok/activity/api/model/CreateTemplateVersionRequest.java
 java/io/todorok/activity/api/model/DetailFormat.java
+java/io/todorok/activity/api/model/EnrollProgramRequest.java
 java/io/todorok/activity/api/model/FieldDefinition.java
 java/io/todorok/activity/api/model/FieldDefinitionInput.java
 java/io/todorok/activity/api/model/FieldInput.java
@@ -25,6 +26,9 @@ java/io/todorok/activity/api/model/LegacyStudyPayload.java
 java/io/todorok/activity/api/model/MonthlyActivitySummaryResponse.java
 java/io/todorok/activity/api/model/ProblemDetails.java
 java/io/todorok/activity/api/model/ProblemDetailsFieldErrorsInner.java
+java/io/todorok/activity/api/model/ProgramCatalogSummary.java
+java/io/todorok/activity/api/model/ProgramEnrollmentResponse.java
+java/io/todorok/activity/api/model/ProgramSessionTarget.java
 java/io/todorok/activity/api/model/StudyDetail.java
 java/io/todorok/activity/api/model/StudyDetailResponse.java
 java/io/todorok/activity/api/model/TaskRecordTemplateResponse.java
