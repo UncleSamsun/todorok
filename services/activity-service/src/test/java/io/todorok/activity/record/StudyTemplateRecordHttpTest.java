@@ -121,6 +121,23 @@ class StudyTemplateRecordHttpTest {
         assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrollment.id())).isEqualTo(4);
     }
 
+    @Test void voidedProgramResultRecalculatesWithoutDeletingAnAlreadyCreatedFollowup() throws Exception {
+        var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        catalogs.importCatalog(catalog);
+        UUID owner = UUID.randomUUID();
+        var enrollment = enrollments.enroll(owner, UUID.randomUUID(), "synthetic-pushup", 1, 10, 1);
+        UUID taskId = jdbc.queryForObject("select task_id from program_session where id=?", UUID.class, enrollment.sessionId());
+        UUID activityId = UUID.randomUUID();
+        enrollments.recordOutcome(taskId, activityId, 8, false);
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrollment.id())).isEqualTo(2);
+        enrollments.recordOutcome(taskId, activityId, 0, true);
+        var recalculated = enrollments.get(owner, enrollment.id());
+        assertThat(recalculated.currentWeek()).isOne();
+        assertThat(recalculated.currentSession()).isOne();
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrollment.id())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select outcome from program_session where id=?", String.class, enrollment.sessionId())).isEqualTo("VOIDED");
+    }
+
     @Test void exposesImportedCatalogAndEnrollmentOverOwnerScopedHttp() throws Exception {
         var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
         catalogs.importCatalog(catalog);
