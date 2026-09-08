@@ -156,6 +156,8 @@ Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드�
 
 작업12 첫 흐름: `client-domain`에 deadline 기반 상태 기계를 추가해 준비 3초→운동 10초→휴식 50초의 10라운드, 일시정지/재개, 건너뛰기, 중단을 브라우저 시간 지연과 분리했다. 가상 시계는 여러 기한을 한 번에 지난 경우 현재 phase만 표시하고 과거 알림을 되풀이하지 않으며, 부분 수행 수를 보존한다. 오늘의 CLIMBING Task 기록 화면에서 크림프 타이머를 열 수 있고, 완료는 `COMPLETED`, 중단 후 1개 이상 수행은 같은 commandId의 `PARTIAL` Activity request로 기존 저장 경로에 보낸다. phase 전환은 지원 시 진동·음성·마지막 3초 countdown을 알리고 active phase 동안 Wake Lock을 요청하며 미지원·거절은 계산과 저장을 멈추지 않는다. 상태 기계 3회귀와 타이머 부분 기록 UI 회귀·production web build가 통과했다. 전용 local runtime에서 새 CLIMBING Task→Kafka projection→60초/1라운드 PARTIAL 저장→Activity readback까지 통과했다. 실제 browser 조작과 iPhone 검증은 남아 있다.
 
+설정 테마 흐름: planner V10 `user_preference`는 authenticated owner별 theme와 optimistic revision을 저장한다. row가 없는 계정은 `SYSTEM`/revision0을 받고, 첫 저장은 0으로 만들며 이후 낡은 revision은 409이다. 웹 provider는 preference를 읽어 document theme를 즉시 적용하고, 저장 실패 때 이전 화면 theme로 복구한다. Settings UI 회귀와 production web build, 실제 local runtime의 `SYSTEM → DARK` 저장→새 API 재조회가 통과했다. planner migration 두 회귀도 V10+test migration 11개를 확인했다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.
