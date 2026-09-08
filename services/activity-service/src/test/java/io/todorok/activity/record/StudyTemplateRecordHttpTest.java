@@ -157,6 +157,30 @@ class StudyTemplateRecordHttpTest {
         assertThat(jdbc.queryForObject("select outcome from program_session where id=?", String.class, enrollment.sessionId())).isEqualTo("VOIDED");
     }
 
+    @Test void correctingTheLastSuccessfulSessionToFailureCreatesAFreshRetryTask() throws Exception {
+        var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        catalogs.importCatalog(catalog);
+        UUID owner = UUID.randomUUID();
+        var enrollment = enrollments.enroll(owner, UUID.randomUUID(), "synthetic-pushup", 1, 10, 1);
+        UUID lastTask = null, lastActivity = UUID.randomUUID();
+        for (int attempt = 0; attempt < 3; attempt++) {
+            lastTask = jdbc.queryForObject("select task_id from program_session where id=?", UUID.class, enrollment.sessionId());
+            int repetitions = 0;
+            for (var target : mapper.readTree(jdbc.queryForObject("select target_sets::text from program_session where id=?", String.class, enrollment.sessionId()))) repetitions += target.asInt();
+            enrollments.recordOutcome(lastTask, attempt == 2 ? lastActivity : UUID.randomUUID(), repetitions, false);
+            enrollment = enrollments.get(owner, enrollment.id());
+        }
+        UUID originalFirstTask = jdbc.queryForObject("select task_id from program_session where enrollment_id=? and cycle=1 and session=1", UUID.class, enrollment.id());
+        enrollments.recordOutcome(lastTask, lastActivity, 0, false);
+
+        var retry = enrollments.get(owner, enrollment.id());
+        UUID retryTask = jdbc.queryForObject("select task_id from program_session where id=?", UUID.class, retry.sessionId());
+        assertThat(retry.currentWeek()).isOne();
+        assertThat(retry.currentSession()).isOne();
+        assertThat(retryTask).isNotEqualTo(originalFirstTask);
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=? and cycle=3 and week=1 and session=1", Integer.class, enrollment.id())).isOne();
+    }
+
     @Test void correctingAndVoidingACompletedProgramWorkoutRecalculatesWithoutDeletingItsFollowup() throws Exception {
         var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
         catalogs.importCatalog(catalog);
