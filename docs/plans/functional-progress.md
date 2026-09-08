@@ -134,6 +134,8 @@ enrollment API 체크포인트: 생성 Activity OpenAPI에서 catalog 목록·�
 
 세션 요청 계약 체크포인트: `PROGRAM_SESSION_REQUESTED` v1은 enrollment/session/task UUID, 날짜, title, target sets를 닫힌 payload로 고정한다. 유효/무효 fixture와 EventType을 계약 테스트에서 검증했다. 아직 activity outbox 발행·planner consumer·실제 Task 생성이 없으므로 사용자 기능 완료로 계산하지 않는다.
 
+첫 세션 event 체크포인트: enrollment 저장 트랜잭션은 고정 session/task UUID와 함께 `PROGRAM_SESSION_REQUESTED`를 activity outbox에 기록한다. planner consumer는 inbox claim 뒤 동일 Task ID가 없을 때만 WORKOUT Task를 만들고 TASK_SCHEDULED를 발행하며, 이미 같은 Task가 있으면 다시 저장/발행하지 않는다. unit 회귀2개와 양 서비스 compile이 통과했다. 실제 Compose/Kafka 왕복과 Activity 결과에 따른 다음 session 재계산/UI가 없으므로 사용자 기능 완료로 계산하지 않는다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.
