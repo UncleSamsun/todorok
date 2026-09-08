@@ -25,10 +25,12 @@ set_retention() {
 create_topic todorok.task.v1 3
 create_topic todorok.activity.v1 3
 create_topic todorok.program-session.v1 3
+create_topic todorok.notification-preference.v1 3
 create_topic todorok.dead-letter 3
 set_retention todorok.task.v1 604800000
 set_retention todorok.activity.v1 604800000
 set_retention todorok.program-session.v1 604800000
+set_retention todorok.notification-preference.v1 604800000
 set_retention todorok.dead-letter 2592000000
 
 for topic in todorok.connect.configs todorok.connect.offsets todorok.connect.status; do

@@ -1,0 +1,9 @@
+{
+  "eventId": "00000000-0000-0000-0000-000000000031",
+  "type": "NOTIFICATION_PREFERENCE_CHANGED",
+  "version": 1,
+  "aggregateVersion": 2,
+  "occurredAt": "2026-09-08T01:00:00Z",
+  "userId": "00000000-0000-0000-0000-000000000032",
+  "payload": { "notificationsEnabled": "true", "summaryTime": "25:00" }
+}

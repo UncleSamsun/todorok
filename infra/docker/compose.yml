@@ -319,6 +319,7 @@ services:
     <<: *notification-image
     restart: unless-stopped
     environment:
+      MESSAGING_ENABLED: "true"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=notification
       SPRING_DATASOURCE_USERNAME: notification_app

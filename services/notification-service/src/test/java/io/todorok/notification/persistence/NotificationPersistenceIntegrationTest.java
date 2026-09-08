@@ -3,7 +3,10 @@ package io.todorok.notification.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +47,7 @@ class NotificationPersistenceIntegrationTest {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", () -> "notification_app");
         registry.add("spring.datasource.password", () -> "notification-test-password");
+        registry.add("spring.datasource.hikari.connection-init-sql", () -> "set search_path to notification");
     }
 
     private static Path roleScript() {
@@ -54,6 +58,8 @@ class NotificationPersistenceIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired PersistenceSampleRepository repository;
     @Autowired Flyway flyway;
+    @Autowired io.todorok.notification.preference.NotificationPreferenceConsumer preferences;
+    @Autowired tools.jackson.databind.ObjectMapper mapper;
 
     @Test
     void migratesOnlyNotificationSchema() {
@@ -71,7 +77,7 @@ class NotificationPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from notification.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(3);
+                Integer.class)).isEqualTo(4);
         assertThat(jdbc.queryForList(
                 "select schema_name from information_schema.schemata "
                         + "where schema_name in ('planner','activity','notification') "
@@ -85,7 +91,7 @@ class NotificationPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from notification.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(3);
+                Integer.class)).isEqualTo(4);
     }
 
     @Test
@@ -101,6 +107,24 @@ class NotificationPersistenceIntegrationTest {
                         + "where table_schema = 'notification' "
                         + "and table_name = 'outbox_event'",
                 Integer.class)).isZero();
+    }
+
+    @Test
+    void consumesPreferenceOnceAndKeepsTheHighestRevision() throws Exception {
+        UUID owner = UUID.randomUUID();
+        preferences.receive(event(owner, UUID.randomUUID(), 2, true, "09:30"));
+        preferences.receive(event(owner, UUID.randomUUID(), 1, false, "08:00"));
+        preferences.receive(event(owner, UUID.randomUUID(), 2, true, "09:30"));
+        assertThat(jdbc.queryForObject("select notifications_enabled from notification_preference where user_id=?", Boolean.class, owner)).isTrue();
+        assertThat(jdbc.queryForObject("select summary_time from notification_preference where user_id=?", String.class, owner).trim()).isEqualTo("09:30");
+        assertThat(jdbc.queryForObject("select revision from notification_preference where user_id=?", Long.class, owner)).isEqualTo(2L);
+        assertThat(jdbc.queryForObject("select count(*) from processed_event where event_type='NOTIFICATION_PREFERENCE_CHANGED'", Integer.class)).isEqualTo(3);
+    }
+
+    private String event(UUID owner, UUID eventId, long revision, boolean enabled, String time) throws Exception {
+        return mapper.writeValueAsString(new io.todorok.contracts.EventEnvelope<>(eventId,
+            io.todorok.contracts.EventType.NOTIFICATION_PREFERENCE_CHANGED, 1, revision, Instant.now(), owner,
+            Map.of("notificationsEnabled", enabled, "summaryTime", time)));
     }
 
     @Test

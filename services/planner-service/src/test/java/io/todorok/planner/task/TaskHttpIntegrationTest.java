@@ -180,6 +180,7 @@ class TaskHttpIntegrationTest {
         assertThat(saved.path("theme").asText()).isEqualTo("DARK");
         assertThat(saved.path("notificationsEnabled").asBoolean()).isTrue();
         assertThat(saved.path("summaryTime").asText()).isEqualTo("09:30");
+        assertThat(jdbc.queryForObject("select count(*) from planner.outbox_event where aggregatetype='notification-preference' and aggregateid=?", Integer.class, owner.toString())).isOne();
         assertThat(saved.path("revision").asLong()).isZero();
         assertThat(body(call(other, "GET", "/preferences", null)).path("theme").asText()).isEqualTo("SYSTEM");
         assertThat(call(owner, "PUT", "/preferences", "{\"theme\":\"LIGHT\",\"notificationsEnabled\":true,\"summaryTime\":\"09:30\",\"expectedRevision\":0}").statusCode()).isEqualTo(200);

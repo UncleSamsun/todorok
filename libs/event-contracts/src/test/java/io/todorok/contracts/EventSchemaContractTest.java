@@ -96,6 +96,7 @@ class EventSchemaContractTest {
                 Arguments.of("activity-completed", "ACTIVITY_COMPLETED"),
                 Arguments.of("activity-corrected", "ACTIVITY_CORRECTED"),
                 Arguments.of("activity-voided", "ACTIVITY_VOIDED"),
+                Arguments.of("notification-preference-changed", "NOTIFICATION_PREFERENCE_CHANGED"),
                 Arguments.of("program-session-requested", "PROGRAM_SESSION_REQUESTED"));
     }
 
