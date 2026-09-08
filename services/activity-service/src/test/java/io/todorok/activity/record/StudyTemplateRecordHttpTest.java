@@ -57,6 +57,49 @@ class StudyTemplateRecordHttpTest {
     @Autowired io.todorok.activity.template.TemplateService templateService;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
 
+    @Test void workoutTemplateKeepsRelationalSetsAndCustomValuesAcrossCorrection() throws Exception {
+        UUID owner = UUID.randomUUID(), task = UUID.randomUUID();
+        var numberId = UUID.randomUUID();
+        var checkId = UUID.randomUUID();
+        var fields = List.of(
+            Map.<String,Object>of("fieldId", numberId, "type", "NUMBER", "name", "RPE", "unit", "점"),
+            Map.<String,Object>of("fieldId", checkId, "type", "CHECK", "name", "통증 없음")
+        );
+        var template = ok(send("POST", "/templates", Map.of("commandId", UUID.randomUUID(), "name", "자유 운동",
+            "domain", "WORKOUT", "kind", "FREE_WORKOUT", "fields", fields), owner), 201).path("templateId").asText();
+        var binding = bindings.approve(new TemplateSelectionRequest(UUID.randomUUID(), owner,
+            TemplateSelectionRequest.TargetTypeEnum.TASK, task, TemplateSelectionRequest.TaskTypeEnum.WORKOUT, UUID.fromString(template), 1L));
+        var payload = new LinkedHashMap<String,Object>(Map.of("taskId", task, "taskType", "WORKOUT", "status", "PLANNED",
+            "scheduledDate", "2026-09-07", "templateLink", Map.of("bindingId", binding.getBindingId(), "templateId", template, "selectedTemplateVersion", 1)));
+        payload.put("seriesId", null);
+        consumer.receive(mapper.writeValueAsString(Map.of("eventId", UUID.randomUUID(), "type", "TASK_SCHEDULED", "version", 2,
+            "aggregateVersion", 0, "occurredAt", Instant.now().toString(), "userId", owner, "payload", payload)));
+
+        var detail = Map.of("workout", Map.of(
+            "sets", List.of(Map.of("exercise", "스쿼트", "reps", 8, "weightKg", 80, "durationSeconds", 40)),
+            "fields", List.of(Map.of("fieldId", numberId, "type", "NUMBER", "numberValue", 7.5),
+                Map.of("fieldId", checkId, "type", "CHECK", "checked", false))));
+        var request = new LinkedHashMap<String,Object>(Map.of("commandId", UUID.randomUUID(), "taskId", task, "activityType", "WORKOUT",
+            "completionStatus", "COMPLETED", "performedAt", "2026-09-07T10:00:00+09:00", "expectedTemplateVersion", 1, "detail", detail));
+        var saved = ok(send("POST", "/activities", request, owner), 201);
+        UUID activityId = UUID.fromString(saved.path("activityId").asText());
+        assertThat(saved.path("detail").path("workout").path("sets").get(0).path("weightKg").decimalValue()).isEqualByComparingTo("80");
+        assertThat(saved.path("detail").path("workout").path("fields").size()).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select count(*) from activity_field_value where activity_id=?", Integer.class, activityId)).isEqualTo(2);
+
+        var correctedDetail = Map.of("workout", Map.of(
+            "sets", List.of(Map.of("exercise", "스쿼트", "reps", 10, "weightKg", 82.5)),
+            "fields", List.of(Map.of("fieldId", checkId, "type", "CHECK", "checked", true))));
+        var corrected = ok(send("PATCH", "/activities/" + activityId, Map.of("expectedVersion", 0,
+            "performedAt", "2026-09-07T10:00:00+09:00", "detail", correctedDetail), owner), 200);
+        assertThat(corrected.path("templateSnapshot")).isEqualTo(saved.path("templateSnapshot"));
+        assertThat(corrected.path("detail").path("workout").path("sets").get(0).path("reps").asInt()).isEqualTo(10);
+        assertThat(corrected.path("detail").path("workout").path("fields").size()).isOne();
+        assertThat(jdbc.queryForObject("select checked from activity_field_value where activity_id=?", Boolean.class, activityId)).isTrue();
+        assertThat(mapper.readTree(jdbc.queryForObject("select snapshot::text from activity_revision_history where activity_id=? and revision=0", String.class, activityId)))
+            .isEqualTo(saved);
+    }
+
     @Test void fiveTypesRoundTripWithOriginalDefinitionAfterEditArchiveCorrectionAndVoid() throws Exception {
         UUID owner = UUID.randomUUID(), task = UUID.randomUUID();
         var definition = definition();

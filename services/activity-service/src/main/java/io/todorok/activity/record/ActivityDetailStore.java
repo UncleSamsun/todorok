@@ -48,18 +48,18 @@ public class ActivityDetailStore {
         );
     }
 
-    public void replace(UUID id, ActivityType type, ActivityDetail detail) {
+    public void replace(UUID id, ActivityType type, ActivityDetail detail, ActivityTemplateSnapshot template, Map<String,Object> values) {
         // The caller archives the old header and typed detail before replacing current rows.
-        for (String table : List.of("workout_set", "climbing_round", "workout_detail", "study_detail", "climbing_detail"))
+        for (String table : List.of("activity_field_value", "workout_set", "climbing_round", "workout_detail", "study_detail", "climbing_detail"))
             jdbc.update("delete from " + table + " where activity_id=?", id);
-        save(id, type, detail);
+        save(id, type, detail, template, values);
     }
 
     public void save(UUID id, ActivityType type, ActivityDetail detail) {
-        save(id, type, detail, null);
+        save(id, type, detail, null, null);
     }
 
-    public void save(UUID id, ActivityType type, ActivityDetail detail, Map<String,Object> studyValues) {
+    public void save(UUID id, ActivityType type, ActivityDetail detail, ActivityTemplateSnapshot template, Map<String,Object> templateValues) {
         switch (type) {
             case WORKOUT -> {
                 jdbc.update(
@@ -90,9 +90,9 @@ public class ActivityDetailStore {
                     id,
                     d == null ? null : d.getSubject(),
                     d == null ? null : d.getDurationMinutes(),
-                    studyValues == null
+                    templateValues == null
                         ? null
-                        : mapper.writeValueAsString(studyValues),
+                        : mapper.writeValueAsString(templateValues),
                     null
                 );
             }
@@ -119,6 +119,21 @@ public class ActivityDetailStore {
                             round.getCompleted()
                         );
                 }
+            }
+        }
+        if (template != null && template.getDomain() != TemplateDomain.STUDY && templateValues != null) {
+            for (var field : template.getFields()) {
+                Object value = templateValues.get(field.getFieldId().toString());
+                if (value == null) continue;
+                jdbc.update("""
+                    insert into activity_field_value(activity_id,template_id,template_version,field_id,type,
+                      number_value,time_seconds,text_value,checked,memo_value) values (?,?,?,?,?,?,?,?,?,?)
+                    """, id, template.getTemplateId(), template.getTemplateVersion(), field.getFieldId(), field.getType().name(),
+                    field.getType() == TemplateFieldType.NUMBER ? value : null,
+                    field.getType() == TemplateFieldType.TIME ? value : null,
+                    field.getType() == TemplateFieldType.SHORT_TEXT ? value : null,
+                    field.getType() == TemplateFieldType.CHECK ? value : null,
+                    field.getType() == TemplateFieldType.MEMO ? value : null);
             }
         }
     }

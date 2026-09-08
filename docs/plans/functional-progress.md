@@ -104,6 +104,12 @@ UI API 인계 — 원본은 `contracts/openapi/activity-v1.yaml`, 생성 모델�
 
 보완 최종: `805fe34..44c0978` 재리뷰가 보관 대상 ID 고정과 A→B 조회 실패 회귀를 확인해 승인했다. 새 중요 문제는 없으며 기존 테스트·브라우저·빌드는 반복하지 않았다. 공부 사용자 정의 기록 흐름을 완료하고 자유 운동 사용자 흐름으로 이동한다.
 
+### 자유 운동·클라이밍 기록 흐름
+
+자유 운동 서버 첫 경계를 착수했다. WorkoutDetail/ClimbingDetail에 동일한 닫힌 FieldInput 계약을 생성하고, 기존 workout_set/climbing_round와 분리된 `activity_field_value` 관계형 저장소를 새 V8 migration으로 추가했다. Activity·정의의 정확한 template/version/type을 복합 FK로 고정하며 값 형식별 컬럼 하나만 허용한다. 자유 TIME은 기존 월 시간 합계에 포함하지 않는다.
+
+첫 실제 PostgreSQL HTTP 회귀는 연결된 자유 운동이 기존 `TEMPLATE_RECORD_NOT_READY` 409로 거절되는 RED를 확인했다. 구현 후 운동 세트와 NUMBER/CHECK 값을 함께 201 저장하고, correction에서 세트와 선택 값 교체·원 snapshot·revision0 history·관계형 행을 확인해 GREEN이 됐다. 생성 계약 drift와 API client build도 통과했다. 이는 서버 첫 체크포인트이며 사용자 기능 완료가 아니다. 남은 것은 입력 오류/DB 제약·동시성·Kafka/반복 검증, 운동 관리·일정·기록 UI, 이어서 자유 행보드·클라이밍 라운드 사용자 흐름이다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import io.todorok.activity.api.model.ClimbingRound;
+import io.todorok.activity.api.model.FieldInput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +33,9 @@ public class ClimbingDetail {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private List<@Valid ClimbingRound> rounds = new ArrayList<>();
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<@Valid FieldInput> fields = new ArrayList<>();
 
   public ClimbingDetail durationSeconds(@Nullable Integer durationSeconds) {
     this.durationSeconds = durationSeconds;
@@ -85,6 +89,35 @@ public class ClimbingDetail {
     this.rounds = rounds;
   }
 
+  public ClimbingDetail fields(List<@Valid FieldInput> fields) {
+    this.fields = fields;
+    return this;
+  }
+
+  public ClimbingDetail addFieldsItem(FieldInput fieldsItem) {
+    if (this.fields == null) {
+      this.fields = new ArrayList<>();
+    }
+    this.fields.add(fieldsItem);
+    return this;
+  }
+
+  /**
+   * Optional values for the server-selected climbing template. Existing rounds remain relational and separate.
+   * @return fields
+   */
+  @Valid
+  @JsonProperty("fields")
+  public List<@Valid FieldInput> getFields() {
+    return fields;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("fields")
+  public void setFields(List<@Valid FieldInput> fields) {
+    this.fields = fields;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -95,12 +128,13 @@ public class ClimbingDetail {
     }
     ClimbingDetail climbingDetail = (ClimbingDetail) o;
     return Objects.equals(this.durationSeconds, climbingDetail.durationSeconds) &&
-        Objects.equals(this.rounds, climbingDetail.rounds);
+        Objects.equals(this.rounds, climbingDetail.rounds) &&
+        Objects.equals(this.fields, climbingDetail.fields);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(durationSeconds, rounds);
+    return Objects.hash(durationSeconds, rounds, fields);
   }
 
   @Override
@@ -109,6 +143,7 @@ public class ClimbingDetail {
     sb.append("class ClimbingDetail {\n");
     sb.append("    durationSeconds: ").append(toIndentedString(durationSeconds)).append("\n");
     sb.append("    rounds: ").append(toIndentedString(rounds)).append("\n");
+    sb.append("    fields: ").append(toIndentedString(fields)).append("\n");
     sb.append("}");
     return sb.toString();
   }

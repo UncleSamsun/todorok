@@ -446,6 +446,10 @@ components:
           type: array
           maxItems: 500
           items: { $ref: '#/components/schemas/WorkoutSet' }
+        fields:
+          type: array
+          description: Optional values for the server-selected free-workout template. Existing sets remain relational and separate.
+          items: { $ref: '#/components/schemas/FieldInput' }
     WorkoutSet:
       type: object
       additionalProperties: false
@@ -528,6 +532,10 @@ components:
           type: array
           maxItems: 500
           items: { $ref: '#/components/schemas/ClimbingRound' }
+        fields:
+          type: array
+          description: Optional values for the server-selected climbing template. Existing rounds remain relational and separate.
+          items: { $ref: '#/components/schemas/FieldInput' }
     ClimbingRound:
       type: object
       additionalProperties: false

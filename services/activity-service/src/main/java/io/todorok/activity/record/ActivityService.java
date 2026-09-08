@@ -25,14 +25,32 @@ public class ActivityService {
           when 'WORKOUT' then jsonb_build_object('workout', jsonb_build_object('sets',
             coalesce((select jsonb_agg(jsonb_build_object('exercise',s.exercise,'reps',s.reps,
               'weightKg',s.weight_kg,'durationSeconds',s.duration_seconds) order by s.position)
-              from workout_set s where s.activity_id=a.id), '[]'::jsonb)))
+              from workout_set s where s.activity_id=a.id), '[]'::jsonb), 'fields',
+            coalesce((select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('fieldId',v.field_id,'type',v.type,
+              'numberValue',case when v.type='NUMBER' then v.number_value end,
+              'timeSeconds',case when v.type='TIME' then v.time_seconds end,
+              'textValue',case when v.type='SHORT_TEXT' then v.text_value end,
+              'checked',case when v.type='CHECK' then v.checked end,
+              'memoValue',case when v.type='MEMO' then v.memo_value end)) order by d.position)
+              from activity_field_value v join template_field_definition d
+                on d.template_id=v.template_id and d.version=v.template_version and d.field_id=v.field_id
+              where v.activity_id=a.id), '[]'::jsonb)))
           when 'STUDY' then jsonb_build_object('study',
             (select jsonb_build_object('subject',s.subject,'durationMinutes',s.duration_minutes,
               'values',s.values_json,'snapshot',s.snapshot) from study_detail s where s.activity_id=a.id))
           when 'CLIMBING' then jsonb_build_object('climbing', jsonb_build_object(
             'durationSeconds',(select c.duration_seconds from climbing_detail c where c.activity_id=a.id),
             'rounds',coalesce((select jsonb_agg(jsonb_build_object('grade',c.grade,'attempts',c.attempts,
-              'completed',c.completed) order by c.position) from climbing_round c where c.activity_id=a.id), '[]'::jsonb)))
+              'completed',c.completed) order by c.position) from climbing_round c where c.activity_id=a.id), '[]'::jsonb),
+            'fields',coalesce((select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('fieldId',v.field_id,'type',v.type,
+              'numberValue',case when v.type='NUMBER' then v.number_value end,
+              'timeSeconds',case when v.type='TIME' then v.time_seconds end,
+              'textValue',case when v.type='SHORT_TEXT' then v.text_value end,
+              'checked',case when v.type='CHECK' then v.checked end,
+              'memoValue',case when v.type='MEMO' then v.memo_value end)) order by d.position)
+              from activity_field_value v join template_field_definition d
+                on d.template_id=v.template_id and d.version=v.template_version and d.field_id=v.field_id
+              where v.activity_id=a.id), '[]'::jsonb)))
         end as detail_snapshot from activity_record a
         """;
 
@@ -115,7 +133,7 @@ public class ActivityService {
             !request.getActivityType().name().equals(reference.get("task_type"))
         ) throw fail("TASK_TYPE_MISMATCH", false);
         var template = templates.current(owner, reference, request.getExpectedTemplateVersion());
-        var studyValues = templates.validate(request.getDetail(), template);
+        var templateValues = templates.validate(request.getDetail(), template);
         if (!"PLANNED".equals(reference.get("status"))) throw fail(
             "TASK_" + reference.get("status"),
             false
@@ -157,7 +175,7 @@ public class ActivityService {
             template == null ? null : reference.get("template_binding_id"),
             template == null ? null : mapper.writeValueAsString(template)
         );
-        details.save(id, request.getActivityType(), request.getDetail(), template == null ? null : studyValues);
+        details.save(id, request.getActivityType(), request.getDetail(), template, template == null ? null : templateValues);
         if (complete) outbox.append(
             "activity",
             id.toString(),
@@ -173,7 +191,7 @@ public class ActivityService {
                     request.getTaskId(),
                     request.getActivityType().name(),
                     request.getPerformedAt().toInstant(),
-                    template == null ? summary(request) : template.getName() + " · 공부 기록",
+                    template == null ? summary(request) : templateSummary(template),
                     start == null ? null : start.toInstant(),
                     end == null ? null : end.toInstant()
                 )
@@ -228,7 +246,11 @@ public class ActivityService {
             }
         }
         var responseDetail = mapper.treeToValue(raw, ActivityDetailResponse.class);
-        if (template == null && responseDetail.getStudy() != null) responseDetail.getStudy().setFields(null);
+        if (template == null) {
+            if (responseDetail.getStudy() != null) responseDetail.getStudy().setFields(null);
+            if (responseDetail.getWorkout() != null) responseDetail.getWorkout().setFields(null);
+            if (responseDetail.getClimbing() != null) responseDetail.getClimbing().setFields(null);
+        }
         return new ActivityResponse(
             (UUID) r.getObject("id"),
             (UUID) r.getObject("command_id"),
@@ -341,7 +363,7 @@ public class ActivityService {
         if (!old.getVersion().equals(request.getExpectedVersion())) throw fail("VERSION_CONFLICT", false);
         if (old.getStatus() == ActivityStatus.VOIDED) throw fail("ACTIVITY_VOIDED", false);
         details.validate(old.getActivityType(), request.getDetail());
-        var studyValues = templates.validate(request.getDetail(), old.getTemplateSnapshot());
+        var templateValues = templates.validate(request.getDetail(), old.getTemplateSnapshot());
         var start = request.getStartedAt();
         var end = request.getEndedAt();
         var zone = ZoneId.of("Asia/Seoul");
@@ -360,13 +382,13 @@ public class ActivityService {
             jdbc.update("update study_detail set subject=?,duration_minutes=? where activity_id=?",
                 study == null ? null : study.getSubject(), study == null ? null : study.getDurationMinutes(), id);
             if (old.getDetailFormat() == DetailFormat.TEMPLATE) jdbc.update("update study_detail set values_json=cast(? as jsonb) where activity_id=?",
-                mapper.writeValueAsString(studyValues), id);
-        } else details.replace(id, old.getActivityType(), request.getDetail());
+                mapper.writeValueAsString(templateValues), id);
+        } else details.replace(id, old.getActivityType(), request.getDetail(), old.getTemplateSnapshot(), templateValues);
         var summaryRequest = new CreateActivityRequest().activityType(old.getActivityType()).detail(request.getDetail());
         outbox.append("activity", id.toString(), new EventEnvelope<>(UUID.randomUUID(), EventType.ACTIVITY_CORRECTED,
             1, old.getVersion() + 1, Instant.now(), owner,
             new ActivityCorrected(id, old.getTaskId(), old.getActivityType().name(), request.getPerformedAt().toInstant(),
-                old.getTemplateSnapshot() == null ? summary(summaryRequest) : old.getTemplateSnapshot().getName() + " · 공부 기록",
+                old.getTemplateSnapshot() == null ? summary(summaryRequest) : templateSummary(old.getTemplateSnapshot()),
                 start == null ? null : start.toInstant(), end == null ? null : end.toInstant(),
                 old.getPerformedAt().toInstant(), old.getStatus().name())));
         return get(owner, id);
@@ -375,6 +397,14 @@ public class ActivityService {
     private void archive(ActivityResponse old) {
         jdbc.update("insert into activity_revision_history(activity_id,revision,snapshot) values (?,?,cast(? as jsonb))",
             old.getActivityId(), old.getVersion(), mapper.writeValueAsString(old));
+    }
+
+    private String templateSummary(ActivityTemplateSnapshot template) {
+        return template.getName() + " · " + switch (template.getDomain()) {
+            case STUDY -> "공부 기록";
+            case WORKOUT -> "운동 기록";
+            case CLIMBING -> "클라이밍 기록";
+        };
     }
 
     @Transactional

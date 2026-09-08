@@ -8,6 +8,7 @@ Name | Type
 ------------ | -------------
 `durationSeconds` | number
 `rounds` | [Array&lt;ClimbingRound&gt;](ClimbingRound.md)
+`fields` | [Array&lt;FieldInput&gt;](FieldInput.md)
 
 ## Example
 
@@ -18,6 +19,7 @@ import type { ClimbingDetail } from '@todorok/api-client'
 const example = {
   "durationSeconds": null,
   "rounds": null,
+  "fields": null,
 } satisfies ClimbingDetail
 
 console.log(example)

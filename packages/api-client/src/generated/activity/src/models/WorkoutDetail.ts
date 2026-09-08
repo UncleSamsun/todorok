@@ -20,6 +20,13 @@ import {
     WorkoutSetToJSON,
     WorkoutSetToJSONTyped,
 } from './WorkoutSet';
+import type { FieldInput } from './FieldInput';
+import {
+    FieldInputFromJSON,
+    FieldInputFromJSONTyped,
+    FieldInputToJSON,
+    FieldInputToJSONTyped,
+} from './FieldInput';
 
 /**
  *
@@ -33,6 +40,12 @@ export interface WorkoutDetail {
      * @memberof WorkoutDetail
      */
     sets?: Array<WorkoutSet>;
+    /**
+     * Optional values for the server-selected free-workout template. Existing sets remain relational and separate.
+     * @type {Array<FieldInput>}
+     * @memberof WorkoutDetail
+     */
+    fields?: Array<FieldInput>;
 }
 
 /**
@@ -53,6 +66,7 @@ export function WorkoutDetailFromJSONTyped(json: any, ignoreDiscriminator: boole
     return {
 
         'sets': json['sets'] == null ? undefined : ((json['sets'] as Array<any>).map(WorkoutSetFromJSON)),
+        'fields': json['fields'] == null ? undefined : ((json['fields'] as Array<any>).map(FieldInputFromJSON)),
     };
 }
 
@@ -68,5 +82,6 @@ export function WorkoutDetailToJSONTyped(value?: WorkoutDetail | null, ignoreDis
     return {
 
         'sets': value['sets'] == null ? undefined : ((value['sets'] as Array<any>).map(WorkoutSetToJSON)),
+        'fields': value['fields'] == null ? undefined : ((value['fields'] as Array<any>).map(FieldInputToJSON)),
     };
 }

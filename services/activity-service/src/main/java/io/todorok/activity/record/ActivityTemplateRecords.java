@@ -16,9 +16,6 @@ final class ActivityTemplateRecords {
             if (expectedVersion != null) throw invalid("VALIDATION_FAILED", "Unlinked tasks cannot specify expectedTemplateVersion.");
             return null;
         }
-        // Workout/climbing custom values are introduced with their own user flow; preserve their existing boundary.
-        if (!"STUDY".equals(reference.get("task_type"))) throw new ApiFailure(409, "TEMPLATE_RECORD_NOT_READY",
-            "Template record not ready", "This domain's custom recording flow is not available yet.", false);
         if (expectedVersion == null) throw invalid("VALIDATION_FAILED", "Linked tasks require expectedTemplateVersion.");
         // Lock order: owner/command -> TaskReference -> template identity. Management never locks TaskReference.
         var rows = jdbc.queryForList("select * from record_template where id=? and user_id=? for update", reference.get("template_id"), owner);
@@ -38,7 +35,7 @@ final class ActivityTemplateRecords {
     }
 
     Map<String,Object> validate(ActivityDetail detail, ActivityTemplateSnapshot snapshot) {
-        List<FieldInput> inputs = detail.getStudy() == null ? null : detail.getStudy().getFields();
+        List<FieldInput> inputs = fields(detail, snapshot);
         if (snapshot == null && inputs != null && !inputs.isEmpty()) throw invalid("FIELD_UNKNOWN", "This activity has no field definition.");
         var values = new LinkedHashMap<String,Object>();
         if (inputs == null) return values;
@@ -68,6 +65,21 @@ final class ActivityTemplateRecords {
             values.put(input.getFieldId().toString(), value);
         }
         return values;
+    }
+
+    private List<FieldInput> fields(ActivityDetail detail, ActivityTemplateSnapshot snapshot) {
+        if (detail == null) return null;
+        if (snapshot == null) {
+            if (detail.getStudy() != null && detail.getStudy().getFields() != null) return detail.getStudy().getFields();
+            if (detail.getWorkout() != null && detail.getWorkout().getFields() != null) return detail.getWorkout().getFields();
+            if (detail.getClimbing() != null && detail.getClimbing().getFields() != null) return detail.getClimbing().getFields();
+            return null;
+        }
+        return switch (snapshot.getDomain()) {
+            case STUDY -> detail.getStudy() == null ? null : detail.getStudy().getFields();
+            case WORKOUT -> detail.getWorkout() == null ? null : detail.getWorkout().getFields();
+            case CLIMBING -> detail.getClimbing() == null ? null : detail.getClimbing().getFields();
+        };
     }
 
     static ApiFailure invalid(String code, String detail) { return new ApiFailure(400, code, "Invalid field value", detail, false); }

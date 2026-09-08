@@ -20,6 +20,13 @@ import {
     ClimbingRoundToJSON,
     ClimbingRoundToJSONTyped,
 } from './ClimbingRound';
+import type { FieldInput } from './FieldInput';
+import {
+    FieldInputFromJSON,
+    FieldInputFromJSONTyped,
+    FieldInputToJSON,
+    FieldInputToJSONTyped,
+} from './FieldInput';
 
 /**
  *
@@ -39,6 +46,12 @@ export interface ClimbingDetail {
      * @memberof ClimbingDetail
      */
     rounds?: Array<ClimbingRound>;
+    /**
+     * Optional values for the server-selected climbing template. Existing rounds remain relational and separate.
+     * @type {Array<FieldInput>}
+     * @memberof ClimbingDetail
+     */
+    fields?: Array<FieldInput>;
 }
 
 /**
@@ -60,6 +73,7 @@ export function ClimbingDetailFromJSONTyped(json: any, ignoreDiscriminator: bool
 
         'durationSeconds': json['durationSeconds'] == null ? undefined : json['durationSeconds'],
         'rounds': json['rounds'] == null ? undefined : ((json['rounds'] as Array<any>).map(ClimbingRoundFromJSON)),
+        'fields': json['fields'] == null ? undefined : ((json['fields'] as Array<any>).map(FieldInputFromJSON)),
     };
 }
 
@@ -76,5 +90,6 @@ export function ClimbingDetailToJSONTyped(value?: ClimbingDetail | null, ignoreD
 
         'durationSeconds': value['durationSeconds'],
         'rounds': value['rounds'] == null ? undefined : ((value['rounds'] as Array<any>).map(ClimbingRoundToJSON)),
+        'fields': value['fields'] == null ? undefined : ((value['fields'] as Array<any>).map(FieldInputToJSON)),
     };
 }

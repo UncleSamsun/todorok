@@ -7,6 +7,7 @@
 Name | Type
 ------------ | -------------
 `sets` | [Array&lt;WorkoutSet&gt;](WorkoutSet.md)
+`fields` | [Array&lt;FieldInput&gt;](FieldInput.md)
 
 ## Example
 
@@ -16,6 +17,7 @@ import type { WorkoutDetail } from '@todorok/api-client'
 // TODO: Update the object below with actual values
 const example = {
   "sets": null,
+  "fields": null,
 } satisfies WorkoutDetail
 
 console.log(example)
