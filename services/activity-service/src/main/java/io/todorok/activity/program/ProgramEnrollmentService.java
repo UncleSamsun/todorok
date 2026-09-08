@@ -57,6 +57,23 @@ public class ProgramEnrollmentService {
         return read(id);
     }
 
+    @Transactional
+    public void recordOutcome(UUID taskId, UUID activityId, int actualRepetitions, boolean voided) {
+        var sessions = jdbc.queryForList("select * from program_session where task_id=? for update", taskId);
+        if (sessions.isEmpty()) return;
+        var session = sessions.getFirst();
+        UUID enrollmentId = (UUID) session.get("enrollment_id");
+        var enrollment = jdbc.queryForMap("select * from program_enrollment where id=? for update", enrollmentId);
+        int target = 0;
+        for (var value : mapper.readTree(String.valueOf(jdbc.queryForObject("select target_sets::text from program_session where id=?", String.class, session.get("id"))))) target += value.asInt();
+        String outcome = voided ? "VOIDED" : actualRepetitions >= target ? "SUCCESS" : "FAILURE";
+        jdbc.update("update program_session set activity_id=?,outcome=? where id=?", voided ? null : activityId, outcome, session.get("id"));
+        var catalog = importer.parse(mapper.readTree(String.valueOf(jdbc.queryForObject("select definition::text from program_catalog where catalog_key=? and catalog_version=?", String.class, enrollment.get("catalog_key"), enrollment.get("catalog_version")))));
+        var history = jdbc.query("select row_number() over(order by created_at,id) as sequence,outcome from program_session where enrollment_id=? and outcome is not null", (row, index) -> new ProgramProgressPolicy.Attempt(row.getLong("sequence"), ProgramProgressPolicy.Outcome.valueOf(row.getString("outcome"))), enrollmentId);
+        var progress = new ProgramProgressPolicy().calculate(((Number) enrollment.get("start_week")).intValue(), catalog.weeks().size(), catalog.sessionsPerWeek(), history);
+        jdbc.update("update program_enrollment set current_week=?,current_session=?,status=?,revision=revision+1 where id=?", progress.week(), progress.session(), progress.completed() ? "COMPLETED" : "ACTIVE", enrollmentId);
+    }
+
     private Enrollment read(UUID id) {
         var enrollment = jdbc.queryForMap("select * from program_enrollment where id=?", id);
         var session = jdbc.queryForMap("select id,target_sets::text as target_sets from program_session where enrollment_id=? and cycle=1 and session=?", id, enrollment.get("current_session"));
