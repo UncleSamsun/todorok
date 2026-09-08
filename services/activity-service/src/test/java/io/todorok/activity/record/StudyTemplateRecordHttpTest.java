@@ -8,6 +8,7 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.*;
 import io.todorok.activity.template.TemplateBindingService;
 import io.todorok.internal.api.model.TemplateSelectionRequest;
+import io.todorok.web.ApiFailure;
 import java.net.URI;
 import java.net.http.*;
 import java.nio.file.Path;
@@ -56,7 +57,20 @@ class StudyTemplateRecordHttpTest {
     @Autowired ActivityDetailStore details;
     @Autowired io.todorok.messaging.OutboxEventWriter outbox;
     @Autowired io.todorok.activity.template.TemplateService templateService;
+    @Autowired io.todorok.activity.program.ProgramCatalogStore catalogs;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
+
+    @Test void importsSyntheticCatalogIdempotentlyAndRejectsChecksumReplacement() throws Exception {
+        var source = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        assertThat(catalogs.importCatalog(source).result()).isEqualTo(io.todorok.activity.program.ProgramCatalogStore.ImportResult.IMPORTED);
+        assertThat(catalogs.importCatalog(source).result()).isEqualTo(io.todorok.activity.program.ProgramCatalogStore.ImportResult.UNCHANGED);
+        assertThat(jdbc.queryForObject("select count(*) from program_catalog where catalog_key='synthetic-pushup' and catalog_version=1", Integer.class)).isOne();
+        ((tools.jackson.databind.node.ObjectNode) source).put("name", "바뀐 합성 프로그램");
+        ((tools.jackson.databind.node.ObjectNode) source).put("checksum", new io.todorok.activity.program.ProgramCatalogImporter(mapper).checksum(source));
+        assertThatThrownBy(() -> catalogs.importCatalog(source)).isInstanceOf(ApiFailure.class)
+            .extracting(error -> ((ApiFailure) error).code()).isEqualTo("CATALOG_VERSION_CONFLICT");
+        assertThat(jdbc.queryForObject("select name from program_catalog where catalog_key='synthetic-pushup' and catalog_version=1", String.class)).isEqualTo("합성 푸시업 프로그램");
+    }
 
     @Test void workoutTemplateKeepsRelationalSetsAndCustomValuesAcrossCorrection() throws Exception {
         UUID owner = UUID.randomUUID(), task = UUID.randomUUID();
