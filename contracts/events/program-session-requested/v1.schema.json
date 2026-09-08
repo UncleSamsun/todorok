@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://todorok.app/schemas/events/program-session-requested/v1",
+  "title": "Program session requested event v1",
+  "type": "object",
+  "required": ["eventId", "type", "version", "aggregateVersion", "occurredAt", "userId", "payload"],
+  "allOf": [
+    { "$ref": "https://todorok.app/schemas/events/envelope/v1" },
+    { "properties": { "type": { "const": "PROGRAM_SESSION_REQUESTED" }, "payload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["enrollmentId", "sessionId", "taskId", "title", "scheduledDate", "targetSets"],
+      "properties": {
+        "enrollmentId": { "type": "string", "format": "uuid" },
+        "sessionId": { "type": "string", "format": "uuid" },
+        "taskId": { "type": "string", "format": "uuid" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "scheduledDate": { "type": "string", "format": "date" },
+        "targetSets": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } }
+      }
+    } } }
+  ]
+}

@@ -132,6 +132,8 @@ enrollment DB 체크포인트: V10은 user·catalog key/version·command fingerp
 
 enrollment API 체크포인트: 생성 Activity OpenAPI에서 catalog 목록·등록·owner 조회를 추가해 Java/TypeScript를 재생성했다. 실제 HTTP에서 catalog 목록, 등록201, pinned version/target `[4,3,3]`, 동일 command 재전달, 다른 owner404를 확인했다. 첫 Task의 planner event·Activity 결과 재계산/UI가 없으므로 사용자 기능 완료로 계산하지 않는다.
 
+세션 요청 계약 체크포인트: `PROGRAM_SESSION_REQUESTED` v1은 enrollment/session/task UUID, 날짜, title, target sets를 닫힌 payload로 고정한다. 유효/무효 fixture와 EventType을 계약 테스트에서 검증했다. 아직 activity outbox 발행·planner consumer·실제 Task 생성이 없으므로 사용자 기능 완료로 계산하지 않는다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

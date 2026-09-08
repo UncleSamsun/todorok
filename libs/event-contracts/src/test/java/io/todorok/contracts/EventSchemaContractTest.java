@@ -95,7 +95,8 @@ class EventSchemaContractTest {
                 Arguments.of("task-changed", "TASK_CHANGED"),
                 Arguments.of("activity-completed", "ACTIVITY_COMPLETED"),
                 Arguments.of("activity-corrected", "ACTIVITY_CORRECTED"),
-                Arguments.of("activity-voided", "ACTIVITY_VOIDED"));
+                Arguments.of("activity-voided", "ACTIVITY_VOIDED"),
+                Arguments.of("program-session-requested", "PROGRAM_SESSION_REQUESTED"));
     }
 
     private static Stream<Arguments> serializedEvents() {
