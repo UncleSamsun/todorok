@@ -110,6 +110,8 @@ UI API 인계 — 원본은 `contracts/openapi/activity-v1.yaml`, 생성 모델�
 
 첫 실제 PostgreSQL HTTP 회귀는 연결된 자유 운동이 기존 `TEMPLATE_RECORD_NOT_READY` 409로 거절되는 RED를 확인했다. 구현 후 운동 세트와 NUMBER/CHECK 값을 함께 201 저장하고, correction에서 세트와 선택 값 교체·원 snapshot·revision0 history·관계형 행을 확인해 GREEN이 됐다. 생성 계약 drift와 API client build도 통과했다. 이는 서버 첫 체크포인트이며 사용자 기능 완료가 아니다. 남은 것은 입력 오류/DB 제약·동시성·Kafka/반복 검증, 운동 관리·일정·기록 UI, 이어서 자유 행보드·클라이밍 라운드 사용자 흐름이다.
 
+클라이밍 서버 연결도 실제 PostgreSQL HTTP 회귀로 확인했다. CLIMBING_SESSION의 기존 duration/round와 TIME/MEMO 자유 값을 함께 저장하고 correction으로 라운드·선택 값만 교체하면서 원 snapshot/history를 유지했다. 자유 TIME 3,600초→7,200초 변경에도 월 집계는 기존 duration 600초→900초만 반영돼 중복 합산하지 않았다. 최초 테스트 컴파일의 타입 이름 누락은 제품 실행 전 수정했고, 같은 신규 시나리오 재실행이 통과했다. UI와 전체09 검증 전이므로 완료 판정은 보류한다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

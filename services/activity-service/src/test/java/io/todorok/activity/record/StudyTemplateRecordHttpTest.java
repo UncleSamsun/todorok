@@ -100,6 +100,49 @@ class StudyTemplateRecordHttpTest {
             .isEqualTo(saved);
     }
 
+    @Test void climbingTemplateKeepsRoundsAndDoesNotDoubleCountCustomTime() throws Exception {
+        UUID owner = UUID.randomUUID(), task = UUID.randomUUID();
+        var timeId = UUID.randomUUID();
+        var memoId = UUID.randomUUID();
+        var fields = List.of(
+            Map.<String,Object>of("fieldId", timeId, "type", "TIME", "name", "휴식 시간", "unit", "분"),
+            Map.<String,Object>of("fieldId", memoId, "type", "MEMO", "name", "느낌")
+        );
+        var template = ok(send("POST", "/templates", Map.of("commandId", UUID.randomUUID(), "name", "클라이밍 세션",
+            "domain", "CLIMBING", "kind", "CLIMBING_SESSION", "fields", fields), owner), 201).path("templateId").asText();
+        var binding = bindings.approve(new TemplateSelectionRequest(UUID.randomUUID(), owner,
+            TemplateSelectionRequest.TargetTypeEnum.TASK, task, TemplateSelectionRequest.TaskTypeEnum.CLIMBING, UUID.fromString(template), 1L));
+        var payload = new LinkedHashMap<String,Object>(Map.of("taskId", task, "taskType", "CLIMBING", "status", "PLANNED",
+            "scheduledDate", "2026-09-07", "templateLink", Map.of("bindingId", binding.getBindingId(), "templateId", template, "selectedTemplateVersion", 1)));
+        payload.put("seriesId", null);
+        consumer.receive(mapper.writeValueAsString(Map.of("eventId", UUID.randomUUID(), "type", "TASK_SCHEDULED", "version", 2,
+            "aggregateVersion", 0, "occurredAt", Instant.now().toString(), "userId", owner, "payload", payload)));
+
+        var detail = Map.of("climbing", Map.of("durationSeconds", 600,
+            "rounds", List.of(Map.of("grade", "V5", "attempts", 2, "completed", false)),
+            "fields", List.of(Map.of("fieldId", timeId, "type", "TIME", "timeSeconds", 3600),
+                Map.of("fieldId", memoId, "type", "MEMO", "memoValue", "슬로퍼"))));
+        var request = new LinkedHashMap<String,Object>(Map.of("commandId", UUID.randomUUID(), "taskId", task, "activityType", "CLIMBING",
+            "completionStatus", "COMPLETED", "performedAt", "2026-09-07T11:00:00+09:00", "expectedTemplateVersion", 1, "detail", detail));
+        var saved = ok(send("POST", "/activities", request, owner), 201);
+        UUID activityId = UUID.fromString(saved.path("activityId").asText());
+        assertThat(saved.path("detail").path("climbing").path("rounds").get(0).path("completed").asBoolean()).isFalse();
+        assertThat(saved.path("detail").path("climbing").path("fields").size()).isEqualTo(2);
+        assertThat(activities.monthlySummary(owner, java.time.YearMonth.of(2026, 9), io.todorok.activity.api.model.ActivityType.CLIMBING).getDurationSeconds()).isEqualTo(600);
+
+        var correctedDetail = Map.of("climbing", Map.of("durationSeconds", 900,
+            "rounds", List.of(Map.of("grade", "V5", "attempts", 3, "completed", true)),
+            "fields", List.of(Map.of("fieldId", timeId, "type", "TIME", "timeSeconds", 7200))));
+        var corrected = ok(send("PATCH", "/activities/" + activityId, Map.of("expectedVersion", 0,
+            "performedAt", "2026-09-07T11:00:00+09:00", "detail", correctedDetail), owner), 200);
+        assertThat(corrected.path("detail").path("climbing").path("rounds").get(0).path("completed").asBoolean()).isTrue();
+        assertThat(corrected.path("detail").path("climbing").path("fields").size()).isOne();
+        assertThat(jdbc.queryForObject("select time_seconds from activity_field_value where activity_id=?", Long.class, activityId)).isEqualTo(7200);
+        assertThat(activities.monthlySummary(owner, java.time.YearMonth.of(2026, 9), io.todorok.activity.api.model.ActivityType.CLIMBING).getDurationSeconds()).isEqualTo(900);
+        assertThat(mapper.readTree(jdbc.queryForObject("select snapshot::text from activity_revision_history where activity_id=? and revision=0", String.class, activityId)))
+            .isEqualTo(saved);
+    }
+
     @Test void fiveTypesRoundTripWithOriginalDefinitionAfterEditArchiveCorrectionAndVoid() throws Exception {
         UUID owner = UUID.randomUUID(), task = UUID.randomUUID();
         var definition = definition();
