@@ -124,6 +124,8 @@ UI API 인계 — 원본은 `contracts/openapi/activity-v1.yaml`, 생성 모델�
 
 작업10 첫 규칙 체크포인트: 합성 프로그램의 한 주를 여러 세션 cycle로 계산하고, cycle의 모든 수행이 성공일 때만 다음 주차로 진급하며 하나라도 실패하면 같은 주차를 반복한다. VOIDED 수행은 이력 재계산에서 제외하고 마지막 주차의 성공 cycle 뒤 종료한다. 수행 sequence 순서를 명시적으로 정렬해 전달 순서에 의존하지 않는다. 순수 policy의 진급·반복·void 재계산·종료·잘못된 범위 4개 회귀가 통과했다. 아직 catalog/import/enrollment/session/API/event/planner/UI가 없으므로 사용자 기능 완료로 계산하지 않는다.
 
+catalog/import 체크포인트: 공개 실제 운동표를 넣지 않은 합성 `program-v1` JSON Schema와 valid/invalid fixture를 추가했다. importer는 checksum 필드를 제외한 정렬 JSON의 SHA-256을 확인하고 source 종류·연속 주차/세션·주당 세션 수·세트 합계를 검증한다. fixture의 객체 키 순서와 무관한 checksum, 내용 위조, 올바른 checksum인데 잘못된 targetTotal을 포함한 3개 회귀가 통과했다. 아직 DB import·enrollment/API가 없으므로 사용자 기능 완료로 계산하지 않는다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

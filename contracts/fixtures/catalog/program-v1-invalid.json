@@ -1,0 +1,9 @@
+{
+  "catalogKey": "synthetic-pushup",
+  "version": 1,
+  "checksum": "5aac7838842db1639f25f471e64a5078cad399ccdb870338eb20be9f3141912a",
+  "name": "잘못된 합계",
+  "source": { "kind": "SYNTHETIC", "label": "테스트 전용" },
+  "sessionsPerWeek": 1,
+  "weeks": [{ "week": 1, "sessions": [{ "session": 1, "sets": [2, 2], "targetTotal": 5 }] }]
+}

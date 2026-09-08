@@ -1,0 +1,25 @@
+{
+  "catalogKey": "synthetic-pushup",
+  "version": 1,
+  "checksum": "34a9aed7deb39701b9a39d283f3b8866b8a06ddd9297f2e202130e77642f93ee",
+  "name": "합성 푸시업 프로그램",
+  "source": {
+    "kind": "SYNTHETIC",
+    "label": "테스트 전용 합성 자료",
+    "conditions": ["테스트용"],
+    "cautions": ["실제 운동 처방이 아님"]
+  },
+  "sessionsPerWeek": 3,
+  "weeks": [
+    { "week": 1, "sessions": [
+      { "session": 1, "sets": [3, 3, 2], "targetTotal": 8 },
+      { "session": 2, "sets": [3, 2, 2], "targetTotal": 7 },
+      { "session": 3, "sets": [2, 2, 2], "targetTotal": 6 }
+    ] },
+    { "week": 2, "sessions": [
+      { "session": 1, "sets": [4, 3, 3], "targetTotal": 10 },
+      { "session": 2, "sets": [4, 3, 2], "targetTotal": 9 },
+      { "session": 3, "sets": [3, 3, 3], "targetTotal": 9 }
+    ] }
+  ]
+}
