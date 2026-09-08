@@ -121,6 +121,24 @@ class StudyTemplateRecordHttpTest {
         assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrollment.id())).isEqualTo(4);
     }
 
+    @Test void completingTheLastProgramSessionDoesNotCreateAnotherTaskRequest() throws Exception {
+        var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        catalogs.importCatalog(catalog);
+        UUID owner = UUID.randomUUID();
+        var enrollment = enrollments.enroll(owner, UUID.randomUUID(), "synthetic-pushup", 1, 10, 1);
+        for (int completed = 0; completed < 6; completed++) {
+            UUID taskId = jdbc.queryForObject("select task_id from program_session where id=?", UUID.class, enrollment.sessionId());
+            String targets = jdbc.queryForObject("select target_sets::text from program_session where id=?", String.class, enrollment.sessionId());
+            int repetitions = 0;
+            for (var target : mapper.readTree(targets)) repetitions += target.asInt();
+            enrollments.recordOutcome(taskId, UUID.randomUUID(), repetitions, false);
+            enrollment = enrollments.get(owner, enrollment.id());
+        }
+        assertThat(jdbc.queryForObject("select status from program_enrollment where id=?", String.class, enrollment.id())).isEqualTo("COMPLETED");
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrollment.id())).isEqualTo(6);
+        assertThat(jdbc.queryForObject("select count(*) from outbox_event where aggregatetype='program-session' and payload->'payload'->>'enrollmentId'=?", Integer.class, enrollment.id().toString())).isEqualTo(6);
+    }
+
     @Test void voidedProgramResultRecalculatesWithoutDeletingAnAlreadyCreatedFollowup() throws Exception {
         var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
         catalogs.importCatalog(catalog);
