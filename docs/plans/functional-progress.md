@@ -148,6 +148,8 @@ Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드�
 
 프로그램 화면 연결 체크포인트: 기존 단건 enrollment 조회만으로는 새로고침 뒤 진행 중인 프로그램을 찾을 수 없어 `GET /program-enrollments`를 추가했다. owner의 enrollment만 `created_at,id` 최신순으로 반환하고 각 항목은 현재 회차 target과 실제 status를 포함한다. OpenAPI Java/TypeScript 생성물을 갱신했고, 실제 PostgreSQL HTTP에서 owner 두 건만 최신순으로 받고 다른 owner의 등록이 섞이지 않는 회귀를 확인했다. 이제 이 API를 운동 탭의 catalog·등록·현재 회차 화면에 연결한다.
 
+프로그램 UI 체크포인트: 운동 탭은 catalog의 이름·기간·주당 회차를 보여 주고, 초기 검사 횟수와 선택 시작 주차로 등록한다. 등록 뒤에는 server response와 목록 재조회로 진행 중인 프로그램의 현재 `주차·회차·권장 세트`를 표시해 새로고침 뒤에도 복구한다. UI 회귀는 catalog 선택→입력→POST 본문→`2주차 1회`/`4 · 3 · 3회` 표시를 확인하고, production build를 통과했다. 전용 실제 runtime의 로그인된 브라우저에서 기존 등록 목록→새 주차2 등록201→목록 재조회→새 첫 회차 표시까지 확인했다. 합성 catalog의 등록→첫 Task→실제 Workout 완료→Kafka 다음 Task는 앞선 Compose smoke로 검증했으며, 다음은 해당 묶음의 제한 리뷰와 실제 catalog 입력 gate다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.
