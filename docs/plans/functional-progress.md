@@ -158,6 +158,8 @@ Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드�
 
 설정 테마 흐름: planner V10 `user_preference`는 authenticated owner별 theme와 optimistic revision을 저장한다. row가 없는 계정은 `SYSTEM`/revision0을 받고, 첫 저장은 0으로 만들며 이후 낡은 revision은 409이다. 웹 provider는 preference를 읽어 document theme를 즉시 적용하고, 저장 실패 때 이전 화면 theme로 복구한다. Settings UI 회귀와 production web build, 실제 local runtime의 `SYSTEM → DARK` 저장→새 API 재조회가 통과했다. planner migration 두 회귀도 V10+test migration 11개를 확인했다.
 
+PWA 전환 보완: 이전 service worker가 가진 index가 없는 lazy chunk를 요청할 때 Nginx가 SPA HTML 200을 반환해 parse 오류와 빈 화면을 만들던 경로를 재현했다. `/assets/`는 존재하는 immutable hashed asset만 제공하고 없으면 404로 끝내며, Vite preload 오류는 한 번 새 index로 reload한다. 정적 Nginx 회귀·production web build와 전용 runtime의 임의 이전 asset 404를 확인했다. 실제 설치 iPhone의 service worker update 복구는 출시 검증에 남는다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

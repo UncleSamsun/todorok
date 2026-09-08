@@ -6,6 +6,14 @@ import { createBrowserSessionCoordinator } from './app/browser-session'
 
 const rootElement = document.getElementById('root')
 
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault()
+  const key = 'todorok.preload-recovery'
+  if (sessionStorage.getItem(key) === '1') return
+  sessionStorage.setItem(key, '1')
+  window.location.reload()
+})
+
 if (!rootElement) {
   throw new Error('root element not found')
 }
