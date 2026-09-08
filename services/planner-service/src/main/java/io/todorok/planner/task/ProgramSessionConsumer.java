@@ -14,7 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 public class ProgramSessionConsumer {
     private final ObjectMapper mapper; private final InboxEventGuard inbox; private final TaskRepository tasks; private final TaskEvents events;
     public ProgramSessionConsumer(ObjectMapper mapper, InboxEventGuard inbox, TaskRepository tasks, TaskEvents events) { this.mapper = mapper; this.inbox = inbox; this.tasks = tasks; this.events = events; }
-    @KafkaListener(id="planner-program-session", topics="todorok.activity.v1", groupId="planner-program-session-v1", autoStartup="${todorok.messaging.enabled:false}")
+    @KafkaListener(id="planner-program-session", topics="todorok.program-session.v1", groupId="planner-program-session-v1", autoStartup="${todorok.messaging.enabled:false}")
     @Transactional
     public void receive(String json) {
         var event = EventJson.read(mapper, json);

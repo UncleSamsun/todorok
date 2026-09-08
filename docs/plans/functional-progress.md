@@ -138,6 +138,8 @@ enrollment API 체크포인트: 생성 Activity OpenAPI에서 catalog 목록·�
 
 Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드하고 전용 runtime을 재기동해 migration·health·Connect·bootstrap을 통과했다. catalog import는 아직 운영자/개발 경로가 없어 런타임에서 catalog를 주입할 공개 API가 없다. 임의 SQL 주입 대신 다음 import 경로와 함께 실제 Kafka 왕복을 한 번에 검증한다.
 
+첫 세션 실제 왕복: local smoke profile에서만 합성 catalog bootstrap을 주입하고 catalog 목록→주차2 등록→outbox→`todorok.program-session.v1`→planner 고정 WORKOUT Task 한 건 생성을 확인했다. 처음에는 aggregate type이 `program-session`이라 Connect가 별도 topic으로 내보내는데 consumer가 activity topic을 구독하고 Kafka init에 새 topic이 없어 Task가 생성되지 않았다. producer/consumer topic과 init/retention을 맞춰 해결했다. planner 재생성 뒤 nginx가 이전 upstream IP를 캐시해 502를 내는 smoke 환경 문제는 nginx 재생성으로 확인했고, 이는 runtime helper의 후속 정리 항목이다. 실제 프로그램 Task를 완료한 뒤 next session 재계산·UI는 아직 남아 있어 사용자 기능 완료로 계산하지 않는다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

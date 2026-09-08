@@ -10,6 +10,8 @@ services:
   activity-service:
     build:
       network: host
+    environment:
+      SPRING_PROFILES_ACTIVE: local
   activity-migration:
     build:
       network: host
