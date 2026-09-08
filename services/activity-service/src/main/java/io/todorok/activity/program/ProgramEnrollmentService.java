@@ -71,7 +71,19 @@ public class ProgramEnrollmentService {
         var catalog = importer.parse(mapper.readTree(String.valueOf(jdbc.queryForObject("select definition::text from program_catalog where catalog_key=? and catalog_version=?", String.class, enrollment.get("catalog_key"), enrollment.get("catalog_version")))));
         var history = jdbc.query("select row_number() over(order by created_at,id) as sequence,outcome from program_session where enrollment_id=? and outcome is not null", (row, index) -> new ProgramProgressPolicy.Attempt(row.getLong("sequence"), ProgramProgressPolicy.Outcome.valueOf(row.getString("outcome"))), enrollmentId);
         var progress = new ProgramProgressPolicy().calculate(((Number) enrollment.get("start_week")).intValue(), catalog.weeks().size(), catalog.sessionsPerWeek(), history);
-        jdbc.update("update program_enrollment set current_week=?,current_session=?,status=?,revision=revision+1 where id=?", progress.week(), progress.session(), progress.completed() ? "COMPLETED" : "ACTIVE", enrollmentId);
+        int currentCycle = ((Number) enrollment.get("current_cycle")).intValue();
+        int nextCycle = progress.session() == 1 && !progress.completed() && history.size() % catalog.sessionsPerWeek() == 0 ? currentCycle + 1 : currentCycle;
+        jdbc.update("update program_enrollment set current_cycle=?,current_week=?,current_session=?,status=?,revision=revision+1 where id=?", nextCycle, progress.week(), progress.session(), progress.completed() ? "COMPLETED" : "ACTIVE", enrollmentId);
+        if (progress.completed()) return;
+        var existing = jdbc.queryForList("select id from program_session where enrollment_id=? and cycle=? and session=?", enrollmentId, nextCycle, progress.session());
+        if (!existing.isEmpty()) return;
+        var nextTarget = catalog.weeks().get(progress.week() - 1).sessions().get(progress.session() - 1);
+        UUID nextSession = UUID.randomUUID(), nextTask = UUID.randomUUID();
+        jdbc.update("insert into program_session(id,enrollment_id,cycle,week,session,target_sets,task_id) values (?,?,?,?,?,cast(? as jsonb),?)", nextSession, enrollmentId, nextCycle, progress.week(), progress.session(), mapper.writeValueAsString(nextTarget.sets()), nextTask);
+        UUID owner = (UUID) enrollment.get("user_id");
+        LocalDate date = LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul"))).plusDays(1);
+        outbox.append("program-session", nextSession.toString(), new EventEnvelope<>(UUID.randomUUID(), EventType.PROGRAM_SESSION_REQUESTED, 1, ((Number) enrollment.get("revision")).longValue() + 1, clock.instant(), owner,
+            Map.of("enrollmentId", enrollmentId.toString(), "sessionId", nextSession.toString(), "taskId", nextTask.toString(), "title", catalog.name() + " · " + progress.week() + "주차 " + progress.session() + "회", "scheduledDate", date.toString(), "targetSets", nextTarget.sets())));
     }
 
     private Enrollment read(UUID id) {
