@@ -89,5 +89,11 @@ class ActivitySummaryHttpTest {
             return new ActivityService(jdbc, mock(ActivityDetailStore.class), mock(OutboxEventWriter.class),
                 mock(ObjectMapper.class), Clock.fixed(Instant.parse("2026-09-07T00:00:00Z"), ZoneOffset.UTC));
         }
+        @Bean io.todorok.activity.program.ProgramCatalogStore catalogs() {
+            return mock(io.todorok.activity.program.ProgramCatalogStore.class);
+        }
+        @Bean io.todorok.activity.program.ProgramEnrollmentService enrollments() {
+            return mock(io.todorok.activity.program.ProgramEnrollmentService.class);
+        }
     }
 }

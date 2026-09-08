@@ -569,7 +569,7 @@ class TemplateFoundationHttpTest {
     }
 
     @Test
-    void rejectsUnknownDuplicateOversizedAndCompressedBodiesOnlyOnTemplateWrites() throws Exception {
+    void rejectsUnknownDuplicateOversizedAndCompressedBodies() throws Exception {
         UUID owner = UUID.randomUUID();
         int before = jdbc.queryForObject("select count(*) from record_template", Integer.class);
         String command = UUID.randomUUID().toString();
@@ -598,7 +598,7 @@ class TemplateFoundationHttpTest {
         String activityDuplicate = "{\"commandId\":\"" + UUID.randomUUID() + "\",\"taskId\":\"" + UUID.randomUUID()
             + "\",\"activityType\":\"STUDY\",\"activityType\":\"STUDY\",\"completionStatus\":\"PARTIAL\","
             + "\"performedAt\":\"2026-09-07T10:00:00+09:00\",\"detail\":{}}";
-        assertProblem(send("POST", "/activities", activityDuplicate, owner), 409, "TASK_REFERENCE_PENDING");
+        assertProblem(send("POST", "/activities", activityDuplicate, owner), 400, "MALFORMED_JSON");
     }
 
     @Test
