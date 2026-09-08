@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { activity, planner } from '@todorok/api-client'
+import { seoulToday } from '@todorok/client-domain'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { WorkoutFields } from './WorkoutFields'
@@ -13,6 +14,7 @@ import { refreshActivity } from './refreshActivity'
 import { CompletedTaskRecord } from './CompletedTaskRecord'
 import { PreviousStudyInput, sameField, TemplateChange } from './TemplateChange'
 import { StudyTemplateFields, validateStudyFields } from './StudyTemplateFields'
+import { CrimpTimer, type CrimpTimerRecord } from '../climbing/CrimpTimer'
 
 const titles = { WORKOUT: '운동 기록', STUDY: '공부 기록', CLIMBING: '클라이밍 기록' } as const
 const midnightSeoul = (date: string) => new Date(`${date}T00:00:00+09:00`)
@@ -40,41 +42,42 @@ export function RecordPage({ type }: { type: RecordType }) {
     const kept = (before.fields ?? []).filter((input) => currentTemplate.fields.some((old) => old.fieldId === input.fieldId && latestTemplate.fields.some((next) => sameField(old, next))))
     update({ template: structuredClone(latestTemplate), previousInputs: [...(draft.previousInputs ?? []), structuredClone({ template: currentTemplate, study: before })], ...(type === 'STUDY' ? { study: { ...study, fields: kept } } : type === 'WORKOUT' ? { workoutFields: kept } : { climbing: { ...climbing, fields: kept } }), snapshot: null, error: '' })
   }
-  const [saved, setSaved] = useState<activity.ActivityResponse | null>(null), [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState<activity.ActivityResponse | null>(null), [busy, setBusy] = useState(false), [timerOpen, setTimerOpen] = useState(false)
   const setError = (error: string) => update({ error })
   const attempt = useRef(0), mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; attempt.current++ } }, [])
   const performedDate = date || task.data?.scheduledDate || ''
   const current = (id?: number) => mounted.current && (id === undefined || attempt.current === id) && session.getSnapshot().generation === state.generation
   function leave() { attempt.current++; void navigate(`/today?date=${task.data?.scheduledDate ?? performedDate}`) }
-  function build(): activity.CreateActivityRequest {
-    const startedAt = toDate(performedDate, start), endedAt = toDate(performedDate, end)
+  function build(timer?: CrimpTimerRecord): activity.CreateActivityRequest {
+    const startedAt = timer ? new Date(timer.startedAt) : toDate(performedDate, start), endedAt = timer ? new Date(timer.endedAt) : toDate(performedDate, end)
     if (Boolean(startedAt) !== Boolean(endedAt)) throw new Error('시작과 종료 시간을 모두 선택해 주세요.')
     if (startedAt && endedAt && endedAt <= startedAt) throw new Error('종료 시간은 시작 시간보다 늦어야 합니다.')
     if (currentTemplate) validateStudyFields(type === 'STUDY' ? study : type === 'WORKOUT' ? { fields: workoutFields } : { fields: climbing.fields })
-    return { commandId: crypto.randomUUID(), taskId, activityType: activity.ActivityType[type[0] + type.slice(1).toLowerCase() as 'Workout' | 'Study' | 'Climbing'], completionStatus: activity.ActivityCompletionStatus.Completed, performedAt: midnightSeoul(performedDate), ...(currentTemplate ? { expectedTemplateVersion: currentTemplate.templateVersion } : {}), ...(startedAt && endedAt ? { startedAt, endedAt } : {}), ...(note.trim() ? { note: note.trim() } : {}), detail: type === 'WORKOUT' ? { workout: { ...(workout.length ? { sets: workout } : {}), ...(currentTemplate ? { fields: workoutFields } : {}) } } : type === 'STUDY' ? { study } : { climbing } }
+    return { commandId: timer?.commandId ?? crypto.randomUUID(), taskId, activityType: activity.ActivityType[type[0] + type.slice(1).toLowerCase() as 'Workout' | 'Study' | 'Climbing'], completionStatus: timer?.completionStatus === 'PARTIAL' ? activity.ActivityCompletionStatus.Partial : activity.ActivityCompletionStatus.Completed, performedAt: midnightSeoul(performedDate), ...(currentTemplate ? { expectedTemplateVersion: currentTemplate.templateVersion } : {}), ...(startedAt && endedAt ? { startedAt, endedAt } : {}), ...(note.trim() ? { note: note.trim() } : {}), detail: timer ? { climbing: timer.detail } : type === 'WORKOUT' ? { workout: { ...(workout.length ? { sets: workout } : {}), ...(currentTemplate ? { fields: workoutFields } : {}) } } : type === 'STUDY' ? { study } : { climbing } }
   }
-  async function submit(retry = false) {
-    if (busy || blocked || (templateChanged && !uncertain)) return
+  async function submit(retry = false, timer?: CrimpTimerRecord): Promise<boolean> {
+    if (busy || blocked || (templateChanged && !uncertain)) return false
     setError(''); setBusy(true)
     const id = ++attempt.current
     try {
       let request: activity.CreateActivityRequest
-      try { request = retry && snapshot ? snapshot : structuredClone(build()) }
-      catch (reason) { if (current(id)) setError(reason instanceof Error ? reason.message : '입력을 확인해 주세요.'); return }
+      try { request = retry && snapshot ? snapshot : structuredClone(build(timer)) }
+      catch (reason) { if (current(id)) setError(reason instanceof Error ? reason.message : '입력을 확인해 주세요.'); return false }
       update({ date: performedDate, snapshot: request, uncertain: true })
       const result = await apis.activities.createActivity({ createActivityRequest: request })
-      if (!current(id)) return
+      if (!current(id)) return false
       clear(result.activityId)
       setSaved(result)
       await refreshActivity(queries, state.userId, result.syncState === 'APPLIED')
       if (current(id)) void navigate(`/today?date=${performedDate}&activityId=${result.activityId}`)
+      return true
     } catch (reason) {
-      if (!current(id)) return
+      if (!current(id)) return false
       const response = reason && typeof reason === 'object' && 'response' in reason ? (reason as { response: Response }).response : null
       let problem: Partial<activity.ProblemDetails> | null = null
       try { problem = response ? await response.clone().json() : null } catch { /* A proxy may return HTML or an empty body. */ }
-      if (!current(id)) return
+      if (!current(id)) return false
       const code = problem?.code
       if (response && [400, 413, 415, 422].includes(response.status)) {
         update({ snapshot: null, uncertain: false, blocked: false, error: `기록을 저장하지 못했습니다. 입력을 수정해 주세요. (${code ?? response.status})` })
@@ -88,6 +91,7 @@ export function RecordPage({ type }: { type: RecordType }) {
       } else {
         update({ uncertain: true, blocked: false, error: `서버 응답을 확인하지 못했습니다. 같은 요청으로 결과를 확인해 주세요.${code ? ` (${code})` : ''}` })
       }
+      return false
     } finally { if (current(id)) setBusy(false) }
   }
   async function check() {
@@ -108,7 +112,9 @@ export function RecordPage({ type }: { type: RecordType }) {
   if (recordTemplate.isError) return <p role="alert">기록 항목이 일정에 반영되는 중이거나 불러오지 못했습니다. <button onClick={() => void recordTemplate.refetch()}>다시 불러오기</button></p>
   if (recordTemplate.data?.linked && !recordTemplate.data.template) return <p role="alert">연결된 기록 항목을 확인하지 못했습니다.</p>
   if (task.data.status === 'COMPLETED' && !snapshot && !saved) return <CompletedTaskRecord taskId={taskId} type={type} />
+  if (timerOpen) return <CrimpTimer persist={(record) => submit(false, record)} close={() => setTimerOpen(false)} />
   return <section className="record-page"><header className="record-heading"><button type="button" aria-label="기록 취소" onClick={leave}>‹</button><div><h1>{currentTemplate ? `${currentTemplate.name} 기록` : titles[type]}</h1><p>{task.data.title}</p></div></header>
+    {type === 'CLIMBING' && task.data.scheduledDate === seoulToday() && <button type="button" onClick={() => setTimerOpen(true)}>크림프 타이머</button>}
     {saved ? <SyncStatus value={saved} checking={busy} check={() => void check()}/> : <form onSubmit={(e) => { e.preventDefault(); void submit(Boolean(snapshot)) }}>
       <fieldset className="record-inputs" disabled={busy || uncertain}>
       <label>수행일<input type="date" value={performedDate} onChange={(e) => update({ date: e.target.value, snapshot: null })} required/></label>

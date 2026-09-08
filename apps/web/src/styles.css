@@ -474,6 +474,15 @@ select {
 .task-title .completion-summary,
 .task-title .time-block { display: block; margin-top: 3px; color: var(--muted); text-decoration: none; }
 .record-page { max-width: 720px; margin: 0 auto; }
+.crimp-timer { max-width: 540px; margin: 0 auto; text-align: center; }
+.crimp-timer header { display: flex; text-align: left; gap: 12px; align-items: start; }
+.crimp-timer header > button { flex: 0 0 44px; padding: 0; font-size: 28px; }
+.crimp-timer h2 { margin: 0; font-size: 28px; }
+.crimp-timer header p { margin: 4px 0 0; }
+.timer-phase { margin: 40px 0 4px !important; font-weight: 700; }
+.timer-count { font-size: clamp(76px, 28vw, 132px); font-variant-numeric: tabular-nums; line-height: 1; margin: 0 0 24px !important; }
+.crimp-timer > strong { display: block; min-height: 44px; font-size: 17px; }
+.timer-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
 .template-manager { max-width: 820px; margin: 0 auto; }
 .template-manager > button { margin: 18px 0; }
 .template-list { display: grid; gap: 8px; }
