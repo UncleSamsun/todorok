@@ -88,7 +88,7 @@ public class ProgramEnrollmentService {
 
     private Enrollment read(UUID id) {
         var enrollment = jdbc.queryForMap("select * from program_enrollment where id=?", id);
-        var session = jdbc.queryForMap("select id,target_sets::text as target_sets from program_session where enrollment_id=? and cycle=1 and session=?", id, enrollment.get("current_session"));
+        var session = jdbc.queryForMap("select id,target_sets::text as target_sets from program_session where enrollment_id=? and cycle=? and session=?", id, enrollment.get("current_cycle"), enrollment.get("current_session"));
         var sets = mapper.readTree(String.valueOf(session.get("target_sets")));
         var targets = new ArrayList<Integer>(); sets.forEach(value -> targets.add(value.asInt()));
         return new Enrollment(id, (String) enrollment.get("catalog_key"), ((Number) enrollment.get("catalog_version")).longValue(), ((Number) enrollment.get("recommended_week")).intValue(), ((Number) enrollment.get("start_week")).intValue(), ((Number) enrollment.get("current_week")).intValue(), ((Number) enrollment.get("current_session")).intValue(), (UUID) session.get("id"), List.copyOf(targets));

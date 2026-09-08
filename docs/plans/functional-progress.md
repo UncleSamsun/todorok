@@ -142,6 +142,8 @@ Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드�
 
 다음 session 준비: V11 `current_cycle`을 enrollment에 추가했다. 성공/실패 cycle·void/correction 재계산에서 어떤 session attempt가 반복 cycle인지 명시적으로 보존하기 위함이다. Activity 결과 연결과 다음 outbox 요청은 다음 작은 흐름에서 구현한다.
 
+후속 session 체크포인트: WORKOUT 완료의 실제 reps 합계를 session target 합계와 비교해 outcome을 저장하고, policy 위치에 없는 `(enrollment,cycle,session)`만 새 Task ID/outbox 요청으로 생성한다. 실제 PostgreSQL 회귀에서 첫 session의 성공은 같은 주차 두 번째 target `[3,2,2]` 하나를 만들고, 동일 결과 재전달은 session 수를 늘리지 않음을 확인했다. 실패·void/correction과 실제 Kafka 후속 Task 검증은 다음 흐름이다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

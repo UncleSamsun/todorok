@@ -89,6 +89,23 @@ class StudyTemplateRecordHttpTest {
             .extracting(error -> ((ApiFailure) error).code()).isEqualTo("COMMAND_CONFLICT");
     }
 
+    @Test void successfulProgramSessionCreatesExactlyOneNextSession() throws Exception {
+        var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        catalogs.importCatalog(catalog);
+        UUID owner = UUID.randomUUID();
+        var enrolled = enrollments.enroll(owner, UUID.randomUUID(), "synthetic-pushup", 1, 10, 1);
+        UUID taskId = jdbc.queryForObject("select task_id from program_session where id=?", UUID.class, enrolled.sessionId());
+        UUID activityId = UUID.randomUUID();
+        enrollments.recordOutcome(taskId, activityId, 8, false);
+        var progressed = enrollments.get(owner, enrolled.id());
+        assertThat(progressed.currentWeek()).isOne();
+        assertThat(progressed.currentSession()).isEqualTo(2);
+        assertThat(progressed.targetSets()).containsExactly(3, 2, 2);
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrolled.id())).isEqualTo(2);
+        enrollments.recordOutcome(taskId, activityId, 8, false);
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrolled.id())).isEqualTo(2);
+    }
+
     @Test void exposesImportedCatalogAndEnrollmentOverOwnerScopedHttp() throws Exception {
         var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
         catalogs.importCatalog(catalog);
