@@ -128,6 +128,8 @@ catalog/import 체크포인트: 공개 실제 운동표를 넣지 않은 합성 
 
 catalog DB 체크포인트: V9 `program_catalog`은 catalog key/version의 불변 checksum과 원본 definition/source JSON을 저장한다. 실제 PostgreSQL에서 최초 import=IMPORTED, 동일 checksum 재import=UNCHANGED, 같은 key/version의 새 checksum=CATALOG_VERSION_CONFLICT, 기존 이름·행 불변을 확인했다. 아직 enrollment/session/API/event/planner/UI가 없으므로 사용자 기능 완료로 계산하지 않는다.
 
+enrollment DB 체크포인트: V10은 user·catalog key/version·command fingerprint·initial test·추천/override 시작 주차와 첫 session의 target sets를 분리해 저장한다. 실제 PostgreSQL에서 합성 catalog version1에 시작 주차2 override를 등록해 week2 session1의 `[4,3,3]` 세트를 하나만 만들고, 같은 command는 같은 enrollment/session을 재전달하며 바뀐 입력은 COMMAND_CONFLICT로 거절했다. JSONB JDBC 반환형은 SQL text cast로 고정했다. 아직 공개 API·planner Task 요청·Activity 결과 재계산/UI가 없으므로 사용자 기능 완료로 계산하지 않는다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

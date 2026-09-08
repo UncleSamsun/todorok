@@ -58,6 +58,7 @@ class StudyTemplateRecordHttpTest {
     @Autowired io.todorok.messaging.OutboxEventWriter outbox;
     @Autowired io.todorok.activity.template.TemplateService templateService;
     @Autowired io.todorok.activity.program.ProgramCatalogStore catalogs;
+    @Autowired io.todorok.activity.program.ProgramEnrollmentService enrollments;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
 
     @Test void importsSyntheticCatalogIdempotentlyAndRejectsChecksumReplacement() throws Exception {
@@ -70,6 +71,22 @@ class StudyTemplateRecordHttpTest {
         assertThatThrownBy(() -> catalogs.importCatalog(source)).isInstanceOf(ApiFailure.class)
             .extracting(error -> ((ApiFailure) error).code()).isEqualTo("CATALOG_VERSION_CONFLICT");
         assertThat(jdbc.queryForObject("select name from program_catalog where catalog_key='synthetic-pushup' and catalog_version=1", String.class)).isEqualTo("합성 푸시업 프로그램");
+    }
+
+    @Test void enrollsAgainstThePinnedCatalogWithOneIdempotentFirstSession() throws Exception {
+        var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        catalogs.importCatalog(catalog);
+        UUID owner = UUID.randomUUID(), command = UUID.randomUUID();
+        var enrolled = enrollments.enroll(owner, command, "synthetic-pushup", 1, 12, 2);
+        assertThat(enrolled.recommendedWeek()).isOne();
+        assertThat(enrolled.startWeek()).isEqualTo(2);
+        assertThat(enrolled.currentWeek()).isEqualTo(2);
+        assertThat(enrolled.currentSession()).isOne();
+        assertThat(enrolled.targetSets()).containsExactly(4, 3, 3);
+        assertThat(enrollments.enroll(owner, command, "synthetic-pushup", 1, 12, 2)).isEqualTo(enrolled);
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrolled.id())).isOne();
+        assertThatThrownBy(() -> enrollments.enroll(owner, command, "synthetic-pushup", 1, 13, 2)).isInstanceOf(ApiFailure.class)
+            .extracting(error -> ((ApiFailure) error).code()).isEqualTo("COMMAND_CONFLICT");
     }
 
     @Test void workoutTemplateKeepsRelationalSetsAndCustomValuesAcrossCorrection() throws Exception {
