@@ -138,6 +138,44 @@ class StudyTemplateRecordHttpTest {
         assertThat(jdbc.queryForObject("select outcome from program_session where id=?", String.class, enrollment.sessionId())).isEqualTo("VOIDED");
     }
 
+    @Test void correctingAndVoidingACompletedProgramWorkoutRecalculatesWithoutDeletingItsFollowup() throws Exception {
+        var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        catalogs.importCatalog(catalog);
+        UUID owner = UUID.randomUUID();
+        var enrollment = enrollments.enroll(owner, UUID.randomUUID(), "synthetic-pushup", 1, 10, 1);
+        UUID taskId = jdbc.queryForObject("select task_id from program_session where id=?", UUID.class, enrollment.sessionId());
+        var projection = new LinkedHashMap<String,Object>(Map.of(
+            "taskId", taskId, "taskType", "WORKOUT", "status", "PLANNED", "scheduledDate", "2026-09-07"));
+        projection.put("seriesId", null);
+        projection.put("templateLink", null);
+        consumer.receive(mapper.writeValueAsString(Map.of("eventId", UUID.randomUUID(), "type", "TASK_SCHEDULED", "version", 2,
+            "aggregateVersion", 0, "occurredAt", Instant.now().toString(), "userId", owner, "payload", projection)));
+
+        var completeDetail = Map.of("workout", Map.of("sets", List.of(
+            Map.of("exercise", "푸시업", "reps", 3),
+            Map.of("exercise", "푸시업", "reps", 3),
+            Map.of("exercise", "푸시업", "reps", 2))));
+        var saved = ok(send("POST", "/activities", Map.of("commandId", UUID.randomUUID(), "taskId", taskId,
+            "activityType", "WORKOUT", "completionStatus", "COMPLETED", "performedAt", "2026-09-07T10:00:00+09:00",
+            "detail", completeDetail), owner), 201);
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrollment.id())).isEqualTo(2);
+
+        var failedDetail = Map.of("workout", Map.of("sets", List.of(
+            Map.of("exercise", "푸시업", "reps", 3),
+            Map.of("exercise", "푸시업", "reps", 2),
+            Map.of("exercise", "푸시업", "reps", 2))));
+        ok(send("PATCH", "/activities/" + saved.path("activityId").asText(), Map.of("expectedVersion", 0,
+            "performedAt", "2026-09-07T10:00:00+09:00", "detail", failedDetail), owner), 200);
+        assertThat(jdbc.queryForObject("select outcome from program_session where id=?", String.class, enrollment.sessionId())).isEqualTo("FAILURE");
+
+        ok(send("POST", "/activities/" + saved.path("activityId").asText() + "/void", Map.of("version", 1, "reason", "다시 측정"), owner), 200);
+        var recalculated = enrollments.get(owner, enrollment.id());
+        assertThat(recalculated.currentWeek()).isOne();
+        assertThat(recalculated.currentSession()).isOne();
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrollment.id())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select outcome from program_session where id=?", String.class, enrollment.sessionId())).isEqualTo("VOIDED");
+    }
+
     @Test void exposesImportedCatalogAndEnrollmentOverOwnerScopedHttp() throws Exception {
         var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
         catalogs.importCatalog(catalog);
