@@ -115,10 +115,13 @@ class NotificationPersistenceIntegrationTest {
         preferences.receive(event(owner, UUID.randomUUID(), 2, true, "09:30"));
         preferences.receive(event(owner, UUID.randomUUID(), 1, false, "08:00"));
         preferences.receive(event(owner, UUID.randomUUID(), 2, true, "09:30"));
+        preferences.receive(event(owner, UUID.randomUUID(), 3, true, "09:31"));
         assertThat(jdbc.queryForObject("select notifications_enabled from notification_preference where user_id=?", Boolean.class, owner)).isTrue();
-        assertThat(jdbc.queryForObject("select summary_time from notification_preference where user_id=?", String.class, owner).trim()).isEqualTo("09:30");
-        assertThat(jdbc.queryForObject("select revision from notification_preference where user_id=?", Long.class, owner)).isEqualTo(2L);
-        assertThat(jdbc.queryForObject("select count(*) from processed_event where event_type='NOTIFICATION_PREFERENCE_CHANGED'", Integer.class)).isEqualTo(3);
+        assertThat(jdbc.queryForObject("select summary_time from notification_preference where user_id=?", String.class, owner).trim()).isEqualTo("09:31");
+        assertThat(jdbc.queryForObject("select revision from notification_preference where user_id=?", Long.class, owner)).isEqualTo(3L);
+        assertThat(jdbc.queryForObject("select count(*) from notification_delivery where user_id=? and status='PENDING'", Integer.class, owner)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from notification_delivery where user_id=? and status='CANCELED'", Integer.class, owner)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from processed_event where event_type='NOTIFICATION_PREFERENCE_CHANGED'", Integer.class)).isEqualTo(4);
     }
 
     private String event(UUID owner, UUID eventId, long revision, boolean enabled, String time) throws Exception {

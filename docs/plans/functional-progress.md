@@ -162,6 +162,8 @@ Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드�
 
 알림 설정 전달: preference 저장은 `NOTIFICATION_PREFERENCE_CHANGED` v1 outbox event를 user/revision에 고정해 발행한다. notification-service V3 consumer는 inbox eventId로 중복을 막고, 더 높은 aggregate revision만 `notification_preference`에 반영한다. schema fixture, planner outbox HTTP, notification PostgreSQL의 duplicate/stale revision 회귀가 통과했다. runtime에서 notification listener가 Kafka topic 세 partition을 구독한 뒤 09:32 설정이 planner outbox→Debezium→notification DB에 같은 revision으로 전달됨을 확인했다. VAPID subscription·delivery job은 다음 흐름이다.
 
+알림 요약 예약 보완: notification V4 `notification_delivery`는 활성화된 요약 시간을 다음 Asia/Seoul 시각으로 `PENDING` 예약한다. 같은 시간을 다시 적용하면 기존 작업을 유지하고, 시간이 바뀌면 이전 `PENDING`을 `CANCELED`로 전환한 뒤 새 작업 하나만 남긴다. scheduler 단위 2개와 notification PostgreSQL consumer 통합 회귀가 통과했다. 기존 local runtime에서 09:35 preference event를 실제 Kafka 경로로 전달한 뒤 해당 사용자 예약은 `CANCELED` 2건·`PENDING` 1건으로 확인했다. VAPID subscription과 실제 delivery worker는 다음 하위 흐름이다.
+
 PWA 전환 보완: 이전 service worker가 가진 index가 없는 lazy chunk를 요청할 때 Nginx가 SPA HTML 200을 반환해 parse 오류와 빈 화면을 만들던 경로를 재현했다. `/assets/`는 존재하는 immutable hashed asset만 제공하고 없으면 404로 끝내며, Vite preload 오류는 한 번 새 index로 reload한다. 정적 Nginx 회귀·production web build와 전용 runtime의 임의 이전 asset 404를 확인했다. 실제 설치 iPhone의 service worker update 복구는 출시 검증에 남는다.
 
 PWA 설치·예산 보완: Settings는 standalone 실행 여부와 iPhone Safari의 홈 화면 추가 절차를 보여 주고, Chromium이 `beforeinstallprompt`를 제공할 때만 사용자 클릭으로 설치 prompt를 연다. 설치 안내 UI 회귀와 production build를 통과했다. `check-bundle-budget.mjs`는 build artifact의 initial gzip 150KB·lazy gzip 100KB 상한을 CI 전체 검증에 연결했고, 현재 initial 102,919 bytes와 lazy 7개가 통과했다.

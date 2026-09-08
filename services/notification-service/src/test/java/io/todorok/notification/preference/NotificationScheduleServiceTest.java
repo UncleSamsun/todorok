@@ -24,4 +24,22 @@ class NotificationScheduleServiceTest {
         assertThat(values.getValue()[2]).isEqualTo(OffsetDateTime.parse("2026-09-09T08:00:00+09:00"));
         org.mockito.Mockito.verify(jdbc).update(org.mockito.ArgumentMatchers.contains("status='CANCELED'"), org.mockito.ArgumentMatchers.eq(owner));
     }
+
+    @Test void changingSummaryTimeCancelsThePriorPendingSummary() {
+        var jdbc = org.mockito.Mockito.mock(JdbcTemplate.class);
+        var service = new NotificationScheduleService(jdbc, Clock.fixed(Instant.parse("2026-09-08T00:30:00Z"), ZoneOffset.UTC));
+        UUID owner = UUID.randomUUID();
+
+        service.apply(owner, true, "08:00");
+        service.apply(owner, true, "09:00");
+
+        var due = org.mockito.ArgumentCaptor.forClass(OffsetDateTime.class);
+        org.mockito.Mockito.verify(jdbc, org.mockito.Mockito.times(2)).update(
+            org.mockito.ArgumentMatchers.contains("scheduled_for <> ?"),
+            org.mockito.ArgumentMatchers.eq(owner),
+            due.capture());
+        assertThat(due.getAllValues()).containsExactly(
+            OffsetDateTime.parse("2026-09-09T08:00:00+09:00"),
+            OffsetDateTime.parse("2026-09-09T09:00:00+09:00"));
+    }
 }

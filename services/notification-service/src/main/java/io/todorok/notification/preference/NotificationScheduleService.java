@@ -24,6 +24,11 @@ public class NotificationScheduleService {
         if (!scheduled.toInstant().isAfter(now)) scheduled = scheduled.plusDays(1);
         var due = scheduled.toOffsetDateTime();
         jdbc.update("""
+            update notification_delivery
+            set status='CANCELED'
+            where user_id=? and kind='DAILY_SUMMARY' and status='PENDING' and scheduled_for <> ?
+            """, owner, due);
+        jdbc.update("""
             insert into notification_delivery(id,user_id,kind,scheduled_for,deadline_at,status)
             values (?,?,'DAILY_SUMMARY',?,?, 'PENDING')
             on conflict(user_id,kind,scheduled_for) do nothing
