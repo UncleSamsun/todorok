@@ -292,6 +292,7 @@ services:
       AUTH_ISSUER: ${AUTH_ISSUER:-todorok}
       AUTH_AUDIENCE: ${AUTH_AUDIENCE:-todorok-api}
       AUTH_PUBLIC_KEY_LOCATION: file:/run/secrets/auth_public_key
+      TODOROK_PROGRAM_CATALOG_INPUTS: ${TODOROK_PROGRAM_CATALOG_INPUTS:-}
       JAVA_TOOL_OPTIONS: >-
         -XX:InitialRAMPercentage=20
         -XX:MaxRAMPercentage=60
