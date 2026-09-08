@@ -106,6 +106,21 @@ class StudyTemplateRecordHttpTest {
         assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrolled.id())).isEqualTo(2);
     }
 
+    @Test void failedProgramCycleRepeatsTheSameWeekAtItsFirstSession() throws Exception {
+        var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        catalogs.importCatalog(catalog);
+        UUID owner = UUID.randomUUID();
+        var enrollment = enrollments.enroll(owner, UUID.randomUUID(), "synthetic-pushup", 1, 10, 1);
+        for (int attempt = 0; attempt < 3; attempt++) {
+            UUID taskId = jdbc.queryForObject("select task_id from program_session where id=?", UUID.class, enrollment.sessionId());
+            enrollments.recordOutcome(taskId, UUID.randomUUID(), attempt == 1 ? 0 : 100, false);
+            enrollment = enrollments.get(owner, enrollment.id());
+        }
+        assertThat(enrollment.currentWeek()).isOne();
+        assertThat(enrollment.currentSession()).isOne();
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, enrollment.id())).isEqualTo(4);
+    }
+
     @Test void exposesImportedCatalogAndEnrollmentOverOwnerScopedHttp() throws Exception {
         var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
         catalogs.importCatalog(catalog);
