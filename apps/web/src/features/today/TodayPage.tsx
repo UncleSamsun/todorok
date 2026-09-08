@@ -179,7 +179,7 @@ export function TodayPage() {
       const failure = await requestFailure(reason), confirmed = failure.rejected
       setAddUncertain(!confirmed)
       if (confirmed) { addRequest.current = null; setAddRejection((value) => value + 1) }
-      if (failure.status === 409 && adding !== 'GENERAL') { setTemplateConflict(true); await recordTemplates.refetch(); if (adding === 'CLIMBING') await hangboardTemplates.refetch() }
+      if (failure.status === 409 && adding !== 'GENERAL' && failure.code?.startsWith('TEMPLATE_')) { setTemplateConflict(true); await recordTemplates.refetch(); if (adding === 'CLIMBING') await hangboardTemplates.refetch() }
       setError(confirmed ? '일정 입력을 확인해 주세요. 작성 중인 내용은 보존됩니다.' : '저장 결과를 확인하지 못했습니다. 같은 요청을 다시 보내 주세요.')
     } finally {
       setBusy(false)

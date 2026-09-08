@@ -1,6 +1,7 @@
 package io.todorok.activity.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSASSASigner;
@@ -86,6 +87,10 @@ class StudyTemplateRecordHttpTest {
         assertThat(saved.path("detail").path("workout").path("sets").get(0).path("weightKg").decimalValue()).isEqualByComparingTo("80");
         assertThat(saved.path("detail").path("workout").path("fields").size()).isEqualTo(2);
         assertThat(jdbc.queryForObject("select count(*) from activity_field_value where activity_id=?", Integer.class, activityId)).isEqualTo(2);
+        assertThatThrownBy(() -> jdbc.update("update activity_field_value set type='TIME',number_value=null,time_seconds=1 where activity_id=? and field_id=?", activityId, numberId))
+            .as("The relational FK must prevent a stored value from changing the definition type")
+            .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(jdbc.queryForObject("select type from activity_field_value where activity_id=? and field_id=?", String.class, activityId, numberId)).isEqualTo("NUMBER");
 
         var correctedDetail = Map.of("workout", Map.of(
             "sets", List.of(Map.of("exercise", "스쿼트", "reps", 10, "weightKg", 82.5)),
@@ -141,6 +146,12 @@ class StudyTemplateRecordHttpTest {
         assertThat(activities.monthlySummary(owner, java.time.YearMonth.of(2026, 9), io.todorok.activity.api.model.ActivityType.CLIMBING).getDurationSeconds()).isEqualTo(900);
         assertThat(mapper.readTree(jdbc.queryForObject("select snapshot::text from activity_revision_history where activity_id=? and revision=0", String.class, activityId)))
             .isEqualTo(saved);
+        var voided = ok(send("POST", "/activities/" + activityId + "/void", Map.of("reason", "손가락 휴식", "version", 1), owner), 200);
+        assertThat(voided.path("status").asText()).isEqualTo("VOIDED");
+        assertThat(voided.path("detail").path("climbing").path("fields").size()).isOne();
+        assertThat(jdbc.queryForObject("select count(*) from activity_field_value where activity_id=?", Integer.class, activityId)).isOne();
+        assertThat(jdbc.queryForObject("select count(*) from activity_revision_history where activity_id=?", Integer.class, activityId)).isEqualTo(2);
+        assertThat(activities.monthlySummary(owner, java.time.YearMonth.of(2026, 9), io.todorok.activity.api.model.ActivityType.CLIMBING).getDurationSeconds()).isZero();
     }
 
     @Test void fiveTypesRoundTripWithOriginalDefinitionAfterEditArchiveCorrectionAndVoid() throws Exception {

@@ -47,6 +47,15 @@ it('passes the selected free-workout template into a new schedule', () => {
   expect(save.mock.calls[0]?.[3]).toEqual({ templateId: workoutTemplate.templateId, expectedTemplateVersion: 1 })
 })
 
+it('keeps the existing basic workout schedule path without a template', () => {
+  const save = vi.fn()
+  render(<QuickAdd date="2026-09-07" type={planner.TaskType.Workout} busy={false} error="" templates={[]} save={save} cancel={vi.fn()} />)
+  fireEvent.change(screen.getByLabelText('제목'), { target: { value: '기본 운동' } })
+  fireEvent.click(screen.getByRole('button', { name: '저장' }))
+  expect(save).toHaveBeenCalledTimes(1)
+  expect(save.mock.calls[0]?.[3]).toBeUndefined()
+})
+
 it('creates a free-workout record type from the workout tab', async () => {
   const writes: any[] = []
   const session = new SessionClient({ fetcher: async (url, init) => {

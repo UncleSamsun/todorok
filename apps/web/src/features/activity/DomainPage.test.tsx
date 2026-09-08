@@ -78,6 +78,7 @@ it('opens a past date task in the existing record form', async () => {
     if (path.endsWith('/activities?limit=20')) return Response.json({ items: [] })
     if (path.includes('/calendar/2026-08-30')) return Response.json({ date: '2026-08-30', tasks: [{ taskId: 'past-task', title: '지난 볼더링', taskType: 'CLIMBING', scheduledDate: '2026-08-30', status: 'PLANNED', version: 0 }] })
     if (path.endsWith('/tasks/past-task')) return Response.json({ taskId: 'past-task', title: '지난 볼더링', taskType: 'CLIMBING', scheduledDate: '2026-08-30', status: 'PLANNED', version: 0 })
+    if (path.endsWith('/tasks/past-task/record-template')) return Response.json({ linked: false })
     return Response.json({}, { status: 404 })
   } })
   render(<App session={session} />)
