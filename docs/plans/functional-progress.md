@@ -150,6 +150,8 @@ Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드�
 
 프로그램 UI 체크포인트: 운동 탭은 catalog의 이름·기간·주당 회차를 보여 주고, 초기 검사 횟수와 선택 시작 주차로 등록한다. 등록 뒤에는 server response와 목록 재조회로 진행 중인 프로그램의 현재 `주차·회차·권장 세트`를 표시해 새로고침 뒤에도 복구한다. UI 회귀는 catalog 선택→입력→POST 본문→`2주차 1회`/`4 · 3 · 3회` 표시를 확인하고, production build를 통과했다. 전용 실제 runtime의 로그인된 브라우저에서 기존 등록 목록→새 주차2 등록201→목록 재조회→새 첫 회차 표시까지 확인했다. 합성 catalog의 등록→첫 Task→실제 Workout 완료→Kafka 다음 Task는 앞선 Compose smoke로 검증했다. 제한 리뷰의 “마지막 성공 회차 correction 뒤 재시도 불가” 지적은 실제 PostgreSQL에서 마지막 성공을 실패로 바꾼 뒤 cycle3의 새 week1 session1 Task ID가 생성됨을 확인해 오탐으로 닫았다. 다음은 실제 catalog 입력 gate다.
 
+작업10 최종 검증: 프로그램 추가 migration으로 드러난 migration 개수 기대값·테스트 전용 controller 의존성 mock·기존 중복 JSON 기대값을 현재 정책에 맞춰 보정했다. 이후 `:services:activity-service:test :services:planner-service:test --no-daemon --no-configuration-cache --max-workers=1`가 5분 1초에 통과했다. 합성 catalog 사용자 흐름은 완료 판정하고 실제 원문 catalog는 작업11의 이용 범위 확인 전까지 private input과 공개 합성 fixture를 분리한다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.
