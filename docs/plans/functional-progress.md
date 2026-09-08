@@ -154,7 +154,7 @@ Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드�
 
 작업11 준비: `TODOROK_PROGRAM_CATALOG_INPUTS`의 쉼표 구분 절대 경로만 읽는 private bootstrap을 추가했다. 빈 값은 import하지 않고, 상대 경로·누락 파일은 조용히 무시하지 않고 시작을 실패시킨다. 합성 fixture를 두 파일로 복사한 3개 회귀로 입력·거부·빈 설정을 검증했고, `docs/runbooks/program-catalog.md`에 private bind mount·checksum·version 교체 절차를 기록했다. catalog API와 운동 탭은 source label, 원문 URL(있을 때), 조건·주의사항을 보여 주도록 확장했으며 importer는 `PRIVATE_VERIFIED`에 URL·조건·주의사항을 강제한다. importer/HTTP 회귀와 contract drift를 확인했다. PRD가 지정한 Naver 원문 두 곳은 2026-09-08 자동 열람이 robots 정책으로 차단돼 있어 이용 허가 확인 증거가 없다. 실제 표를 import하거나 공개 fixture로 옮기지 않았으며, 이 권한 확인은 현재 유일한 작업11 차단 조건이다.
 
-작업12 첫 흐름: `client-domain`에 deadline 기반 상태 기계를 추가해 준비 3초→운동 10초→휴식 50초의 10라운드, 일시정지/재개, 건너뛰기, 중단을 브라우저 시간 지연과 분리했다. 가상 시계는 여러 기한을 한 번에 지난 경우 현재 phase만 표시하고 과거 알림을 되풀이하지 않으며, 부분 수행 수를 보존한다. 오늘의 CLIMBING Task 기록 화면에서 크림프 타이머를 열 수 있고, 완료는 `COMPLETED`, 중단 후 1개 이상 수행은 같은 commandId의 `PARTIAL` Activity request로 기존 저장 경로에 보낸다. 상태 기계 3회귀와 타이머 부분 기록 UI 회귀·production web build가 통과했다. 실제 저장 browser flow와 Wake Lock/음성/진동 adapter, iPhone 검증은 남아 있다.
+작업12 첫 흐름: `client-domain`에 deadline 기반 상태 기계를 추가해 준비 3초→운동 10초→휴식 50초의 10라운드, 일시정지/재개, 건너뛰기, 중단을 브라우저 시간 지연과 분리했다. 가상 시계는 여러 기한을 한 번에 지난 경우 현재 phase만 표시하고 과거 알림을 되풀이하지 않으며, 부분 수행 수를 보존한다. 오늘의 CLIMBING Task 기록 화면에서 크림프 타이머를 열 수 있고, 완료는 `COMPLETED`, 중단 후 1개 이상 수행은 같은 commandId의 `PARTIAL` Activity request로 기존 저장 경로에 보낸다. phase 전환은 지원 시 진동·음성·마지막 3초 countdown을 알리고 active phase 동안 Wake Lock을 요청하며 미지원·거절은 계산과 저장을 멈추지 않는다. 상태 기계 3회귀와 타이머 부분 기록 UI 회귀·production web build가 통과했다. 실제 저장 browser flow와 iPhone 검증은 남아 있다.
 
 ### 실행 규칙 (2026-09-08)
 

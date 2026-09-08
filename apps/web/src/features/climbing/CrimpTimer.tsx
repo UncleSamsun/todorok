@@ -20,11 +20,41 @@ const live = (state: TimerState) => state.phase === 'PREPARING' || state.phase =
 
 export function CrimpTimer({ persist, close }: { persist: (record: CrimpTimerRecord) => Promise<boolean>; close: () => void }) {
   const [timer, setTimer] = useState(idleTimer), [now, setNow] = useState(Date.now()), [saving, setSaving] = useState(false), [error, setError] = useState('')
-  const command = useRef(''), persisted = useRef(false)
+  const command = useRef(''), persisted = useRef(false), previousPhase = useRef(timer.phase), announced = useRef<number | null>(null)
+  const remaining = timer.deadlineAt === null ? timer.remainingMs ?? 0 : Math.max(0, timer.deadlineAt - now)
   useEffect(() => {
     if (!live(timer)) return
     const id = setInterval(() => { const current = Date.now(); setNow(current); setTimer((value) => advanceTimer(value, current).state) }, 250)
     return () => clearInterval(id)
+  }, [timer.phase])
+  useEffect(() => {
+    if (previousPhase.current === timer.phase) return
+    previousPhase.current = timer.phase
+    if (timer.phase === 'WORK' || timer.phase === 'REST') {
+      navigator.vibrate?.(timer.phase === 'WORK' ? [80, 40, 80] : 80)
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(timer.phase === 'WORK' ? '운동 시작' : '휴식'))
+      }
+    }
+  }, [timer.phase])
+  useEffect(() => {
+    const seconds = Math.ceil(remaining / 1000)
+    if (!live(timer) || seconds < 1 || seconds > 3 || announced.current === seconds) return
+    announced.current = seconds
+    if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(String(seconds)))
+  }, [timer.phase, remaining])
+  useEffect(() => {
+    if (!live(timer) || !('wakeLock' in navigator)) return
+    let released = false
+    let lock: { release(): Promise<void> } | null = null
+    const request = async () => {
+      try { lock = await (navigator as Navigator & { wakeLock?: { request(type: 'screen'): Promise<{ release(): Promise<void> }> } }).wakeLock?.request('screen') ?? null }
+      catch { /* Wake Lock is an enhancement; timer and persistence continue without it. */ }
+    }
+    const visible = () => { if (document.visibilityState === 'visible' && !released) void request() }
+    void request(); document.addEventListener('visibilitychange', visible)
+    return () => { released = true; document.removeEventListener('visibilitychange', visible); if (lock) void lock.release() }
   }, [timer.phase])
   useEffect(() => {
     if (timer.phase !== 'FINISHED' && timer.phase !== 'ABORTED') return
@@ -37,7 +67,6 @@ export function CrimpTimer({ persist, close }: { persist: (record: CrimpTimerRec
       .catch(() => { persisted.current = false; setError('기록을 저장하지 못했습니다. 같은 기록으로 다시 시도해 주세요.') })
       .finally(() => setSaving(false))
   }, [timer, persist])
-  const remaining = timer.deadlineAt === null ? timer.remainingMs ?? 0 : Math.max(0, timer.deadlineAt - now)
   function start() { const current = Date.now(); command.current = crypto.randomUUID(); persisted.current = false; setError(''); setNow(current); setTimer(startTimer(current)) }
   function retry() { persisted.current = false; setTimer({ ...timer }) }
   return <section className="crimp-timer" aria-label="크림프 타이머">
