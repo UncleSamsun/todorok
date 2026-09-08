@@ -35,10 +35,12 @@ export function StudyTemplateFields({
   definitions,
   value,
   change,
+  legend = '공부 내용',
 }: {
   definitions: activity.FieldDefinition[]
   value: activity.StudyDetail
   change: (value: activity.StudyDetail) => void
+  legend?: string
 }) {
   const values = new Map((value.fields ?? []).map((field) => [field.fieldId, field]))
   function set(field: activity.FieldDefinition, next: string) {
@@ -58,7 +60,7 @@ export function StudyTemplateFields({
     })
     change({ ...value, fields: [...ordered, ...remaining.filter((item) => !definitions.some((definition) => definition.fieldId === item.fieldId))] })
   }
-  return <fieldset><legend>공부 내용</legend>
+  return <fieldset><legend>{legend}</legend>
     {definitions.map((field) => {
       const input = values.get(field.fieldId)
       if (field.type === activity.TemplateFieldType.Check) return <label key={field.fieldId}>{fieldLabel(field)}<select aria-label={fieldLabel(field)} value={input?.checked === undefined ? '' : String(input.checked)} onChange={(event) => set(field, event.target.value)}><option value="">미입력</option><option value="true">예</option><option value="false">아니오</option></select></label>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type SubmitEvent } from 'react'
-import type { activity, planner } from '@todorok/api-client'
+import { activity, type planner } from '@todorok/api-client'
 import { studyFieldSummary } from '../activity/StudyTemplateFields'
 import { StudyTemplateManager } from '../study/StudyTemplateManager'
 import {
@@ -51,6 +51,9 @@ export function QuickAdd({
   })
   const listedTemplate = templates.find((template) => template.templateId === templateId)
   const selectedTemplate = uncertain ? selectedSnapshot : listedTemplate ?? selectedSnapshot
+  const supportsTemplate = type === 'STUDY' || type === 'WORKOUT'
+  const templateLabel = type === 'STUDY' ? '공부 카테고리' : '운동 기록 유형'
+  const templateNoun = type === 'STUDY' ? '카테고리' : '기록 유형'
   useEffect(() => {
     if (listedTemplate && !uncertain) setSelectedSnapshot(listedTemplate)
   }, [listedTemplate, uncertain])
@@ -65,7 +68,7 @@ export function QuickAdd({
     )
     {
       submittedTemplate.current = selectedTemplate ? structuredClone(selectedTemplate) : undefined
-      submitted.current = structuredClone([title.trim(), scheduled, commandId.current, type === 'STUDY' && selectedTemplate ? {
+      submitted.current = structuredClone([title.trim(), scheduled, commandId.current, supportsTemplate && selectedTemplate ? {
         templateId: selectedTemplate.templateId,
         expectedTemplateVersion: selectedTemplate.currentVersion.templateVersion,
       } : undefined, frequency === 'NONE' ? undefined : repeat])
@@ -75,7 +78,7 @@ export function QuickAdd({
   return (<>
     <form className="task-form" hidden={managingTemplates} onSubmit={submit}>
       <fieldset disabled={busy || uncertain}>
-      {type === 'STUDY' && <><label htmlFor="study-template">공부 카테고리</label><select id="study-template" required value={templateId} onChange={(event) => { setTemplateId(event.target.value); setSelectedSnapshot(templates.find((item) => item.templateId === event.target.value)) }}><option value="">선택해 주세요</option>{selectedSnapshot && !templates.some((item) => item.templateId === selectedSnapshot.templateId && !item.archived) && <option value={selectedSnapshot.templateId}>{selectedSnapshot.currentVersion.name} · 이전 선택</option>}{templates.filter((template) => !template.archived).map((template) => <option key={template.templateId} value={template.templateId}>{template.currentVersion.name}</option>)}</select>{loadMore && <button type="button" disabled={loadingMore} onClick={loadMore}>카테고리 더 보기</button>}<button type="button" onClick={() => setManagingTemplates(true)}>카테고리 관리</button>{selectedTemplate && <ul className="template-preview">{selectedTemplate.currentVersion.fields.map((field) => <li key={field.fieldId}>{studyFieldSummary(field)}</li>)}</ul>}</>}
+      {supportsTemplate && <><label htmlFor="record-template">{templateLabel}</label><select id="record-template" required value={templateId} onChange={(event) => { setTemplateId(event.target.value); setSelectedSnapshot(templates.find((item) => item.templateId === event.target.value)) }}><option value="">선택해 주세요</option>{selectedSnapshot && !templates.some((item) => item.templateId === selectedSnapshot.templateId && !item.archived) && <option value={selectedSnapshot.templateId}>{selectedSnapshot.currentVersion.name} · 이전 선택</option>}{templates.filter((template) => !template.archived).map((template) => <option key={template.templateId} value={template.templateId}>{template.currentVersion.name}</option>)}</select>{loadMore && <button type="button" disabled={loadingMore} onClick={loadMore}>{templateNoun} 더 보기</button>}<button type="button" onClick={() => setManagingTemplates(true)}>{templateNoun} 관리</button>{selectedTemplate && <ul className="template-preview">{selectedTemplate.currentVersion.fields.map((field) => <li key={field.fieldId}>{studyFieldSummary(field)}</li>)}</ul>}</>}
       <label htmlFor="task-title">제목</label>
       <input
         autoFocus
@@ -134,7 +137,7 @@ export function QuickAdd({
       {error && <p role="alert">{error}</p>}
       {templateConflict && <section><p>카테고리를 다시 선택하고 현재 항목을 확인해 주세요. 제목·날짜·반복 초안은 유지됩니다.</p>{submittedTemplate.current && <><h3>이전 선택 · {submittedTemplate.current.currentVersion.name} · 버전 {submittedTemplate.current.currentVersion.templateVersion}</h3><ul>{submittedTemplate.current.currentVersion.fields.map((field) => <li key={field.fieldId}>{studyFieldSummary(field)}</li>)}</ul></>}<button type="button" disabled={!listedTemplate || listedTemplate.archived || busy} onClick={confirmTemplate}>최신 카테고리 확인</button></section>}
       <div className="form-actions">
-        <button type="submit" disabled={busy || templateConflict || (!uncertain && (!title.trim() || (type === 'STUDY' && (!selectedTemplate || selectedTemplate.archived))))}>
+        <button type="submit" disabled={busy || templateConflict || (!uncertain && (!title.trim() || (supportsTemplate && (!selectedTemplate || selectedTemplate.archived))))}>
           {busy ? '저장 중…' : uncertain ? '같은 요청 다시 보내기' : '저장'}
         </button>
         <button type="button" disabled={busy} onClick={cancel}>
@@ -142,6 +145,6 @@ export function QuickAdd({
         </button>
       </div>
     </form>
-    {managingTemplates && <StudyTemplateManager close={() => setManagingTemplates(false)} />}
+    {managingTemplates && <StudyTemplateManager close={() => setManagingTemplates(false)} {...(type === 'WORKOUT' ? { domain: activity.TemplateDomain.Workout, kind: activity.TemplateKind.FreeWorkout, section: '운동', noun: '기록 유형' } : {})} />}
   </>)
 }

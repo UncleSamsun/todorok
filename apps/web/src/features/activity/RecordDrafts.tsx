@@ -4,7 +4,7 @@ import { emptyTime, type TimeValue } from './RecordTimeFields'
 import { CorrectionDraftProvider } from './CorrectionDrafts'
 
 type Draft = {
-  date: string; note: string; workout: activity.WorkoutSet[]; study: activity.StudyDetail; climbing: activity.ClimbingDetail
+  date: string; note: string; workout: activity.WorkoutSet[]; workoutFields: activity.FieldInput[]; study: activity.StudyDetail; climbing: activity.ClimbingDetail
   start: TimeValue; end: TimeValue; snapshot: activity.CreateActivityRequest | null
   uncertain: boolean; blocked: boolean; error: string
   template?: activity.TemplateVersion
@@ -20,7 +20,7 @@ export function useRecordDraft(key: string) {
   const drafts = useContext(Drafts)
   if (!drafts) throw new Error('RecordDraftProvider is required')
   const [draft, setDraft] = useState<Draft>(() => drafts.get(key) ?? {
-    date: '', note: '', workout: [], study: {}, climbing: {}, start: emptyTime(), end: emptyTime(),
+    date: '', note: '', workout: [], workoutFields: [], study: {}, climbing: {}, start: emptyTime(), end: emptyTime(),
     snapshot: null, uncertain: false, blocked: false, error: '',
   })
   const latest = useRef(draft)

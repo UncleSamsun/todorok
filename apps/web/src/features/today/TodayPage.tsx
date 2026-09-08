@@ -19,7 +19,7 @@ import { SeriesEditor } from './SeriesEditor'
 import { StickyNote } from './StickyNote'
 import { ActivityReturnStatus } from '../activity/ActivityReturnStatus'
 import type { Task } from './model'
-import { useStudyTemplates } from '../study/useStudyTemplates'
+import { useRecordTemplates } from '../study/useStudyTemplates'
 import { requestFailure } from '../activity/requestFailure'
 const apiDate = (value: string) => value
 export function TodayPage() {
@@ -116,7 +116,10 @@ export function TodayPage() {
     queryFn: ({ signal }) =>
       api.calendar.getDayDetail({ date: apiDate(selected) }, { signal }),
   })
-  const studyTemplates = useStudyTemplates(api.templates, state.userId, false, adding === planner.TaskType.Study)
+  const templateType = adding === planner.TaskType.Workout
+    ? [activity.TemplateDomain.Workout, activity.TemplateKind.FreeWorkout] as const
+    : [activity.TemplateDomain.Study, activity.TemplateKind.StudyCategory] as const
+  const recordTemplates = useRecordTemplates(api.templates, state.userId, templateType[0], templateType[1], false, adding === planner.TaskType.Study || adding === planner.TaskType.Workout)
   const summaries = new Map(range.data?.days?.map((d) => [d.date, d]))
   function select(date: string) {
     if (rolloverState === 'pending') return
@@ -172,7 +175,7 @@ export function TodayPage() {
       const failure = await requestFailure(reason), confirmed = failure.rejected
       setAddUncertain(!confirmed)
       if (confirmed) { addRequest.current = null; setAddRejection((value) => value + 1) }
-      if (failure.status === 409 && adding === 'STUDY') { setTemplateConflict(true); await studyTemplates.refetch() }
+      if (failure.status === 409 && (adding === 'STUDY' || adding === 'WORKOUT')) { setTemplateConflict(true); await recordTemplates.refetch() }
       setError(confirmed ? '일정 입력을 확인해 주세요. 작성 중인 내용은 보존됩니다.' : '저장 결과를 확인하지 못했습니다. 같은 요청을 다시 보내 주세요.')
     } finally {
       setBusy(false)
@@ -364,9 +367,9 @@ export function TodayPage() {
             busy={busy}
             uncertain={addUncertain}
             error={error}
-            templates={studyTemplates.data?.pages.flatMap((page) => page.items) ?? []}
-            loadMore={studyTemplates.hasNextPage ? () => void studyTemplates.fetchNextPage() : undefined}
-            loadingMore={studyTemplates.isFetchingNextPage}
+            templates={recordTemplates.data?.pages.flatMap((page) => page.items) ?? []}
+            loadMore={recordTemplates.hasNextPage ? () => void recordTemplates.fetchNextPage() : undefined}
+            loadingMore={recordTemplates.isFetchingNextPage}
             templateConflict={templateConflict}
             rejectedAttempt={addRejection}
             confirmTemplate={() => { setTemplateConflict(false); setError('') }}

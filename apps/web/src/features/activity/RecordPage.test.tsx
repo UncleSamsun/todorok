@@ -76,3 +76,33 @@ it('does not POST local invalid time and unlocks fields after known validation r
   expect(screen.getByLabelText('기록 메모')).not.toBeDisabled()
   expect(screen.getByRole('button', { name: '기록 저장' })).toBeVisible()
 })
+
+it('records a linked free workout with sets and custom fields together', async () => {
+  const writes: any[] = []
+  const fieldId = '30000000-0000-0000-0000-000000000003'
+  const session = new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url)
+    if (path.endsWith('/refresh')) return Response.json({ accessToken: 'token', userId: 'owner', expiresAt: '2099-01-01T00:00:00Z' })
+    if (path.endsWith('/rollover')) return Response.json({ today: '2026-09-07', movedCount: 0 })
+    if (path.includes('/calendar?')) return Response.json({ from: '2026-09-06', to: '2026-09-12', days: [] })
+    if (path.includes('/calendar/')) return Response.json({ date: '2026-09-07', tasks: [{ taskId: 'task-1', userId: 'owner', title: '하체 운동', taskType: 'WORKOUT', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0 }] })
+    if (path.includes('/notes/')) return Response.json({ date: '2026-09-07', content: '', version: null })
+    if (path.endsWith('/tasks/task-1')) return Response.json({ taskId: 'task-1', userId: 'owner', title: '하체 운동', taskType: 'WORKOUT', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0 })
+    if (path.endsWith('/tasks/task-1/record-template')) return Response.json({ linked: true, template: { templateId: 'template-1', domain: 'WORKOUT', kind: 'FREE_WORKOUT', archived: false, revision: 0, currentVersion: { templateId: 'template-1', templateVersion: 1, name: '자유 운동', fields: [{ fieldId, name: 'RPE', type: 'NUMBER', unit: '점', position: 0 }] } } })
+    if (path.endsWith('/activities') && init?.method === 'POST') {
+      const body = JSON.parse(String(init.body)); writes.push(body)
+      return Response.json({ activityId: 'activity-1', commandId: body.commandId, taskId: 'task-1', userId: 'owner', activityType: 'WORKOUT', performedAt: '2026-09-07T00:00:00+09:00', detail: body.detail, detailFormat: 'TEMPLATE', status: 'COMPLETED', version: 0, syncState: 'APPLIED' }, { status: 201 })
+    }
+    return Response.json({ code: 'NOT_FOUND' }, { status: 404 })
+  } })
+  window.history.replaceState({}, '', '/today')
+  render(<App session={session} />)
+  fireEvent.click(await screen.findByRole('button', { name: '하체 운동 기록' }))
+  fireEvent.click(await screen.findByRole('button', { name: '세트 추가' }))
+  fireEvent.change(screen.getByLabelText('운동 1'), { target: { value: '스쿼트' } })
+  fireEvent.change(screen.getByLabelText('횟수 1'), { target: { value: '8' } })
+  fireEvent.change(await screen.findByLabelText('RPE (점)'), { target: { value: '7.5' } })
+  fireEvent.click(screen.getByRole('button', { name: '기록 저장' }))
+  await waitFor(() => expect(writes).toHaveLength(1))
+  expect(writes[0]).toMatchObject({ expectedTemplateVersion: 1, detail: { workout: { sets: [{ exercise: '스쿼트', reps: 8 }], fields: [{ fieldId, type: 'NUMBER', numberValue: 7.5 }] } } })
+})

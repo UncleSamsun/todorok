@@ -3,7 +3,7 @@ import type { activity, ActivityCorrection, EditableActivity } from '@todorok/ap
 import { emptyTime, type TimeValue } from './RecordTimeFields'
 export type CorrectionOperation = { kind: 'patch'; body: ActivityCorrection } | { kind: 'void'; body: { version: number; reason: string } }
 export type CorrectionDraft = {
-  baseline: EditableActivity | null; date: string; note: string; workout: activity.WorkoutSet[]; study: activity.StudyDetail; climbing: activity.ClimbingDetail
+  baseline: EditableActivity | null; date: string; note: string; workout: activity.WorkoutSet[]; workoutFields: activity.FieldInput[]; study: activity.StudyDetail; climbing: activity.ClimbingDetail
   start: TimeValue; end: TimeValue; startDirty: boolean; endDirty: boolean; dateDirty: boolean
   operation: CorrectionOperation | null; mode: 'ready' | 'uncertain' | 'conflict'; error: string
 }
@@ -15,7 +15,7 @@ export function CorrectionDraftProvider({ children }: { children: ReactNode }) {
 export function useCorrectionDraft(id: string) {
   const drafts = useContext(Drafts)
   if (!drafts) throw new Error('CorrectionDraftProvider is required')
-  const [draft, setDraft] = useState<CorrectionDraft>(() => drafts.get(id) ?? { baseline: null, date: '', note: '', workout: [], study: {}, climbing: {}, start: emptyTime(), end: emptyTime(), startDirty: false, endDirty: false, dateDirty: false, operation: null, mode: 'ready', error: '' })
+  const [draft, setDraft] = useState<CorrectionDraft>(() => drafts.get(id) ?? { baseline: null, date: '', note: '', workout: [], workoutFields: [], study: {}, climbing: {}, start: emptyTime(), end: emptyTime(), startDirty: false, endDirty: false, dateDirty: false, operation: null, mode: 'ready', error: '' })
   const latest = useRef(draft)
   function update(patch: Partial<CorrectionDraft>) {
     const next = { ...latest.current, ...patch }
