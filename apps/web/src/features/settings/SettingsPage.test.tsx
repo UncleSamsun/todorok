@@ -28,3 +28,19 @@ it('계정 테마를 저장하고 현재 화면에 즉시 적용한다', async (
   expect(writes[0]).toMatchObject({ theme: 'DARK', expectedRevision: 0 })
   expect(document.documentElement.dataset.theme).toBe('dark')
 })
+
+it('설정에서 홈 화면 설치 안내를 보여 준다', async () => {
+  const session = new SessionClient({ fetcher: async (url) => {
+    const path = String(url)
+    if (path.endsWith('/refresh')) return Response.json({ accessToken: 'token', userId: 'owner', expiresAt: '2099-01-01T00:00:00Z' })
+    if (path.endsWith('/rollover')) return Response.json({ today: '2026-09-07', movedCount: 0 })
+    if (path.endsWith('/preferences')) return Response.json({ theme: 'SYSTEM', revision: 0 })
+    if (path.includes('/calendar?')) return Response.json({ from: '2026-09-01', to: '2026-09-30', days: [] })
+    if (path.includes('/calendar/')) return Response.json({ date: '2026-09-07', tasks: [] })
+    if (path.includes('/notes/')) return Response.json({ date: '2026-09-07', content: '', version: null })
+    return Response.json({}, { status: 404 })
+  } })
+  await act(async () => { render(<App session={session} />) })
+  fireEvent.click(await screen.findByRole('link', { name: '설정' }))
+  expect(await screen.findByText('홈 화면에 추가')).toBeVisible()
+})
