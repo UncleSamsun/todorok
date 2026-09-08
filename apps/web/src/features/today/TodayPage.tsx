@@ -118,8 +118,12 @@ export function TodayPage() {
   })
   const templateType = adding === planner.TaskType.Workout
     ? [activity.TemplateDomain.Workout, activity.TemplateKind.FreeWorkout] as const
+    : adding === planner.TaskType.Climbing
+      ? [activity.TemplateDomain.Climbing, activity.TemplateKind.ClimbingSession] as const
     : [activity.TemplateDomain.Study, activity.TemplateKind.StudyCategory] as const
-  const recordTemplates = useRecordTemplates(api.templates, state.userId, templateType[0], templateType[1], false, adding === planner.TaskType.Study || adding === planner.TaskType.Workout)
+  const recordTemplates = useRecordTemplates(api.templates, state.userId, templateType[0], templateType[1], false, adding === planner.TaskType.Study || adding === planner.TaskType.Workout || adding === planner.TaskType.Climbing)
+  const hangboardTemplates = useRecordTemplates(api.templates, state.userId, activity.TemplateDomain.Climbing, activity.TemplateKind.FreeHangboard, false, adding === planner.TaskType.Climbing)
+  const availableTemplates = [...(recordTemplates.data?.pages.flatMap((page) => page.items) ?? []), ...(adding === planner.TaskType.Climbing ? hangboardTemplates.data?.pages.flatMap((page) => page.items) ?? [] : [])]
   const summaries = new Map(range.data?.days?.map((d) => [d.date, d]))
   function select(date: string) {
     if (rolloverState === 'pending') return
@@ -175,7 +179,7 @@ export function TodayPage() {
       const failure = await requestFailure(reason), confirmed = failure.rejected
       setAddUncertain(!confirmed)
       if (confirmed) { addRequest.current = null; setAddRejection((value) => value + 1) }
-      if (failure.status === 409 && (adding === 'STUDY' || adding === 'WORKOUT')) { setTemplateConflict(true); await recordTemplates.refetch() }
+      if (failure.status === 409 && adding !== 'GENERAL') { setTemplateConflict(true); await recordTemplates.refetch(); if (adding === 'CLIMBING') await hangboardTemplates.refetch() }
       setError(confirmed ? '일정 입력을 확인해 주세요. 작성 중인 내용은 보존됩니다.' : '저장 결과를 확인하지 못했습니다. 같은 요청을 다시 보내 주세요.')
     } finally {
       setBusy(false)
@@ -367,9 +371,9 @@ export function TodayPage() {
             busy={busy}
             uncertain={addUncertain}
             error={error}
-            templates={recordTemplates.data?.pages.flatMap((page) => page.items) ?? []}
-            loadMore={recordTemplates.hasNextPage ? () => void recordTemplates.fetchNextPage() : undefined}
-            loadingMore={recordTemplates.isFetchingNextPage}
+            templates={availableTemplates}
+            loadMore={recordTemplates.hasNextPage || (adding === planner.TaskType.Climbing && hangboardTemplates.hasNextPage) ? () => { if (recordTemplates.hasNextPage) void recordTemplates.fetchNextPage(); if (adding === planner.TaskType.Climbing && hangboardTemplates.hasNextPage) void hangboardTemplates.fetchNextPage() } : undefined}
+            loadingMore={recordTemplates.isFetchingNextPage || hangboardTemplates.isFetchingNextPage}
             templateConflict={templateConflict}
             rejectedAttempt={addRejection}
             confirmTemplate={() => { setTemplateConflict(false); setError('') }}

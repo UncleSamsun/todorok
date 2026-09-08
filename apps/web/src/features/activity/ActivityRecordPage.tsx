@@ -53,7 +53,7 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
   useEffect(() => { if (!baseline && record.data) initialize(record.data) }, [record.data, baseline])
   function build(): ActivityCorrection {
     if (!baseline) throw new Error('원본 기록을 불러오는 중입니다.')
-    if (baseline.templateSnapshot && (type === 'STUDY' || type === 'WORKOUT')) validateStudyFields(type === 'STUDY' ? study : { fields: workoutFields })
+    if (baseline.templateSnapshot) validateStudyFields(type === 'STUDY' ? study : type === 'WORKOUT' ? { fields: workoutFields } : { fields: climbing.fields })
     const original = activityTimestamps(baseline), originalDate = dateInSeoul(baseline.performedAt)
     const startedAt = draft.startDirty ? toDate(date, start)?.toISOString() : shiftDate(original.startedAt, originalDate, date)
     const endedAt = draft.endDirty ? toDate(date, end)?.toISOString() : shiftDate(original.endedAt, originalDate, date)
@@ -133,7 +133,7 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
     {baseline.detailFormat === activity.DetailFormat.Legacy && baseline.legacyStudyPayloadRaw && <section className="legacy-study"><h2>기존 공부 자료</h2><p>검증되지 않은 이전 형식의 원문이며 읽기 전용입니다.</p><pre>{baseline.legacyStudyPayloadRaw}</pre></section>}
     {voided ? <p>이 기록은 취소되었으며 이력은 보존됩니다.</p> : <form onSubmit={(event) => { event.preventDefault(); save() }}><fieldset className="record-inputs" disabled={locked}>
       <label>수행일<input type="date" value={date} onChange={(event) => update({ date: event.target.value, dateDirty: true })} required /></label>
-      {type === 'WORKOUT' ? <><WorkoutFields sets={workout} change={(value) => update({ workout: value })} />{template && <StudyTemplateFields legend="사용자 기록 항목" definitions={template.fields} value={{ fields: workoutFields }} change={(value) => update({ workoutFields: value.fields ?? [] })} />}</> : type === 'STUDY' ? <StudyFields definitions={template?.fields} value={study} change={(value) => update({ study: value })} /> : <ClimbingFields detail={climbing} change={(value) => update({ climbing: value })} />}
+      {type === 'WORKOUT' ? <><WorkoutFields sets={workout} change={(value) => update({ workout: value })} />{template && <StudyTemplateFields legend="사용자 기록 항목" definitions={template.fields} value={{ fields: workoutFields }} change={(value) => update({ workoutFields: value.fields ?? [] })} />}</> : type === 'STUDY' ? <StudyFields definitions={template?.fields} value={study} change={(value) => update({ study: value })} /> : <><ClimbingFields detail={climbing} change={(value) => update({ climbing: value })} />{template && <StudyTemplateFields legend="사용자 기록 항목" definitions={template.fields} value={{ fields: climbing.fields }} change={(value) => update({ climbing: { ...climbing, fields: value.fields ?? [] } })} />}</>}
       <RecordTimeFields start={start} end={end} setStart={(value) => update({ start: value, startDirty: true })} setEnd={(value) => update({ end: value, endDirty: true })} />
       <label>기록 메모<textarea value={note} onChange={(event) => update({ note: event.target.value })} /></label>
     </fieldset><div className="form-actions"><button type="button" disabled={locked} onClick={() => void perform({ kind: 'void', body: { reason: '사용자 취소', version: baseline.version } })}>기록 취소</button><button disabled={locked}>{busy ? '저장 중…' : '수정 저장'}</button></div></form>}

@@ -74,6 +74,29 @@ it('creates a free-workout record type from the workout tab', async () => {
   expect(writes[0]).toMatchObject({ domain: 'WORKOUT', kind: 'FREE_WORKOUT', name: '하체 운동', fields: [{ name: 'RPE', type: 'NUMBER', unit: '점' }] })
 })
 
+it('creates and selects a free-hangboard type from the climbing flow', async () => {
+  const writes: any[] = []
+  const session = new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url), fallback = common(path)
+    if (path.includes('/templates?')) return Response.json({ items: [] })
+    if (path.endsWith('/templates') && init?.method === 'POST') { const body = JSON.parse(String(init.body)); writes.push(body); return Response.json({ templateId: '70000000-0000-0000-0000-000000000007', domain: body.domain, kind: body.kind, archived: false, revision: 0, currentVersion: { templateId: '70000000-0000-0000-0000-000000000007', templateVersion: 1, name: body.name, fields: body.fields.map((field: any, position: number) => ({ ...field, position })) } }, { status: 201 }) }
+    if (path.includes('/activities/summary')) return Response.json({ month: '2026-09', activityType: 'CLIMBING', completedCount: 0, durationSeconds: 0 })
+    return fallback ?? Response.json({}, { status: 404 })
+  } })
+  render(<App session={session} />)
+  await waitFor(() => expect(location.pathname).toBe('/today'))
+  fireEvent.click(await screen.findByRole('link', { name: '클라이밍' }))
+  fireEvent.click(await screen.findByRole('button', { name: '행보드 유형 관리' }))
+  fireEvent.click(await screen.findByRole('button', { name: '새 행보드 유형' }))
+  fireEvent.change(screen.getByLabelText('행보드 유형 이름'), { target: { value: '오픈핸드' } })
+  fireEvent.click(screen.getByRole('button', { name: '항목 추가' }))
+  fireEvent.change(screen.getByLabelText('항목 이름'), { target: { value: '성공' } })
+  fireEvent.change(screen.getByLabelText('형식'), { target: { value: 'CHECK' } })
+  fireEvent.click(screen.getByRole('button', { name: '행보드 유형 저장' }))
+  await waitFor(() => expect(writes).toHaveLength(1))
+  expect(writes[0]).toMatchObject({ domain: 'CLIMBING', kind: 'FREE_HANGBOARD', name: '오픈핸드', fields: [{ name: '성공', type: 'CHECK' }] })
+})
+
 it('review: NUMBER accepts negative decimals and TIME displays minutes while sending seconds', () => {
   const change = vi.fn()
   render(<StudyTemplateFields definitions={template().currentVersion.fields as activity.FieldDefinition[]} value={{ fields: [{ fieldId: template().currentVersion.fields[0]!.fieldId, type: activity.TemplateFieldType.Number, numberValue: -1.5 }, { fieldId: template().currentVersion.fields[1]!.fieldId, type: activity.TemplateFieldType.Time, timeSeconds: 90 }] }} change={change} />)

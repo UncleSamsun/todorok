@@ -40,7 +40,7 @@ export function QuickAdd({
     [scheduled, setScheduled] = useState(date)
   const [frequency, setFrequency] = useState('NONE')
   const [templateId, setTemplateId] = useState('')
-  const [managingTemplates, setManagingTemplates] = useState(false)
+  const [managingTemplates, setManagingTemplates] = useState<activity.TemplateKind | null>(null)
   const commandId = useRef(crypto.randomUUID())
   const submitted = useRef<Parameters<typeof save> | null>(null)
   const submittedTemplate = useRef<activity.TemplateResponse | undefined>(undefined)
@@ -51,8 +51,8 @@ export function QuickAdd({
   })
   const listedTemplate = templates.find((template) => template.templateId === templateId)
   const selectedTemplate = uncertain ? selectedSnapshot : listedTemplate ?? selectedSnapshot
-  const supportsTemplate = type === 'STUDY' || type === 'WORKOUT'
-  const templateLabel = type === 'STUDY' ? '공부 카테고리' : '운동 기록 유형'
+  const supportsTemplate = type === 'STUDY' || type === 'WORKOUT' || type === 'CLIMBING'
+  const templateLabel = type === 'STUDY' ? '공부 카테고리' : type === 'WORKOUT' ? '운동 기록 유형' : '클라이밍 기록 유형'
   const templateNoun = type === 'STUDY' ? '카테고리' : '기록 유형'
   useEffect(() => {
     if (listedTemplate && !uncertain) setSelectedSnapshot(listedTemplate)
@@ -76,9 +76,9 @@ export function QuickAdd({
     }
   }
   return (<>
-    <form className="task-form" hidden={managingTemplates} onSubmit={submit}>
+    <form className="task-form" hidden={Boolean(managingTemplates)} onSubmit={submit}>
       <fieldset disabled={busy || uncertain}>
-      {supportsTemplate && <><label htmlFor="record-template">{templateLabel}</label><select id="record-template" required value={templateId} onChange={(event) => { setTemplateId(event.target.value); setSelectedSnapshot(templates.find((item) => item.templateId === event.target.value)) }}><option value="">선택해 주세요</option>{selectedSnapshot && !templates.some((item) => item.templateId === selectedSnapshot.templateId && !item.archived) && <option value={selectedSnapshot.templateId}>{selectedSnapshot.currentVersion.name} · 이전 선택</option>}{templates.filter((template) => !template.archived).map((template) => <option key={template.templateId} value={template.templateId}>{template.currentVersion.name}</option>)}</select>{loadMore && <button type="button" disabled={loadingMore} onClick={loadMore}>{templateNoun} 더 보기</button>}<button type="button" onClick={() => setManagingTemplates(true)}>{templateNoun} 관리</button>{selectedTemplate && <ul className="template-preview">{selectedTemplate.currentVersion.fields.map((field) => <li key={field.fieldId}>{studyFieldSummary(field)}</li>)}</ul>}</>}
+      {supportsTemplate && <><label htmlFor="record-template">{templateLabel}</label><select id="record-template" required value={templateId} onChange={(event) => { setTemplateId(event.target.value); setSelectedSnapshot(templates.find((item) => item.templateId === event.target.value)) }}><option value="">선택해 주세요</option>{selectedSnapshot && !templates.some((item) => item.templateId === selectedSnapshot.templateId && !item.archived) && <option value={selectedSnapshot.templateId}>{selectedSnapshot.currentVersion.name} · 이전 선택</option>}{templates.filter((template) => !template.archived).map((template) => <option key={template.templateId} value={template.templateId}>{template.currentVersion.name}</option>)}</select>{loadMore && <button type="button" disabled={loadingMore} onClick={loadMore}>{templateNoun} 더 보기</button>}{type === 'CLIMBING' ? <><button type="button" onClick={() => setManagingTemplates(activity.TemplateKind.ClimbingSession)}>세션 유형 관리</button><button type="button" onClick={() => setManagingTemplates(activity.TemplateKind.FreeHangboard)}>행보드 유형 관리</button></> : <button type="button" onClick={() => setManagingTemplates(type === 'STUDY' ? activity.TemplateKind.StudyCategory : activity.TemplateKind.FreeWorkout)}>{templateNoun} 관리</button>}{selectedTemplate && <ul className="template-preview">{selectedTemplate.currentVersion.fields.map((field) => <li key={field.fieldId}>{studyFieldSummary(field)}</li>)}</ul>}</>}
       <label htmlFor="task-title">제목</label>
       <input
         autoFocus
@@ -145,6 +145,6 @@ export function QuickAdd({
         </button>
       </div>
     </form>
-    {managingTemplates && <StudyTemplateManager close={() => setManagingTemplates(false)} {...(type === 'WORKOUT' ? { domain: activity.TemplateDomain.Workout, kind: activity.TemplateKind.FreeWorkout, section: '운동', noun: '기록 유형' } : {})} />}
+    {managingTemplates && <StudyTemplateManager close={() => setManagingTemplates(null)} {...(type === 'WORKOUT' ? { domain: activity.TemplateDomain.Workout, kind: activity.TemplateKind.FreeWorkout, section: '운동', noun: '기록 유형' } : type === 'CLIMBING' ? { domain: activity.TemplateDomain.Climbing, kind: managingTemplates, section: '클라이밍', noun: managingTemplates === activity.TemplateKind.FreeHangboard ? '행보드 유형' : '세션 유형' } : {})} />}
   </>)
 }

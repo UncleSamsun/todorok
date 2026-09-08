@@ -15,7 +15,7 @@ const performedDate = (value: Date) => new Intl.DateTimeFormat('en-CA', { timeZo
 
 export function DomainPage({ type, title }: { type: RecordType; title: string }) {
   const { session, state } = useAuth(), navigate = useNavigate(), today = seoulToday(), { month, previous, next, atCurrent } = useActivityMonth()
-  const [pastOpen, setPastOpen] = useState(false), [pastDate, setPastDate] = useState(today), [managingTemplates, setManagingTemplates] = useState(false)
+  const [pastOpen, setPastOpen] = useState(false), [pastDate, setPastDate] = useState(today), [managingTemplates, setManagingTemplates] = useState<activity.TemplateKind | null>(null)
   const apis = useMemo(() => ({ calendar: new planner.CalendarApi(new planner.Configuration({ basePath: '/api/planner/v1', fetchApi: session.fetch })), activities: new activity.ActivityApi(new activity.Configuration({ basePath: '/api/activity/v1', fetchApi: session.fetch })) }), [session])
   const range = monthRange(month), owner = state.userId ?? 'session'
   const activitySummary = useQuery({ queryKey: ['activity-summary', owner, month, type], queryFn: ({ signal }) => apis.activities.getMonthlyActivitySummary({ month, activityType: apiType(type) }, { signal }) })
@@ -24,9 +24,13 @@ export function DomainPage({ type, title }: { type: RecordType; title: string })
   const day = useQuery({ queryKey: ['calendar', 'day', pastDate], enabled: pastOpen, queryFn: ({ signal }) => apis.calendar.getDayDetail({ date: pastDate }, { signal }) })
   const history = useInfiniteQuery({ queryKey: ['activities', owner], initialPageParam: undefined as string | undefined, queryFn: ({ pageParam, signal }) => apis.activities.listActivities({ cursor: pageParam, limit: 20 }, { signal }), getNextPageParam: (page) => page.nextCursor })
   const records = history.data?.pages.flatMap((page) => page.items).filter((item) => item.activityType === type) ?? []
-  if (managingTemplates && (type === 'STUDY' || type === 'WORKOUT')) return <StudyTemplateManager close={() => setManagingTemplates(false)} {...(type === 'WORKOUT' ? { domain: activity.TemplateDomain.Workout, kind: activity.TemplateKind.FreeWorkout, section: '운동', noun: '기록 유형' } : {})} />
+  if (managingTemplates) return <StudyTemplateManager close={() => setManagingTemplates(null)} {...(type === 'WORKOUT'
+    ? { domain: activity.TemplateDomain.Workout, kind: activity.TemplateKind.FreeWorkout, section: '운동', noun: '기록 유형' }
+    : type === 'CLIMBING'
+      ? { domain: activity.TemplateDomain.Climbing, kind: managingTemplates, section: '클라이밍', noun: managingTemplates === activity.TemplateKind.FreeHangboard ? '행보드 유형' : '세션 유형' }
+      : {})} />
   return <section className="domain-page">
-    <header className="domain-summary-heading"><div className="month-picker"><button aria-label="이전 달" onClick={previous}>‹</button><strong>{displayMonth(month)}</strong><button aria-label="다음 달" disabled={atCurrent} onClick={next}>›</button></div><div className="domain-actions">{(type === 'STUDY' || type === 'WORKOUT') && <button onClick={() => setManagingTemplates(true)}>{type === 'STUDY' ? '카테고리 관리' : '기록 유형 관리'}</button>}<button onClick={() => navigate(`/today?date=${today}&add=${type}`)}>추가</button><button onClick={() => setPastOpen((value) => !value)}>지난 기록</button></div></header>
+    <header className="domain-summary-heading"><div className="month-picker"><button aria-label="이전 달" onClick={previous}>‹</button><strong>{displayMonth(month)}</strong><button aria-label="다음 달" disabled={atCurrent} onClick={next}>›</button></div><div className="domain-actions">{type === 'STUDY' && <button onClick={() => setManagingTemplates(activity.TemplateKind.StudyCategory)}>카테고리 관리</button>}{type === 'WORKOUT' && <button onClick={() => setManagingTemplates(activity.TemplateKind.FreeWorkout)}>기록 유형 관리</button>}{type === 'CLIMBING' && <><button onClick={() => setManagingTemplates(activity.TemplateKind.ClimbingSession)}>세션 유형 관리</button><button onClick={() => setManagingTemplates(activity.TemplateKind.FreeHangboard)}>행보드 유형 관리</button></>}<button onClick={() => navigate(`/today?date=${today}&add=${type}`)}>추가</button><button onClick={() => setPastOpen((value) => !value)}>지난 기록</button></div></header>
     <section className="domain-summary" aria-label={`${title} 월간 요약`}>
       <div><span>완료</span>{activitySummary.isError ? <><strong>—</strong><p role="alert">활동 요약을 불러오지 못했습니다.</p><button onClick={() => void activitySummary.refetch()}>다시 시도</button></> : <strong>{activitySummary.data ? `${activitySummary.data.completedCount}회` : '…'}</strong>}</div>
       <div><span>시간</span>{activitySummary.isError ? <strong>—</strong> : <strong>{activitySummary.data ? `${Math.floor(activitySummary.data.durationSeconds / 60)}분` : '…'}</strong>}</div>

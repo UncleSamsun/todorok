@@ -15,6 +15,7 @@ function sessionFor(writes: unknown[], failFirst: false | 'network' | 'validatio
     if (path.includes('/calendar/')) return Response.json({ date: '2026-09-07', tasks: [{ taskId: 'task-1', userId: 'owner', title: '볼더링', taskType: 'CLIMBING', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0 }] })
     if (path.includes('/notes/')) return Response.json({ date: '2026-09-07', content: '', version: null })
     if (path.endsWith('/tasks/task-1')) return Response.json({ taskId: 'task-1', userId: 'owner', title: '볼더링', taskType: 'CLIMBING', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0 })
+    if (path.endsWith('/tasks/task-1/record-template')) return Response.json({ linked: false })
     if (path.endsWith('/activities') && init?.method === 'POST') {
       writes.push(JSON.parse(String(init.body)))
       attempts++
@@ -105,4 +106,30 @@ it('records a linked free workout with sets and custom fields together', async (
   fireEvent.click(screen.getByRole('button', { name: '기록 저장' }))
   await waitFor(() => expect(writes).toHaveLength(1))
   expect(writes[0]).toMatchObject({ expectedTemplateVersion: 1, detail: { workout: { sets: [{ exercise: '스쿼트', reps: 8 }], fields: [{ fieldId, type: 'NUMBER', numberValue: 7.5 }] } } })
+})
+
+it('records a linked climbing session with rounds and custom fields together', async () => {
+  const writes: any[] = []
+  const fieldId = '60000000-0000-0000-0000-000000000006'
+  const session = new SessionClient({ fetcher: async (url, init) => {
+    const path = String(url)
+    if (path.endsWith('/refresh')) return Response.json({ accessToken: 'token', userId: 'owner', expiresAt: '2099-01-01T00:00:00Z' })
+    if (path.endsWith('/rollover')) return Response.json({ today: '2026-09-07', movedCount: 0 })
+    if (path.includes('/calendar?')) return Response.json({ from: '2026-09-06', to: '2026-09-12', days: [] })
+    if (path.includes('/calendar/')) return Response.json({ date: '2026-09-07', tasks: [{ taskId: 'task-2', userId: 'owner', title: '저녁 볼더링', taskType: 'CLIMBING', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0 }] })
+    if (path.includes('/notes/')) return Response.json({ date: '2026-09-07', content: '', version: null })
+    if (path.endsWith('/tasks/task-2')) return Response.json({ taskId: 'task-2', userId: 'owner', title: '저녁 볼더링', taskType: 'CLIMBING', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0 })
+    if (path.endsWith('/tasks/task-2/record-template')) return Response.json({ linked: true, template: { templateId: 'template-2', domain: 'CLIMBING', kind: 'CLIMBING_SESSION', archived: false, revision: 0, currentVersion: { templateId: 'template-2', templateVersion: 1, name: '클라이밍 세션', fields: [{ fieldId, name: '느낌', type: 'MEMO', position: 0 }] } } })
+    if (path.endsWith('/activities') && init?.method === 'POST') { const body = JSON.parse(String(init.body)); writes.push(body); return Response.json({ activityId: 'activity-2', commandId: body.commandId, taskId: 'task-2', userId: 'owner', activityType: 'CLIMBING', performedAt: body.performedAt, detail: body.detail, detailFormat: 'TEMPLATE', status: 'COMPLETED', version: 0, syncState: 'APPLIED' }, { status: 201 }) }
+    return Response.json({ code: 'NOT_FOUND' }, { status: 404 })
+  } })
+  window.history.replaceState({}, '', '/today')
+  render(<App session={session} />)
+  fireEvent.click(await screen.findByRole('button', { name: '저녁 볼더링 기록' }))
+  fireEvent.click(await screen.findByRole('button', { name: '라운드 추가' }))
+  fireEvent.change(screen.getByLabelText('난이도'), { target: { value: 'V5' } })
+  fireEvent.change(screen.getByLabelText('느낌'), { target: { value: '슬로퍼가 어려움' } })
+  fireEvent.click(screen.getByRole('button', { name: '기록 저장' }))
+  await waitFor(() => expect(writes).toHaveLength(1))
+  expect(writes[0]).toMatchObject({ expectedTemplateVersion: 1, detail: { climbing: { rounds: [{ grade: 'V5' }], fields: [{ fieldId, type: 'MEMO', memoValue: '슬로퍼가 어려움' }] } } })
 })
