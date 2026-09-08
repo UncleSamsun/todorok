@@ -84,7 +84,11 @@ public class ActivityController implements ActivityApi {
 
     @Override
     public ResponseEntity<java.util.List<ProgramCatalogSummary>> listPrograms() {
-        return ResponseEntity.ok(catalogs.list().stream().map(value -> new ProgramCatalogSummary(value.catalogKey(), value.catalogVersion(), value.checksum(), value.name(), value.sessionsPerWeek(), value.totalWeeks())).toList());
+        return ResponseEntity.ok(catalogs.list().stream().map(value -> {
+            var source = new ProgramSource(ProgramSource.KindEnum.fromValue(value.source().kind()), value.source().label(), value.source().conditions(), value.source().cautions());
+            if (value.source().url() != null) source.url(java.net.URI.create(value.source().url()));
+            return new ProgramCatalogSummary(value.catalogKey(), value.catalogVersion(), value.checksum(), value.name(), source, value.sessionsPerWeek(), value.totalWeeks());
+        }).toList());
     }
 
     @Override

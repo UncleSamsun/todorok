@@ -19,7 +19,19 @@
         "url": { "type": "string", "format": "uri", "maxLength": 2048 },
         "conditions": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
         "cautions": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 500 } }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "PRIVATE_VERIFIED" } }, "required": ["kind"] },
+          "then": {
+            "required": ["url", "conditions", "cautions"],
+            "properties": {
+              "conditions": { "minItems": 1 },
+              "cautions": { "minItems": 1 }
+            }
+          }
+        }
+      ]
     },
     "sessionsPerWeek": { "type": "integer", "minimum": 1, "maximum": 7 },
     "weeks": {

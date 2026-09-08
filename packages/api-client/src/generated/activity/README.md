@@ -105,6 +105,7 @@ All URIs are relative to */api/activity/v1*
 - [ProgramCatalogSummary](docs/ProgramCatalogSummary.md)
 - [ProgramEnrollmentResponse](docs/ProgramEnrollmentResponse.md)
 - [ProgramSessionTarget](docs/ProgramSessionTarget.md)
+- [ProgramSource](docs/ProgramSource.md)
 - [StudyDetail](docs/StudyDetail.md)
 - [StudyDetailResponse](docs/StudyDetailResponse.md)
 - [TaskRecordTemplateResponse](docs/TaskRecordTemplateResponse.md)

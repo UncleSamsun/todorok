@@ -10,6 +10,7 @@ Name | Type
 `catalogVersion` | number
 `checksum` | string
 `name` | string
+`source` | [ProgramSource](ProgramSource.md)
 `sessionsPerWeek` | number
 `totalWeeks` | number
 
@@ -24,6 +25,7 @@ const example = {
   "catalogVersion": null,
   "checksum": null,
   "name": null,
+  "source": null,
   "sessionsPerWeek": null,
   "totalWeeks": null,
 } satisfies ProgramCatalogSummary

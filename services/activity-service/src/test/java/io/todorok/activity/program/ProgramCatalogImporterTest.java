@@ -15,6 +15,8 @@ class ProgramCatalogImporterTest {
     @Test void readsSyntheticCatalogWithContiguousWeeksAndExactSetTotals() {
         var catalog = importer.read(fixture("program-v1-valid.json"));
         assertThat(catalog.catalogKey()).isEqualTo("synthetic-pushup");
+        assertThat(catalog.source().label()).isEqualTo("테스트 전용 합성 자료");
+        assertThat(catalog.source().conditions()).containsExactly("테스트용");
         assertThat(catalog.sessionsPerWeek()).isEqualTo(3);
         assertThat(catalog.weeks()).hasSize(2);
         assertThat(catalog.weeks().getFirst().sessions().getFirst().sets()).containsExactly(3, 3, 2);
@@ -32,5 +34,13 @@ class ProgramCatalogImporterTest {
         assertThat(importer.checksum(valid)).isEqualTo(valid.get("checksum").asText());
         ((tools.jackson.databind.node.ObjectNode) valid.get("weeks").get(1).get("sessions").get(2)).put("targetTotal", 10);
         assertThat(importer.checksum(valid)).isNotEqualTo(valid.get("checksum").asText());
+    }
+
+    @Test void requiresOriginalLinkAndSafetyMetadataForPrivateVerifiedCatalogs() throws Exception {
+        var valid = (tools.jackson.databind.node.ObjectNode) mapper.readTree(java.nio.file.Files.readString(fixture("program-v1-valid.json")));
+        ((tools.jackson.databind.node.ObjectNode) valid.get("source")).put("kind", "PRIVATE_VERIFIED");
+        valid.put("checksum", importer.checksum(valid));
+
+        assertThatThrownBy(() -> importer.parse(valid)).hasMessageContaining("source url");
     }
 }

@@ -11,7 +11,7 @@ import tools.jackson.databind.ObjectMapper;
 public class ProgramCatalogStore {
     public enum ImportResult { IMPORTED, UNCHANGED }
     public record Imported(ProgramCatalogImporter.Catalog catalog, ImportResult result) {}
-    public record Summary(String catalogKey, long catalogVersion, String checksum, String name, int sessionsPerWeek, int totalWeeks) {}
+    public record Summary(String catalogKey, long catalogVersion, String checksum, String name, ProgramCatalogImporter.Source source, int sessionsPerWeek, int totalWeeks) {}
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final ProgramCatalogImporter importer;
@@ -38,7 +38,7 @@ public class ProgramCatalogStore {
 
     @Transactional(readOnly = true)
     public java.util.List<Summary> list() {
-        return jdbc.query("select catalog_key,catalog_version,checksum,name,(definition->>'sessionsPerWeek')::int as sessions_per_week,jsonb_array_length(definition->'weeks') as total_weeks from program_catalog order by catalog_key,catalog_version desc",
-            (row, index) -> new Summary(row.getString("catalog_key"), row.getLong("catalog_version"), row.getString("checksum"), row.getString("name"), row.getInt("sessions_per_week"), row.getInt("total_weeks")));
+        return jdbc.query("select catalog_key,catalog_version,checksum,name,source::text as source,(definition->>'sessionsPerWeek')::int as sessions_per_week,jsonb_array_length(definition->'weeks') as total_weeks from program_catalog order by catalog_key,catalog_version desc",
+            (row, index) -> new Summary(row.getString("catalog_key"), row.getLong("catalog_version"), row.getString("checksum"), row.getString("name"), importer.parseSource(mapper.readTree(row.getString("source"))), row.getInt("sessions_per_week"), row.getInt("total_weeks")));
     }
 }

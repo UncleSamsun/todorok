@@ -152,6 +152,8 @@ Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드�
 
 작업10 최종 검증: 프로그램 추가 migration으로 드러난 migration 개수 기대값·테스트 전용 controller 의존성 mock·기존 중복 JSON 기대값을 현재 정책에 맞춰 보정했다. 이후 `:services:activity-service:test :services:planner-service:test --no-daemon --no-configuration-cache --max-workers=1`가 5분 1초에 통과했다. 합성 catalog 사용자 흐름은 완료 판정하고 실제 원문 catalog는 작업11의 이용 범위 확인 전까지 private input과 공개 합성 fixture를 분리한다.
 
+작업11 준비: `TODOROK_PROGRAM_CATALOG_INPUTS`의 쉼표 구분 절대 경로만 읽는 private bootstrap을 추가했다. 빈 값은 import하지 않고, 상대 경로·누락 파일은 조용히 무시하지 않고 시작을 실패시킨다. 합성 fixture를 두 파일로 복사한 3개 회귀로 입력·거부·빈 설정을 검증했고, `docs/runbooks/program-catalog.md`에 private bind mount·checksum·version 교체 절차를 기록했다. catalog API와 운동 탭은 source label, 원문 URL(있을 때), 조건·주의사항을 보여 주도록 확장했으며 importer는 `PRIVATE_VERIFIED`에 URL·조건·주의사항을 강제한다. importer/HTTP 회귀와 contract drift를 확인했다. PRD가 지정한 Naver 원문 두 곳은 2026-09-08 자동 열람이 robots 정책으로 차단돼 있어 이용 허가 확인 증거가 없다. 실제 표를 import하거나 공개 fixture로 옮기지 않았으며, 이 권한 확인은 현재 유일한 작업11 차단 조건이다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

@@ -383,14 +383,29 @@ components:
     ProgramCatalogSummary:
       type: object
       additionalProperties: false
-      required: [catalogKey, catalogVersion, checksum, name, sessionsPerWeek, totalWeeks]
+      required: [catalogKey, catalogVersion, checksum, name, source, sessionsPerWeek, totalWeeks]
       properties:
         catalogKey: { type: string }
         catalogVersion: { type: integer, format: int64, minimum: 1 }
         checksum: { type: string }
         name: { type: string }
+        source: { $ref: '#/components/schemas/ProgramSource' }
         sessionsPerWeek: { type: integer, minimum: 1 }
         totalWeeks: { type: integer, minimum: 1 }
+    ProgramSource:
+      type: object
+      additionalProperties: false
+      required: [kind, label, conditions, cautions]
+      properties:
+        kind: { type: string, enum: [SYNTHETIC, PRIVATE_VERIFIED] }
+        label: { type: string, minLength: 1, maxLength: 200 }
+        url: { type: string, format: uri, maxLength: 2048 }
+        conditions:
+          type: array
+          items: { type: string, minLength: 1, maxLength: 500 }
+        cautions:
+          type: array
+          items: { type: string, minLength: 1, maxLength: 500 }
     EnrollProgramRequest:
       type: object
       additionalProperties: false

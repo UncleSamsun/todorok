@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import io.todorok.activity.api.model.ProgramSource;
 import org.springframework.lang.Nullable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -28,6 +29,8 @@ public class ProgramCatalogSummary {
 
   private String name;
 
+  private ProgramSource source;
+
   private Integer sessionsPerWeek;
 
   private Integer totalWeeks;
@@ -39,11 +42,12 @@ public class ProgramCatalogSummary {
   /**
    * Constructor with only required parameters
    */
-  public ProgramCatalogSummary(String catalogKey, Long catalogVersion, String checksum, String name, Integer sessionsPerWeek, Integer totalWeeks) {
+  public ProgramCatalogSummary(String catalogKey, Long catalogVersion, String checksum, String name, ProgramSource source, Integer sessionsPerWeek, Integer totalWeeks) {
     this.catalogKey = catalogKey;
     this.catalogVersion = catalogVersion;
     this.checksum = checksum;
     this.name = name;
+    this.source = source;
     this.sessionsPerWeek = sessionsPerWeek;
     this.totalWeeks = totalWeeks;
   }
@@ -129,6 +133,26 @@ public class ProgramCatalogSummary {
     this.name = name;
   }
 
+  public ProgramCatalogSummary source(ProgramSource source) {
+    this.source = source;
+    return this;
+  }
+
+  /**
+   * Get source
+   * @return source
+   */
+  @NotNull @Valid
+  @JsonProperty("source")
+  public ProgramSource getSource() {
+    return source;
+  }
+
+  @JsonProperty("source")
+  public void setSource(ProgramSource source) {
+    this.source = source;
+  }
+
   public ProgramCatalogSummary sessionsPerWeek(Integer sessionsPerWeek) {
     this.sessionsPerWeek = sessionsPerWeek;
     return this;
@@ -184,13 +208,14 @@ public class ProgramCatalogSummary {
         Objects.equals(this.catalogVersion, programCatalogSummary.catalogVersion) &&
         Objects.equals(this.checksum, programCatalogSummary.checksum) &&
         Objects.equals(this.name, programCatalogSummary.name) &&
+        Objects.equals(this.source, programCatalogSummary.source) &&
         Objects.equals(this.sessionsPerWeek, programCatalogSummary.sessionsPerWeek) &&
         Objects.equals(this.totalWeeks, programCatalogSummary.totalWeeks);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(catalogKey, catalogVersion, checksum, name, sessionsPerWeek, totalWeeks);
+    return Objects.hash(catalogKey, catalogVersion, checksum, name, source, sessionsPerWeek, totalWeeks);
   }
 
   @Override
@@ -201,6 +226,7 @@ public class ProgramCatalogSummary {
     sb.append("    catalogVersion: ").append(toIndentedString(catalogVersion)).append("\n");
     sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("    source: ").append(toIndentedString(source)).append("\n");
     sb.append("    sessionsPerWeek: ").append(toIndentedString(sessionsPerWeek)).append("\n");
     sb.append("    totalWeeks: ").append(toIndentedString(totalWeeks)).append("\n");
     sb.append("}");

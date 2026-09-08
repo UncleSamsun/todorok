@@ -29,6 +29,7 @@ docs/ProblemDetailsFieldErrorsInner.md
 docs/ProgramCatalogSummary.md
 docs/ProgramEnrollmentResponse.md
 docs/ProgramSessionTarget.md
+docs/ProgramSource.md
 docs/StudyDetail.md
 docs/StudyDetailResponse.md
 docs/TaskRecordTemplateResponse.md
@@ -76,6 +77,7 @@ src/models/ProblemDetailsFieldErrorsInner.ts
 src/models/ProgramCatalogSummary.ts
 src/models/ProgramEnrollmentResponse.ts
 src/models/ProgramSessionTarget.ts
+src/models/ProgramSource.ts
 src/models/StudyDetail.ts
 src/models/StudyDetailResponse.ts
 src/models/TaskRecordTemplateResponse.ts

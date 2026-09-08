@@ -17,7 +17,7 @@ it('등록한 프로그램의 현재 회차와 권장 세트를 운동 탭에서
     const path = String(url)
     if (path.endsWith('/refresh')) return Response.json({ accessToken: 'token', userId: 'owner', expiresAt: '2099-01-01T00:00:00Z' })
     if (path.endsWith('/rollover')) return Response.json({ today: '2026-09-07', movedCount: 0 })
-    if (path.endsWith('/programs')) return Response.json([{ catalogKey: 'synthetic-pushup', catalogVersion: 1, checksum: 'test', name: '합성 푸시업 프로그램', sessionsPerWeek: 3, totalWeeks: 2 }])
+    if (path.endsWith('/programs')) return Response.json([{ catalogKey: 'synthetic-pushup', catalogVersion: 1, checksum: 'test', name: '합성 푸시업 프로그램', sessionsPerWeek: 3, totalWeeks: 2, source: { kind: 'SYNTHETIC', label: '테스트 전용 합성 자료', conditions: ['테스트용'], cautions: ['실제 운동 처방이 아님'] } }])
     if (path.endsWith('/program-enrollments') && init?.method === 'POST') { writes.push(JSON.parse(String(init.body))); enrolled = true; return Response.json(enrollment, { status: 201 }) }
     if (path.endsWith('/program-enrollments')) return Response.json(enrolled ? [enrollment] : [])
     if (path.includes('/activities/summary')) return Response.json({ month: '2026-09', activityType: 'WORKOUT', completedCount: 0, durationSeconds: 0 })
@@ -36,6 +36,7 @@ it('등록한 프로그램의 현재 회차와 권장 세트를 운동 탭에서
 
   expect(await screen.findByText('2주차 1회')).toBeVisible()
   expect(screen.getByText('4 · 3 · 3회')).toBeVisible()
+  expect(screen.getByText('테스트 전용 합성 자료')).toBeVisible()
   expect(writes[0]).toMatchObject({ catalogKey: 'synthetic-pushup', catalogVersion: 1, initialTestValue: 12, startWeek: 2 })
   expect(writes[0]?.commandId).toEqual(expect.any(String))
 })

@@ -29,6 +29,7 @@ java/io/todorok/activity/api/model/ProblemDetailsFieldErrorsInner.java
 java/io/todorok/activity/api/model/ProgramCatalogSummary.java
 java/io/todorok/activity/api/model/ProgramEnrollmentResponse.java
 java/io/todorok/activity/api/model/ProgramSessionTarget.java
+java/io/todorok/activity/api/model/ProgramSource.java
 java/io/todorok/activity/api/model/StudyDetail.java
 java/io/todorok/activity/api/model/StudyDetailResponse.java
 java/io/todorok/activity/api/model/TaskRecordTemplateResponse.java

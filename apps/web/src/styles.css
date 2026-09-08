@@ -516,6 +516,8 @@ select {
 .program-catalogs { display: grid; gap: 10px; }
 .program-catalogs article { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
 .program-catalogs article p { margin: 4px 0 0; font-size: 13px; }
+.program-source { color: var(--muted); font-size: 12px; }
+.program-source a { color: inherit; }
 .program-catalogs button { flex: 0 0 auto; }
 .program-enrollment { display: grid; gap: 10px; }
 .program-enrollment h3 { margin-bottom: 4px; }

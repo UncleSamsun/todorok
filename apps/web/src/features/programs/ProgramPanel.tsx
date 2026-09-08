@@ -50,7 +50,7 @@ export function ProgramPanel() {
     {catalogs.isPending && <p role="status">프로그램을 불러오는 중…</p>}
     {catalogs.isError && <p role="alert">프로그램을 불러오지 못했습니다.</p>}
     {catalogs.data && <section className="program-catalogs"><h3>프로그램 선택</h3>{catalogs.data.map((catalog) => <article key={`${catalog.catalogKey}:${catalog.catalogVersion}`}>
-      <div><strong>{catalog.name}</strong><p>{catalog.totalWeeks}주 · 주 {catalog.sessionsPerWeek}회</p></div>
+      <div><strong>{catalog.name}</strong><p>{catalog.totalWeeks}주 · 주 {catalog.sessionsPerWeek}회</p><small className="program-source">{catalog.source.label}{catalog.source.url && <> · <a href={catalog.source.url} target="_blank" rel="noreferrer">출처 원문</a></>}</small>{catalog.source.conditions.length > 0 && <p className="program-source">조건: {catalog.source.conditions.join(' · ')}</p>}{catalog.source.cautions.length > 0 && <p className="program-source">주의: {catalog.source.cautions.join(' · ')}</p>}</div>
       <button onClick={() => begin(catalog)}>{catalog.name} 등록</button>
     </article>)}</section>}
     {selected && <form className="program-enrollment" onSubmit={submit}>

@@ -28,6 +28,7 @@ export * from './ProblemDetailsFieldErrorsInner';
 export * from './ProgramCatalogSummary';
 export * from './ProgramEnrollmentResponse';
 export * from './ProgramSessionTarget';
+export * from './ProgramSource';
 export * from './StudyDetail';
 export * from './StudyDetailResponse';
 export * from './TaskRecordTemplateResponse';

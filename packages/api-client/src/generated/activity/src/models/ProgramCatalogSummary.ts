@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime';
+import type { ProgramSource } from './ProgramSource';
+import {
+    ProgramSourceFromJSON,
+    ProgramSourceFromJSONTyped,
+    ProgramSourceToJSON,
+    ProgramSourceToJSONTyped,
+} from './ProgramSource';
+
 /**
  *
  * @export
@@ -45,6 +53,12 @@ export interface ProgramCatalogSummary {
     name: string;
     /**
      *
+     * @type {ProgramSource}
+     * @memberof ProgramCatalogSummary
+     */
+    source: ProgramSource;
+    /**
+     *
      * @type {number}
      * @memberof ProgramCatalogSummary
      */
@@ -65,6 +79,7 @@ export function instanceOfProgramCatalogSummary(value: object): value is Program
     if (!('catalogVersion' in value) || value['catalogVersion'] === undefined) return false;
     if (!('checksum' in value) || value['checksum'] === undefined) return false;
     if (!('name' in value) || value['name'] === undefined) return false;
+    if (!('source' in value) || value['source'] === undefined) return false;
     if (!('sessionsPerWeek' in value) || value['sessionsPerWeek'] === undefined) return false;
     if (!('totalWeeks' in value) || value['totalWeeks'] === undefined) return false;
     return true;
@@ -84,6 +99,7 @@ export function ProgramCatalogSummaryFromJSONTyped(json: any, ignoreDiscriminato
         'catalogVersion': json['catalogVersion'],
         'checksum': json['checksum'],
         'name': json['name'],
+        'source': ProgramSourceFromJSON(json['source']),
         'sessionsPerWeek': json['sessionsPerWeek'],
         'totalWeeks': json['totalWeeks'],
     };
@@ -104,6 +120,7 @@ export function ProgramCatalogSummaryToJSONTyped(value?: ProgramCatalogSummary |
         'catalogVersion': value['catalogVersion'],
         'checksum': value['checksum'],
         'name': value['name'],
+        'source': ProgramSourceToJSON(value['source']),
         'sessionsPerWeek': value['sessionsPerWeek'],
         'totalWeeks': value['totalWeeks'],
     };

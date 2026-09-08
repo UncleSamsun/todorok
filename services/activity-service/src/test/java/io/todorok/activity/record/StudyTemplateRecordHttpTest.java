@@ -225,6 +225,9 @@ class StudyTemplateRecordHttpTest {
         UUID owner = UUID.randomUUID(), command = UUID.randomUUID();
         var programs = ok(send("GET", "/programs", null, owner), 200);
         assertThat(programs.get(0).path("catalogKey").asText()).isEqualTo("synthetic-pushup");
+        assertThat(programs.get(0).path("source").path("label").asText()).isEqualTo("테스트 전용 합성 자료");
+        assertThat(programs.get(0).path("source").path("conditions").get(0).asText()).isEqualTo("테스트용");
+        assertThat(programs.get(0).path("source").path("cautions").get(0).asText()).isEqualTo("실제 운동 처방이 아님");
         var body = Map.of("commandId", command, "catalogKey", "synthetic-pushup", "catalogVersion", 1, "initialTestValue", 9, "startWeek", 2);
         var enrolled = ok(send("POST", "/program-enrollments", body, owner), 201);
         assertThat(enrolled.path("startWeek").asInt()).isEqualTo(2);
