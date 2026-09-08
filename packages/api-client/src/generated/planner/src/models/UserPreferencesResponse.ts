@@ -35,6 +35,18 @@ export interface UserPreferencesResponse {
     theme: ThemeMode;
     /**
      *
+     * @type {boolean}
+     * @memberof UserPreferencesResponse
+     */
+    notificationsEnabled: boolean;
+    /**
+     *
+     * @type {string}
+     * @memberof UserPreferencesResponse
+     */
+    summaryTime: string;
+    /**
+     *
      * @type {number}
      * @memberof UserPreferencesResponse
      */
@@ -48,6 +60,8 @@ export interface UserPreferencesResponse {
  */
 export function instanceOfUserPreferencesResponse(value: object): value is UserPreferencesResponse {
     if (!('theme' in value) || value['theme'] === undefined) return false;
+    if (!('notificationsEnabled' in value) || value['notificationsEnabled'] === undefined) return false;
+    if (!('summaryTime' in value) || value['summaryTime'] === undefined) return false;
     if (!('revision' in value) || value['revision'] === undefined) return false;
     return true;
 }
@@ -63,6 +77,8 @@ export function UserPreferencesResponseFromJSONTyped(json: any, ignoreDiscrimina
     return {
 
         'theme': ThemeModeFromJSON(json['theme']),
+        'notificationsEnabled': json['notificationsEnabled'],
+        'summaryTime': json['summaryTime'],
         'revision': json['revision'],
     };
 }
@@ -79,6 +95,8 @@ export function UserPreferencesResponseToJSONTyped(value?: UserPreferencesRespon
     return {
 
         'theme': ThemeModeToJSON(value['theme']),
+        'notificationsEnabled': value['notificationsEnabled'],
+        'summaryTime': value['summaryTime'],
         'revision': value['revision'],
     };
 }

@@ -453,16 +453,20 @@ components:
     UserPreferencesResponse:
       type: object
       additionalProperties: false
-      required: [theme, revision]
+      required: [theme, notificationsEnabled, summaryTime, revision]
       properties:
         theme: { $ref: '#/components/schemas/ThemeMode' }
+        notificationsEnabled: { type: boolean }
+        summaryTime: { type: string, pattern: '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$' }
         revision: { type: integer, format: int64, minimum: 0 }
     UpdateUserPreferencesRequest:
       type: object
       additionalProperties: false
-      required: [theme, expectedRevision]
+      required: [theme, notificationsEnabled, summaryTime, expectedRevision]
       properties:
         theme: { $ref: '#/components/schemas/ThemeMode' }
+        notificationsEnabled: { type: boolean }
+        summaryTime: { type: string, pattern: '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$' }
         expectedRevision: { type: integer, format: int64, minimum: 0 }
     TemplateSelection:
       $ref: './common-v1.yaml#/components/schemas/TemplateSelection'

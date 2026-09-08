@@ -35,6 +35,18 @@ export interface UpdateUserPreferencesRequest {
     theme: ThemeMode;
     /**
      *
+     * @type {boolean}
+     * @memberof UpdateUserPreferencesRequest
+     */
+    notificationsEnabled: boolean;
+    /**
+     *
+     * @type {string}
+     * @memberof UpdateUserPreferencesRequest
+     */
+    summaryTime: string;
+    /**
+     *
      * @type {number}
      * @memberof UpdateUserPreferencesRequest
      */
@@ -48,6 +60,8 @@ export interface UpdateUserPreferencesRequest {
  */
 export function instanceOfUpdateUserPreferencesRequest(value: object): value is UpdateUserPreferencesRequest {
     if (!('theme' in value) || value['theme'] === undefined) return false;
+    if (!('notificationsEnabled' in value) || value['notificationsEnabled'] === undefined) return false;
+    if (!('summaryTime' in value) || value['summaryTime'] === undefined) return false;
     if (!('expectedRevision' in value) || value['expectedRevision'] === undefined) return false;
     return true;
 }
@@ -63,6 +77,8 @@ export function UpdateUserPreferencesRequestFromJSONTyped(json: any, ignoreDiscr
     return {
 
         'theme': ThemeModeFromJSON(json['theme']),
+        'notificationsEnabled': json['notificationsEnabled'],
+        'summaryTime': json['summaryTime'],
         'expectedRevision': json['expectedRevision'],
     };
 }
@@ -79,6 +95,8 @@ export function UpdateUserPreferencesRequestToJSONTyped(value?: UpdateUserPrefer
     return {
 
         'theme': ThemeModeToJSON(value['theme']),
+        'notificationsEnabled': value['notificationsEnabled'],
+        'summaryTime': value['summaryTime'],
         'expectedRevision': value['expectedRevision'],
     };
 }

@@ -24,6 +24,10 @@ public class UpdateUserPreferencesRequest {
 
   private ThemeMode theme;
 
+  private Boolean notificationsEnabled;
+
+  private String summaryTime;
+
   private Long expectedRevision;
 
   public UpdateUserPreferencesRequest() {
@@ -33,8 +37,10 @@ public class UpdateUserPreferencesRequest {
   /**
    * Constructor with only required parameters
    */
-  public UpdateUserPreferencesRequest(ThemeMode theme, Long expectedRevision) {
+  public UpdateUserPreferencesRequest(ThemeMode theme, Boolean notificationsEnabled, String summaryTime, Long expectedRevision) {
     this.theme = theme;
+    this.notificationsEnabled = notificationsEnabled;
+    this.summaryTime = summaryTime;
     this.expectedRevision = expectedRevision;
   }
 
@@ -57,6 +63,48 @@ public class UpdateUserPreferencesRequest {
   @JsonProperty("theme")
   public void setTheme(ThemeMode theme) {
     this.theme = theme;
+  }
+
+  public UpdateUserPreferencesRequest notificationsEnabled(Boolean notificationsEnabled) {
+    this.notificationsEnabled = notificationsEnabled;
+    return this;
+  }
+
+  /**
+   * Get notificationsEnabled
+   * @return notificationsEnabled
+   */
+  @NotNull
+
+  @JsonProperty("notificationsEnabled")
+  public Boolean getNotificationsEnabled() {
+    return notificationsEnabled;
+  }
+
+  @JsonProperty("notificationsEnabled")
+  public void setNotificationsEnabled(Boolean notificationsEnabled) {
+    this.notificationsEnabled = notificationsEnabled;
+  }
+
+  public UpdateUserPreferencesRequest summaryTime(String summaryTime) {
+    this.summaryTime = summaryTime;
+    return this;
+  }
+
+  /**
+   * Get summaryTime
+   * @return summaryTime
+   */
+  @NotNull @Pattern(regexp = "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$")
+
+  @JsonProperty("summaryTime")
+  public String getSummaryTime() {
+    return summaryTime;
+  }
+
+  @JsonProperty("summaryTime")
+  public void setSummaryTime(String summaryTime) {
+    this.summaryTime = summaryTime;
   }
 
   public UpdateUserPreferencesRequest expectedRevision(Long expectedRevision) {
@@ -91,12 +139,14 @@ public class UpdateUserPreferencesRequest {
     }
     UpdateUserPreferencesRequest updateUserPreferencesRequest = (UpdateUserPreferencesRequest) o;
     return Objects.equals(this.theme, updateUserPreferencesRequest.theme) &&
+        Objects.equals(this.notificationsEnabled, updateUserPreferencesRequest.notificationsEnabled) &&
+        Objects.equals(this.summaryTime, updateUserPreferencesRequest.summaryTime) &&
         Objects.equals(this.expectedRevision, updateUserPreferencesRequest.expectedRevision);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(theme, expectedRevision);
+    return Objects.hash(theme, notificationsEnabled, summaryTime, expectedRevision);
   }
 
   @Override
@@ -104,6 +154,8 @@ public class UpdateUserPreferencesRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class UpdateUserPreferencesRequest {\n");
     sb.append("    theme: ").append(toIndentedString(theme)).append("\n");
+    sb.append("    notificationsEnabled: ").append(toIndentedString(notificationsEnabled)).append("\n");
+    sb.append("    summaryTime: ").append(toIndentedString(summaryTime)).append("\n");
     sb.append("    expectedRevision: ").append(toIndentedString(expectedRevision)).append("\n");
     sb.append("}");
     return sb.toString();

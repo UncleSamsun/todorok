@@ -24,6 +24,10 @@ public class UserPreferencesResponse {
 
   private ThemeMode theme;
 
+  private Boolean notificationsEnabled;
+
+  private String summaryTime;
+
   private Long revision;
 
   public UserPreferencesResponse() {
@@ -33,8 +37,10 @@ public class UserPreferencesResponse {
   /**
    * Constructor with only required parameters
    */
-  public UserPreferencesResponse(ThemeMode theme, Long revision) {
+  public UserPreferencesResponse(ThemeMode theme, Boolean notificationsEnabled, String summaryTime, Long revision) {
     this.theme = theme;
+    this.notificationsEnabled = notificationsEnabled;
+    this.summaryTime = summaryTime;
     this.revision = revision;
   }
 
@@ -57,6 +63,48 @@ public class UserPreferencesResponse {
   @JsonProperty("theme")
   public void setTheme(ThemeMode theme) {
     this.theme = theme;
+  }
+
+  public UserPreferencesResponse notificationsEnabled(Boolean notificationsEnabled) {
+    this.notificationsEnabled = notificationsEnabled;
+    return this;
+  }
+
+  /**
+   * Get notificationsEnabled
+   * @return notificationsEnabled
+   */
+  @NotNull
+
+  @JsonProperty("notificationsEnabled")
+  public Boolean getNotificationsEnabled() {
+    return notificationsEnabled;
+  }
+
+  @JsonProperty("notificationsEnabled")
+  public void setNotificationsEnabled(Boolean notificationsEnabled) {
+    this.notificationsEnabled = notificationsEnabled;
+  }
+
+  public UserPreferencesResponse summaryTime(String summaryTime) {
+    this.summaryTime = summaryTime;
+    return this;
+  }
+
+  /**
+   * Get summaryTime
+   * @return summaryTime
+   */
+  @NotNull @Pattern(regexp = "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$")
+
+  @JsonProperty("summaryTime")
+  public String getSummaryTime() {
+    return summaryTime;
+  }
+
+  @JsonProperty("summaryTime")
+  public void setSummaryTime(String summaryTime) {
+    this.summaryTime = summaryTime;
   }
 
   public UserPreferencesResponse revision(Long revision) {
@@ -91,12 +139,14 @@ public class UserPreferencesResponse {
     }
     UserPreferencesResponse userPreferencesResponse = (UserPreferencesResponse) o;
     return Objects.equals(this.theme, userPreferencesResponse.theme) &&
+        Objects.equals(this.notificationsEnabled, userPreferencesResponse.notificationsEnabled) &&
+        Objects.equals(this.summaryTime, userPreferencesResponse.summaryTime) &&
         Objects.equals(this.revision, userPreferencesResponse.revision);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(theme, revision);
+    return Objects.hash(theme, notificationsEnabled, summaryTime, revision);
   }
 
   @Override
@@ -104,6 +154,8 @@ public class UserPreferencesResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class UserPreferencesResponse {\n");
     sb.append("    theme: ").append(toIndentedString(theme)).append("\n");
+    sb.append("    notificationsEnabled: ").append(toIndentedString(notificationsEnabled)).append("\n");
+    sb.append("    summaryTime: ").append(toIndentedString(summaryTime)).append("\n");
     sb.append("    revision: ").append(toIndentedString(revision)).append("\n");
     sb.append("}");
     return sb.toString();

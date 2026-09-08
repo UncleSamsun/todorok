@@ -172,13 +172,18 @@ class TaskHttpIntegrationTest {
     @Test
     void savesThemePreferencePerOwnerWithOptimisticRevision() throws Exception {
         UUID owner = UUID.randomUUID(), other = UUID.randomUUID();
-        assertThat(body(call(owner, "GET", "/preferences", null)).path("theme").asText()).isEqualTo("SYSTEM");
-        var saved = body(call(owner, "PUT", "/preferences", "{\"theme\":\"DARK\",\"expectedRevision\":0}"));
+        var initial = body(call(owner, "GET", "/preferences", null));
+        assertThat(initial.path("theme").asText()).isEqualTo("SYSTEM");
+        assertThat(initial.path("notificationsEnabled").asBoolean()).isFalse();
+        assertThat(initial.path("summaryTime").asText()).isEqualTo("08:00");
+        var saved = body(call(owner, "PUT", "/preferences", "{\"theme\":\"DARK\",\"notificationsEnabled\":true,\"summaryTime\":\"09:30\",\"expectedRevision\":0}"));
         assertThat(saved.path("theme").asText()).isEqualTo("DARK");
+        assertThat(saved.path("notificationsEnabled").asBoolean()).isTrue();
+        assertThat(saved.path("summaryTime").asText()).isEqualTo("09:30");
         assertThat(saved.path("revision").asLong()).isZero();
         assertThat(body(call(other, "GET", "/preferences", null)).path("theme").asText()).isEqualTo("SYSTEM");
-        assertThat(call(owner, "PUT", "/preferences", "{\"theme\":\"LIGHT\",\"expectedRevision\":0}").statusCode()).isEqualTo(200);
-        assertThat(call(owner, "PUT", "/preferences", "{\"theme\":\"SYSTEM\",\"expectedRevision\":0}").statusCode()).isEqualTo(409);
+        assertThat(call(owner, "PUT", "/preferences", "{\"theme\":\"LIGHT\",\"notificationsEnabled\":true,\"summaryTime\":\"09:30\",\"expectedRevision\":0}").statusCode()).isEqualTo(200);
+        assertThat(call(owner, "PUT", "/preferences", "{\"theme\":\"SYSTEM\",\"notificationsEnabled\":false,\"summaryTime\":\"08:00\",\"expectedRevision\":0}").statusCode()).isEqualTo(409);
     }
 
     @Test

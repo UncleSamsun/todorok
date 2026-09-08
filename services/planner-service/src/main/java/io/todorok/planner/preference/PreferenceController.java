@@ -17,10 +17,10 @@ public class PreferenceController implements PreferenceApi {
     public PreferenceController(UserPreference preferences) { this.preferences = preferences; }
     @Override public ResponseEntity<UserPreferencesResponse> getPreferences() { return ResponseEntity.ok(response(preferences.get(owner()))); }
     @Override public ResponseEntity<UserPreferencesResponse> updatePreferences(UpdateUserPreferencesRequest request) {
-        return ResponseEntity.ok(response(preferences.save(owner(), request.getTheme().getValue(), request.getExpectedRevision())));
+        return ResponseEntity.ok(response(preferences.save(owner(), request.getTheme().getValue(), request.getNotificationsEnabled(), request.getSummaryTime(), request.getExpectedRevision())));
     }
     private UUID owner() { return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal(); }
     private UserPreferencesResponse response(UserPreference.Value value) {
-        return new UserPreferencesResponse(ThemeMode.fromValue(value.theme()), value.revision());
+        return new UserPreferencesResponse(ThemeMode.fromValue(value.theme()), value.notificationsEnabled(), value.summaryTime(), value.revision());
     }
 }

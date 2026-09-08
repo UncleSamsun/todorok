@@ -7,6 +7,8 @@
 Name | Type
 ------------ | -------------
 `theme` | [ThemeMode](ThemeMode.md)
+`notificationsEnabled` | boolean
+`summaryTime` | string
 `expectedRevision` | number
 
 ## Example
@@ -17,6 +19,8 @@ import type { UpdateUserPreferencesRequest } from '@todorok/api-client'
 // TODO: Update the object below with actual values
 const example = {
   "theme": null,
+  "notificationsEnabled": null,
+  "summaryTime": null,
   "expectedRevision": null,
 } satisfies UpdateUserPreferencesRequest
 
