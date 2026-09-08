@@ -184,6 +184,22 @@ public interface ActivityApi {
     );
 
 
+    String PATH_LIST_PROGRAM_ENROLLMENTS = "/program-enrollments";
+    /**
+     * GET /program-enrollments
+     *
+     * @return Current owner&#39;s program enrollments, newest first. (status code 200)
+     */
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = ActivityApi.PATH_LIST_PROGRAM_ENROLLMENTS,
+        produces = { "application/json" }
+    )
+    ResponseEntity<List<ProgramEnrollmentResponse>> listProgramEnrollments(
+
+    );
+
+
     String PATH_LIST_PROGRAMS = "/programs";
     /**
      * GET /programs

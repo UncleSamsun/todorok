@@ -11,6 +11,7 @@ All URIs are relative to */api/activity/v1*
 | [**getMonthlyActivitySummary**](ActivityApi.md#getmonthlyactivitysummary) | **GET** /activities/summary |  |
 | [**getProgramEnrollment**](ActivityApi.md#getprogramenrollment) | **GET** /program-enrollments/{enrollmentId} |  |
 | [**listActivities**](ActivityApi.md#listactivities) | **GET** /activities |  |
+| [**listProgramEnrollments**](ActivityApi.md#listprogramenrollments) | **GET** /program-enrollments |  |
 | [**listPrograms**](ActivityApi.md#listprograms) | **GET** /programs |  |
 | [**voidActivity**](ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |  |
 
@@ -527,6 +528,67 @@ example().catch(console.error);
 |-------------|-------------|------------------|
 | **200** | Activity 목록 |  -  |
 | **400** | 잘못된 요청 |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## listProgramEnrollments
+
+> Array&lt;ProgramEnrollmentResponse&gt; listProgramEnrollments()
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  ActivityApi,
+} from '@todorok/api-client';
+import type { ListProgramEnrollmentsRequest } from '@todorok/api-client';
+
+async function example() {
+  console.log("🚀 Testing @todorok/api-client SDK...");
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
+
+  try {
+    const data = await api.listProgramEnrollments();
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**Array&lt;ProgramEnrollmentResponse&gt;**](ProgramEnrollmentResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Current owner\&#39;s program enrollments, newest first. |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

@@ -57,6 +57,12 @@ public class ProgramEnrollmentService {
         return read(id);
     }
 
+    @Transactional(readOnly = true)
+    public List<Enrollment> list(UUID owner) {
+        return jdbc.queryForList("select id from program_enrollment where user_id=? order by created_at desc,id desc", owner).stream()
+            .map(row -> read((UUID) row.get("id"))).toList();
+    }
+
     @Transactional
     public void recordOutcome(UUID taskId, UUID activityId, int actualRepetitions, boolean voided) {
         var sessions = jdbc.queryForList("select * from program_session where task_id=? for update", taskId);

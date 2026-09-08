@@ -210,6 +210,20 @@ class StudyTemplateRecordHttpTest {
         assertThat(send("GET", "/program-enrollments/" + enrolled.path("enrollmentId").asText(), null, UUID.randomUUID()).statusCode()).isEqualTo(404);
     }
 
+    @Test void listsOnlyTheCurrentOwnersProgramEnrollments() throws Exception {
+        var catalog = mapper.readTree(java.nio.file.Files.readString(Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", "program-v1-valid.json")));
+        catalogs.importCatalog(catalog);
+        UUID owner = UUID.randomUUID();
+        var first = enrollments.enroll(owner, UUID.randomUUID(), "synthetic-pushup", 1, 10, 1);
+        var second = enrollments.enroll(owner, UUID.randomUUID(), "synthetic-pushup", 1, 11, 2);
+        enrollments.enroll(UUID.randomUUID(), UUID.randomUUID(), "synthetic-pushup", 1, 12, 1);
+
+        var listed = ok(send("GET", "/program-enrollments", null, owner), 200);
+        assertThat(listed).hasSize(2);
+        assertThat(listed.get(0).path("enrollmentId").asText()).isEqualTo(second.id().toString());
+        assertThat(listed.get(1).path("enrollmentId").asText()).isEqualTo(first.id().toString());
+    }
+
     @Test void workoutTemplateKeepsRelationalSetsAndCustomValuesAcrossCorrection() throws Exception {
         UUID owner = UUID.randomUUID(), task = UUID.randomUUID();
         var numberId = UUID.randomUUID();

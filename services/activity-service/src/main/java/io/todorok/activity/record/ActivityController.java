@@ -88,6 +88,11 @@ public class ActivityController implements ActivityApi {
     }
 
     @Override
+    public ResponseEntity<java.util.List<ProgramEnrollmentResponse>> listProgramEnrollments() {
+        return ResponseEntity.ok(enrollments.list(owner()).stream().map(this::response).toList());
+    }
+
+    @Override
     public ResponseEntity<ProgramEnrollmentResponse> enrollProgram(EnrollProgramRequest request) {
         return ResponseEntity.status(201).body(response(enrollments.enroll(owner(), request.getCommandId(), request.getCatalogKey(), request.getCatalogVersion(), request.getInitialTestValue(), request.getStartWeek())));
     }

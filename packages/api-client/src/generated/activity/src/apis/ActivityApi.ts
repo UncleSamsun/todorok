@@ -271,6 +271,25 @@ export interface ActivityApiInterface {
     listActivities(requestParameters: ListActivitiesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityPageResponse>;
 
     /**
+     * Creates request options for listProgramEnrollments without sending the request
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    listProgramEnrollmentsRequestOpts(): Promise<runtime.RequestOpts>;
+
+    /**
+     *
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    listProgramEnrollmentsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ProgramEnrollmentResponse>>>;
+
+    /**
+     */
+    listProgramEnrollments(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ProgramEnrollmentResponse>>;
+
+    /**
      * Creates request options for listPrograms without sending the request
      * @throws {RequiredError}
      * @memberof ActivityApiInterface
@@ -709,6 +728,49 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
      */
     async listActivities(requestParameters: ListActivitiesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ActivityPageResponse> {
         const response = await this.listActivitiesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for listProgramEnrollments without sending the request
+     */
+    async listProgramEnrollmentsRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/program-enrollments`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async listProgramEnrollmentsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ProgramEnrollmentResponse>>> {
+        const requestOptions = await this.listProgramEnrollmentsRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ProgramEnrollmentResponseFromJSON));
+    }
+
+    /**
+     */
+    async listProgramEnrollments(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ProgramEnrollmentResponse>> {
+        const response = await this.listProgramEnrollmentsRaw(initOverrides);
         return await response.value();
     }
 

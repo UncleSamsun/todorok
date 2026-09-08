@@ -23,6 +23,17 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/ProgramCatalogSummary' }
   /program-enrollments:
+    get:
+      tags: [Activity]
+      operationId: listProgramEnrollments
+      responses:
+        '200':
+          description: Current owner's program enrollments, newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ProgramEnrollmentResponse' }
     post:
       tags: [Activity]
       operationId: enrollProgram

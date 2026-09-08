@@ -146,6 +146,8 @@ Compose 준비: 새 activity/planner 이미지를 build-recording으로 빌드�
 
 후속 session 실제 왕복: 새 activity image를 runtime에 반영해 합성 catalog 주차2 등록→첫 Task→`[4,3,3]` 실제 Workout 완료→outbox→program-session topic→planner 두 번째 Task 생성까지 Compose/Kafka에서 통과했다. 실패 cycle은 실제 PostgreSQL에서 같은 주차 첫 session을 새 cycle로 만들고, void는 이미 생성된 후속 session을 삭제하지 않은 채 진행 위치를 재계산하는 회귀가 통과했다. 이어서 실제 활동 HTTP 생성→수정→취소 흐름에서 완료 Workout의 `SUCCESS`가 수정 후 `FAILURE`, 취소 후 `VOIDED`로 재계산되고 이미 만든 후속 session 두 건은 유지됨을 `StudyTemplateRecordHttpTest.correctingAndVoidingACompletedProgramWorkoutRecalculatesWithoutDeletingItsFollowup` 실제 PostgreSQL 1건으로 확인했다. 합성 2주·6회 전부 성공 시 enrollment가 `COMPLETED`가 되고 program-session outbox 요청도 정확히 6건에서 멈추는 종료 회귀를 추가했다. 이 회귀가 API 응답의 종료 상태가 상수 `ACTIVE`로 고정된 결함도 재현해, 저장된 enrollment status를 response로 전달하도록 보완했다. 프로그램 UI는 아직 남아 있어 사용자 기능 완료로 계산하지 않는다.
 
+프로그램 화면 연결 체크포인트: 기존 단건 enrollment 조회만으로는 새로고침 뒤 진행 중인 프로그램을 찾을 수 없어 `GET /program-enrollments`를 추가했다. owner의 enrollment만 `created_at,id` 최신순으로 반환하고 각 항목은 현재 회차 target과 실제 status를 포함한다. OpenAPI Java/TypeScript 생성물을 갱신했고, 실제 PostgreSQL HTTP에서 owner 두 건만 최신순으로 받고 다른 owner의 등록이 섞이지 않는 회귀를 확인했다. 이제 이 API를 운동 탭의 catalog·등록·현재 회차 화면에 연결한다.
+
 ### 실행 규칙 (2026-09-08)
 
 - 사용자 흐름 단위로 구현 → 영향 테스트 → 리뷰한다. 기반·계약만 완료된 상태는 사용자 기능 완료가 아니다.

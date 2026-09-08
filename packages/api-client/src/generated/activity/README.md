@@ -63,6 +63,7 @@ All URIs are relative to */api/activity/v1*
 *ActivityApi* | [**getMonthlyActivitySummary**](docs/ActivityApi.md#getmonthlyactivitysummary) | **GET** /activities/summary |
 *ActivityApi* | [**getProgramEnrollment**](docs/ActivityApi.md#getprogramenrollment) | **GET** /program-enrollments/{enrollmentId} |
 *ActivityApi* | [**listActivities**](docs/ActivityApi.md#listactivities) | **GET** /activities |
+*ActivityApi* | [**listProgramEnrollments**](docs/ActivityApi.md#listprogramenrollments) | **GET** /program-enrollments |
 *ActivityApi* | [**listPrograms**](docs/ActivityApi.md#listprograms) | **GET** /programs |
 *ActivityApi* | [**voidActivity**](docs/ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |
 *TemplateApi* | [**archiveTemplate**](docs/TemplateApi.md#archivetemplateoperation) | **POST** /templates/{templateId}/archive |
