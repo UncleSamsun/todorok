@@ -404,6 +404,7 @@ public class ActivityService {
             if (old.getDetailFormat() == DetailFormat.TEMPLATE) jdbc.update("update study_detail set values_json=cast(? as jsonb) where activity_id=?",
                 mapper.writeValueAsString(templateValues), id);
         } else details.replace(id, old.getActivityType(), request.getDetail(), old.getTemplateSnapshot(), templateValues);
+        if (complete && old.getActivityType() == ActivityType.WORKOUT && programs != null) programs.recordOutcome(old.getTaskId(), id, repetitions(request.getDetail()), false);
         var summaryRequest = new CreateActivityRequest().activityType(old.getActivityType()).detail(request.getDetail());
         outbox.append("activity", id.toString(), new EventEnvelope<>(UUID.randomUUID(), EventType.ACTIVITY_CORRECTED,
             1, old.getVersion() + 1, Instant.now(), owner,
@@ -452,6 +453,7 @@ public class ActivityService {
             complete ? "PENDING" : "NOT_REQUIRED",
             id
         );
+        if (complete && ActivityType.WORKOUT.name().equals(row.get("activity_type")) && programs != null) programs.recordOutcome((UUID) row.get("task_id"), id, 0, true);
         if (complete) outbox.append(
             "activity",
             id.toString(),
@@ -471,6 +473,11 @@ public class ActivityService {
             )
         );
         return get(owner, id);
+    }
+
+    private int repetitions(ActivityDetail detail) {
+        return detail == null || detail.getWorkout() == null || detail.getWorkout().getSets() == null ? 0
+            : detail.getWorkout().getSets().stream().mapToInt(set -> set.getReps() == null ? 0 : set.getReps()).sum();
     }
 
     private String summary(CreateActivityRequest request) {
