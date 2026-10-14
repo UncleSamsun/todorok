@@ -4,6 +4,12 @@
 현재 workspace: `C:\workspace\todorok`
 2026-10-12 재개·이동 인계: [구현 및 workspace 인계](2026-10-12-workspace-handoff.md). 아래 과거 검증 근거는 당시 기능 worktree에서 실행했다.
 
+## 2026-10-14 회사 서버 배포
+
+https://211.45.127.56/todorok/ 에 todorok-test K3s 격리 배포를 완료했다. SSH mjkim, 이미지5개 Actions 성공·Public pull, migration12/11/6, runtime5개+StatefulSet2개 Ready, Debezium RUNNING과 실제 HTTPS smoke11개를 확인했다. 초기 계정은 ACL 제한 ignored .local/company-server/private/access.json에만 보관한다. 초기 실DB와 앱 키 암호화·외부 PC 보관, network-none DB 복원에서 계정·owner·ACL을 검증했다.
+
+[2026-10-14 회사 서버 배포 결과](2026-10-14-company-server-deploy.md). 원래 feature/mvp-functional 수정은 보존하고 별도 관리 worktree의 codex/company-server-deploy에서 스냅샷을 게시했다. 실제 iPhone/provider·catalog 이용 범위·자동 백업/복구한 앱 로그인/CDC·장기 운영 검증은 남는다.
+
 ## 구현 상태
 
 - 작업 01~10: 로그인·달력·Task·반복·메모·Activity·수정 이력·공부/자유 운동/클라이밍 기록과 합성 운동 프로그램 엔진까지 구현·검증했다.
@@ -25,7 +31,7 @@
 3. 타이머의 실제 브라우저·iPhone 흐름을 확인한다.
 4. 배포 준비·실기기·최종 통합 검증을 진행한다.
 
-실제 배포 대상은 2026-10-12 사용자 확인 기준 회사 서버다. 기존 단일 VM Compose 준비와 실제 서버 배포 방식을 구분한다. SSH 키는 PC 이관에 포함되지 않았고 현재 기본 `.ssh`·agent가 없어 원격 접속은 실행하지 않았다. 운영 준비 도구와 격리 백업/실패 migration 검증은 `docs/runbooks/deployment.md`, `backup-restore.md`, `release-checklist.md`를 참고한다.
+실제 배포 대상은 회사 서버이며 2026-10-14 새 SSH 키 등록 후 K3s 격리 배포를 완료했다. 기존 단일 VM Compose 준비와 실제 서버 배포 방식을 구분한다. 운영 준비 도구와 격리 백업/실패 migration 검증은 `docs/runbooks/deployment.md`, `backup-restore.md`, `release-checklist.md`를 참고한다.
 
 ## 작업 규칙
 

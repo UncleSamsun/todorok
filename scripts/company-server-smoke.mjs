@@ -32,7 +32,9 @@ const html=(await request('/todorok/')).data
 assert.match(html,/\/todorok\/assets\//)
 for(const asset of [...html.matchAll(/(?:src|href)="(\/todorok\/assets\/[^" ]+)"/g)].map(m=>m[1]))await request(asset)
 await request('/todorok/assets/missing-deployment-check.js',{expected:404})
-const manifest=(await request('/todorok/manifest.webmanifest')).data
+const manifestResponse=await request('/todorok/manifest.webmanifest')
+assert.match(manifestResponse.response.headers.get('content-type'),/application\/manifest\+json/)
+const manifest=manifestResponse.data
 assert.equal(new URL(manifest.scope,access.url).pathname,'/todorok/')
 assert.equal(new URL(manifest.start_url,access.url).pathname,'/todorok/')
 await request('/todorok/sw.js')

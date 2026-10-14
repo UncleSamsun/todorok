@@ -13,7 +13,7 @@
 | 배포·복구 | migration 실패 시 기존 runtime 유지, 빈 격리 DB 복원·서비스 왕복 | 실패 job의 runtime 보존·암호화/격리 fixture 복원 통과. 실제 운영 데이터·로그인/CDC 복구는 대기 |
 | 운영 적합성 | 실제 4GB 환경 p95·lag·WAL·swap·OOM, 7일 관찰 | 실행 환경·관찰 기간 필요 |
 
-2026-10-12 사용자 확인 운영 대상은 회사 서버다. 현재 기기의 SSH 키 이관 부재로 실제 접속·배포는 실행하지 않았다. 서버의 기존 배포 플랫폼을 확인한 뒤 적용하며 로컬 Compose 리허설을 회사 서버 배포 성공으로 해석하지 않는다.
+2026-10-14 회사 서버 SSH 접속과 K3s 권한을 확인하고 전용 todorok-test namespace에서 배포를 진행했다. planner V12·activity V11·notification V6 migration, Kafka 토픽과 outbox publication/slot을 실측했다. 최종 readiness·HTTPS smoke 결과는 `docs/plans/2026-10-14-company-server-deploy.md`에 기록하며 짧은 smoke를 실기기·장기 운영 판정으로 해석하지 않는다.
 
 ## 실제 iPhone 확인 순서
 

@@ -2,6 +2,12 @@
 
 프로덕션 DB 복원은 기존 데이터를 덮어쓰지 않는다. 새 VM·새 Compose 프로젝트·빈 볼륨에서 복구한 뒤 검증하고 전환한다. PostgreSQL 17의 custom-format dump와 `scripts/backup-archive.mjs`의 AES-256-GCM 파일을 사용한다. 실제 운영 백업/스케줄·외부 보관·서비스 로그인 복구 검증은 운영 환경에서 별도 실행해야 한다.
 
+## 2026-10-14 초기 서버 백업 검증
+
+회사 todorok-test의 실제 초기 DB dump와 앱 secret을 이 PC의 ACL 제한 ignored .local/company-server/private/initial-backup-20261014 에 AES-256-GCM으로 보관했다. 키는 별도 상위 backup.key 파일이며 본문을 Git·vault·로그에 남기지 않는다. 암호화 파일의 SHA-256 manifest와 복원 결과를 같은 private 디렉터리에 보관한다.
+
+복호화 내용 일치와 별도 network-none PostgreSQL 17 복원에서 migration12/11/6, 초기 계정1개, planner_app 소유권·Debezium SELECT 권한을 검증했다. plaintext와 임시 복원 컨테이너는 제거했다. 서버 원본 데이터는 변경하지 않았다. 자동 백업 스케줄·보관/경보와 복원된 앱의 로그인·CDC는 별도 확인이 필요하다.
+
 ## 키와 보관
 
 32바이트 난수의 base64 문자열 파일을 백업 키로 준비한다. 키는 Git·백업 파일과 분리하고 비밀 저장소에 보관한다. push 구독의 DB 암호문을 복호화할 `PUSH_ENCRYPTION_KEY`와 인증 서명 키도 별도 백업해야 한다. DB dump만으로 키는 복구되지 않는다.
