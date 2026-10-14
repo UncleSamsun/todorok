@@ -2,12 +2,15 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-export async function renderCompanyDeployment({images,origin,release,dns}){
+export async function renderCompanyDeployment({images,origin,release,dns,aliases=[]}){
   const namespace='todorok-test'
   for(const name of ['planner','activity','notification','web','connect-init'])
     if(!new RegExp(`^ghcr.io/unclesamsun/todorok-${name}@sha256:[a-f0-9]{64}$`).test(images?.[name]??''))throw new Error(`Missing immutable image digest: ${name}`)
   const url=new URL(origin)
   if(url.protocol!=='https:'||url.origin!==origin)throw new Error('An HTTPS origin without a path is required')
+  const origins=[...new Set([origin,...aliases])]
+  for(const address of origins){const candidate=new URL(address);if(candidate.protocol!=='https:'||candidate.origin!==address)throw new Error('An HTTPS origin without a path is required')}
+  const serverIps=origins.map(address=>new URL(address).hostname).filter(host=>/^\d+\.\d+\.\d+\.\d+$/.test(host)).map(host=>host+'/32')
   if(!/^[a-z0-9-]{6,32}$/.test(release))throw new Error('Invalid release identifier')
   if(!/^\d{1,3}(\.\d{1,3}){3}$/.test(dns))throw new Error('A cluster DNS IPv4 address is required')
   const labels=name=>({'app.kubernetes.io/name':name,'app.kubernetes.io/part-of':'todorok'})
@@ -46,7 +49,7 @@ export async function renderCompanyDeployment({images,origin,release,dns}){
       podSelector:{},policyTypes:['Ingress','Egress'],
       ingress:[{from:[{podSelector:{}}]},{from:[{namespaceSelector:{matchLabels:{'kubernetes.io/metadata.name':'kube-system'}},podSelector:{matchLabels:{'app.kubernetes.io/name':'traefik'}}}],ports:[{protocol:'TCP',port:80}]}],
       egress:[{to:[{podSelector:{}}]},{to:[{namespaceSelector:{matchLabels:{'kubernetes.io/metadata.name':'kube-system'}},podSelector:{matchLabels:{'k8s-app':'kube-dns'}}}],ports:[{port:53,protocol:'UDP'},{port:53,protocol:'TCP'}]},
-        {to:[{ipBlock:{cidr:'0.0.0.0/0',except:['10.0.0.0/8','172.16.0.0/12','192.168.0.0/16','127.0.0.0/8','169.254.0.0/16',...(url.hostname.match(/^\d+\.\d+\.\d+\.\d+$/)?[url.hostname+'/32']:[])]}}],ports:[{port:443,protocol:'TCP'}]}],
+        {to:[{ipBlock:{cidr:'0.0.0.0/0',except:['10.0.0.0/8','172.16.0.0/12','192.168.0.0/16','127.0.0.0/8','169.254.0.0/16',...serverIps]}}],ports:[{port:443,protocol:'TCP'}]}],
     })]
   const postgres=resource('apps/v1','StatefulSet','postgres',{serviceName:'postgres',replicas:1,selector:{matchLabels:labels('postgres')},
     template:pod('postgres',{image:'postgres:17.11-alpine',args:['postgres','-c','wal_level=logical','-c','max_wal_senders=1','-c','max_replication_slots=1','-c','max_slot_wal_keep_size=2048MB'],env:adminEnv,
@@ -70,7 +73,7 @@ export async function renderCompanyDeployment({images,origin,release,dns}){
   const runtime=[]
   for(const [name,port,memory] of [['planner',8081,'512Mi'],['activity',8082,'640Mi'],['notification',8083,'384Mi']]){
     const env=[...dbEnv(name),value('MESSAGING_ENABLED','true'),value('SPRING_KAFKA_BOOTSTRAP_SERVERS','kafka:19092'),value('SPRING_FLYWAY_ENABLED','false'),value('AUTH_PUBLIC_KEY_LOCATION','file:/run/secrets/auth-public.pem'),value('JAVA_TOOL_OPTIONS','-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=60 -XX:+ExitOnOutOfMemoryError')]
-    if(name==='planner')env.push(value('AUTH_PRIVATE_KEY_LOCATION','file:/run/secrets/auth-private.pem'),value('AUTH_ALLOWED_ORIGINS',origin),value('AUTH_COOKIE_SECURE','true'),value('TODOROK_TEMPLATE_SERVICE_PRIVATE_KEY_FILE','file:/run/secrets/template-private.pem'))
+    if(name==='planner')env.push(value('AUTH_PRIVATE_KEY_LOCATION','file:/run/secrets/auth-private.pem'),value('AUTH_ALLOWED_ORIGINS',origins.join(',')),value('AUTH_COOKIE_SECURE','true'),value('TODOROK_TEMPLATE_SERVICE_PRIVATE_KEY_FILE','file:/run/secrets/template-private.pem'))
     if(name==='activity')env.push(value('TODOROK_TEMPLATE_SERVICE_PUBLIC_KEY_FILE','file:/run/secrets/template-public.pem'))
     if(name==='notification')env.push(value('PUSH_ENABLED','true'),value('PUSH_WORKER_ENABLED','true'),value('PUSH_PUBLIC_KEY_LOCATION','file:/run/secrets/push-public.key'),value('PUSH_PRIVATE_KEY_LOCATION','file:/run/secrets/push-private.key'),value('PUSH_ENCRYPTION_KEY_LOCATION','file:/run/secrets/push-encryption.key'),value('PUSH_SUBJECT',origin+'/todorok/'))
     const health=name==='notification'?'/actuator/health':`/api/${name}/v1/actuator/health`
@@ -79,7 +82,7 @@ export async function renderCompanyDeployment({images,origin,release,dns}){
     runtime.push(service(name+'-service',port),deployment(name+'-service',{image:images[name],env,resources:resources(memory),ports:[{containerPort:port}],volumeMounts:[keysMount],startupProbe:httpProbe(port,health),readinessProbe:httpProbe(port,health),livenessProbe:{...httpProbe(port,health),failureThreshold:6}},[{...keysVolume,secret:{...keysVolume.secret,items:required.map(key=>({key,path:key}))}}]))
   }
   runtime.push(service('web',80),deployment('web',{image:images.web,resources:resources('64Mi','200m'),ports:[{containerPort:80}],volumeMounts:[{name:'nginx',mountPath:'/etc/nginx/nginx.conf',subPath:'nginx.conf',readOnly:true}],readinessProbe:httpProbe(80,'/health')},[{name:'nginx',configMap:{name:'todorok-nginx'}}]))
-  const host='Host(`'+url.hostname+'`)'
+  const host='('+origins.map(address=>'Host(`'+new URL(address).hostname+'`)').join(' || ')+')'
   const edge=[resource('traefik.io/v1alpha1','Middleware','todorok-slash',{redirectRegex:{regex:'^(https?://[^/]+/todorok)$',replacement:'${1}/',permanent:true}}),
     resource('traefik.io/v1alpha1','Middleware','todorok-strip',{stripPrefix:{prefixes:['/todorok']}}),
     resource('traefik.io/v1alpha1','IngressRoute','todorok-public',{entryPoints:['websecure'],routes:[
@@ -90,8 +93,8 @@ export async function renderCompanyDeployment({images,origin,release,dns}){
 }
 
 if(import.meta.url===pathToFileURL(process.argv[1]).href){
-  const [imagesFile,output,origin,release,dns]=process.argv.slice(2)
-  const phases=await renderCompanyDeployment({images:JSON.parse(await readFile(imagesFile,'utf8')),origin,release,dns})
+  const [imagesFile,output,origin,release,dns,aliases='']=process.argv.slice(2)
+  const phases=await renderCompanyDeployment({images:JSON.parse(await readFile(imagesFile,'utf8')),origin,release,dns,aliases:aliases?aliases.split(','):[]})
   await mkdir(output,{recursive:true})
   for(const [name,items] of Object.entries(phases))await writeFile(path.join(output,name+'.json'),JSON.stringify({apiVersion:'v1',kind:'List',items},null,2)+'\n')
   console.log('Deployment phases rendered without secrets.')

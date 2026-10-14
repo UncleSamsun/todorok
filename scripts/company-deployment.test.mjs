@@ -2,6 +2,17 @@ import assert from 'node:assert/strict'
 import { access } from 'node:fs/promises'
 import test from 'node:test'
 
+test('domain and IP share routes, explicit login origins and server egress exclusion',async()=>{
+  const {renderCompanyDeployment}=await import('./render-company-deployment.mjs')
+  const images=Object.fromEntries(['planner','activity','notification','web','connect-init'].map(name=>[name,`ghcr.io/unclesamsun/todorok-${name}@sha256:${'a'.repeat(64)}`]))
+  const result=await renderCompanyDeployment({images,origin:'https://ai.dfocus.net',aliases:['https://211.45.127.56'],release:'domain-20261014',dns:'10.43.0.10'})
+  const planner=result.runtime.find(x=>x.kind==='Deployment'&&x.metadata.name==='planner-service')
+  assert.equal(planner.spec.template.spec.containers[0].env.find(x=>x.name==='AUTH_ALLOWED_ORIGINS').value,'https://ai.dfocus.net,https://211.45.127.56')
+  assert.ok(result.edge.find(x=>x.kind==='IngressRoute').spec.routes.every(x=>x.match.includes('ai.dfocus.net')&&x.match.includes('211.45.127.56')))
+  assert.ok(JSON.stringify(result.foundation.find(x=>x.kind==='NetworkPolicy')).includes('211.45.127.56/32'))
+  await assert.rejects(renderCompanyDeployment({images,origin:'https://ai.dfocus.net',aliases:['http://unsafe.example'],release:'domain-20261014',dns:'10.43.0.10'}),/HTTPS/)
+})
+
 test('company manifests isolate storage/network and pin application images without publishing secrets',async()=>{
   assert.ok(await access('scripts/render-company-deployment.mjs').then(()=>true,()=>false),'Company deployment renderer is not implemented')
   const { renderCompanyDeployment }=await import('./render-company-deployment.mjs')

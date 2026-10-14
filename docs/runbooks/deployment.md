@@ -1,13 +1,13 @@
 # 배포·migration 실패 대응
 
-현재 배포 대상은 회사 `ai-server`의 K3s이며 전용 namespace는 `todorok-test`, 초기 HTTPS 주소는 `https://211.45.127.56/todorok/`다. 2026-10-14 mjkim SSH와 kubectl 권한을 실측했다. 과거 AWS Lightsail 목표 및 아래 Compose 도구는 단일 VM 검증 경로로 보존한다.
+현재 배포 대상은 회사 `ai-server`의 K3s이며 전용 namespace는 `todorok-test`, 기본 HTTPS 주소는 `https://ai.dfocus.net/todorok/`다. 기존 `https://211.45.127.56/todorok/`도 지원한다. 2026-10-14 mjkim SSH와 kubectl 권한을 실측했다. 과거 AWS Lightsail 목표 및 아래 Compose 도구는 단일 VM 검증 경로로 보존한다.
 
 ## 회사 K3s 배포
 
 `company-server-images.yml`이 별도 `codex/company-server-deploy` 브랜치에서 애플리케이션 5개를 빌드한다. GitHub Actions의 `image-*` artifact만 다운로드해 component→GHCR digest JSON으로 합친다. 공개 저장소의 패키지는 사용자 선택에 따라 Public으로 설정하고 익명 pull을 확인한다. 다른 앱의 인증 정보는 재사용하지 않는다.
 
 ```powershell
-node scripts/render-company-deployment.mjs C:\release\images.json C:\release\manifests https://211.45.127.56 RELEASE_ID 10.43.0.10
+node scripts/render-company-deployment.mjs C:\release\images.json C:\release\manifests https://ai.dfocus.net RELEASE_ID 10.43.0.10 https://211.45.127.56
 ```
 
 기존 namespace가 있다면 `app.kubernetes.io/part-of=todorok` 소유권을 확인한다. public manifest를 server dry-run으로 검증하고, 별도 ACL 제한 로컬 디렉터리에 `generate-company-secrets.mjs`로 한 번 생성한 secret.json을 mode 600 서버 release 디렉터리에 배치한다. 명령 출력·Git·vault에 비밀값을 남기지 않는다. 기존 secret은 덮어 생성하지 않는다.
@@ -15,6 +15,8 @@ node scripts/render-company-deployment.mjs C:\release\images.json C:\release\man
 `deploy-company-server.py RELEASE_DIRECTORY`는 foundation·secret·PostgreSQL/Kafka → 역할 → migration 3개 → 토픽·publication/slot → Connect·connector → bootstrap → runtime → HTTPS route 순으로 실행한다. 각 job은 의존 서비스 TCP 준비를 기다리고 실패 시 다음 단계로 넘어가지 않는다. PVC가 자신의 namespace에 속하는지 확인한 후 PV reclaim 정책만 Retain으로 변경한다. 기존 SyncDoc/VODA, 호스트 포트, 호스트 마운트와 sudo는 사용하지 않는다.
 
 단일 Kafka의 KRaft controller는 `127.0.0.1:9093`으로 통신해 readiness 이전 Service 의존을 피한다. Nginx 동적 DNS upstream은 `notification-service.todorok-test.svc.cluster.local`과 CoreDNS를 사용한다. `/todorok/` UI와 서비스 워커는 해당 범위에 한정하고 API의 고유 `/api/{planner,activity,notification}/` 경로는 그대로 사용한다.
+
+마지막 CLI 인자는 추가 HTTPS origin의 쉼표 구분 목록이다. Ingress와 planner Origin allowlist에 기본 도메인·IP를 함께 적용한다. TLS는 기존 ai-edge 라우트에서 로드된 도메인 인증서의 SNI 선택을 이용하며 인증서 키를 복사하거나 공유 인프라를 수정하지 않는다. 도메인과 IP의 쿠키·PWA 설치는 서로 독립적이므로 새 도메인에서는 한 번 로그인해야 한다. 도메인 연결은 기존 앱/DB를 교체하지 않고 planner 환경과 자신의 IngressRoute만 갱신했다.
 
 이미지 digest, manifest 수정 버전과 성공 job, DB history, connector 상태, 실제 HTTPS 로그인·생성·기록·CDC 및 기존 서비스 상태를 배포 기록에 남긴다. 실기기 push와 운영 백업 복원·장기 관찰은 별도 검증이다.
 
