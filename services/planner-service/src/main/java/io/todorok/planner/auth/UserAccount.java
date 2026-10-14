@@ -24,9 +24,9 @@ public class UserAccount {
     @Transactional
     public UUID bootstrap(String email, String password, PasswordEncoder encoder) {
         if (email == null || !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+") || email.length() > 254
-                || password == null || password.length() < 12
+                || password == null || password.length() < 7
                 || password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
-            throw new IllegalArgumentException("Bootstrap requires a valid email and a 12 to 72-byte password");
+            throw new IllegalArgumentException("Bootstrap requires a valid email and a password of at least 7 characters and at most 72 UTF-8 bytes");
         }
         // Serialize first-account creation across simultaneous command invocations.
         jdbc.execute("select pg_advisory_xact_lock(742019202602)");

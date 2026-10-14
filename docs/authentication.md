@@ -30,9 +30,11 @@ $env:TODOROK_BOOTSTRAP_EMAIL = 'owner@example.com'
 docker compose --env-file .env -f infra/docker/compose.yml --profile bootstrap run --rm planner-bootstrap
 ```
 
-컨테이너 없이 실행할 때는 `:services:planner-service:bootstrapBootJar`로 생성한 `*-bootstrap.jar`에 DB 접속 환경과 두 bootstrap 환경 변수를 제공한다. 이 command는 HTTP 서버·JWT 키가 필요 없다. 최초 계정 생성을 DB lock으로 직렬화하며 재실행은 기존 계정과 비밀번호를 유지한다. 비밀번호는 최소 12자, UTF-8 최대 72바이트이며 BCrypt cost 12로 저장한다.
+컨테이너 없이 실행할 때는 `:services:planner-service:bootstrapBootJar`로 생성한 `*-bootstrap.jar`에 DB 접속 환경과 두 bootstrap 환경 변수를 제공한다. 이 command는 HTTP 서버·JWT 키가 필요 없다. 최초 계정 생성을 DB lock으로 직렬화하며 재실행은 기존 계정과 비밀번호를 유지한다. 비밀번호는 최소 7자, UTF-8 최대 72바이트이며 BCrypt cost 12로 저장한다. 2026-10-14 사용자 요청으로 bootstrap과 OpenAPI 로그인 검증의 최소 길이를 7자로 맞췄다.
 
 ## 세션과 제한
+
+한 번 로그인하면 같은 브라우저·설치 PWA의 재실행에서 `SessionClient.restore()`가 저장된 HttpOnly 쿠키로 세션을 자동 복원한다. 비밀번호나 access token을 localStorage에 보관하지 않는다. 쿠키는 `Max-Age=2592000`의 영속 쿠키이고 복원·회전할 때마다 30일로 갱신한다. 30일 동안 사용하지 않거나 로그아웃·쿠키 삭제·세션 폐기된 경우에는 다시 로그인한다.
 
 refresh는 32바이트 난수를 URL-safe opaque 값으로 발급하고 SHA-256 해시만 PostgreSQL에 보관한다. 매번 갱신한 토큰은 발급 시점부터 30일간 유효하다. family row를 잠근 다음 기존 token을 소비하고 새 token을 같은 transaction에서 저장한다. 사용된 토큰이 다시 들어오면 family를 폐기한 transaction을 commit한 뒤 401을 반환한다. 같은 토큰의 동시 refresh에서는 한 요청만 성공하고 나머지 요청의 replay 탐지로 승자가 받은 토큰도 폐기된다. 클라이언트는 탭 간 refresh를 직렬화해야 한다.
 

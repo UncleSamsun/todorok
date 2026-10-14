@@ -1,6 +1,7 @@
 package io.todorok.planner.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -86,6 +87,22 @@ class SessionSecurityIntegrationTest extends AuthenticationIntegrationTest {
         var me = send("GET", "/test/me", null, null, body.get("accessToken").asText(), null);
         assertThat(me.statusCode()).isEqualTo(200);
         assertThat(body(me).get("userId").asText()).isEqualTo(user.toString());
+    }
+
+    @Test void sevenCharacterPasswordBootstrapsAndLogsInButSixCharactersAreRejected() throws Exception {
+        UUID user = users.bootstrap(EMAIL, "seven77", passwords);
+        assertThatThrownBy(() -> users.bootstrap(EMAIL, "six666", passwords))
+                .hasRootCauseInstanceOf(IllegalArgumentException.class);
+        assertThat(passwords.matches("seven77", users.find(EMAIL).orElseThrow().passwordHash())).isTrue();
+        var login = send("POST", "/auth/login", json.writeValueAsString(Map.of("email", EMAIL, "password", "seven77")), null, null, ORIGIN);
+        assertThat(login.statusCode()).describedAs(login.body()).isEqualTo(200);
+        assertThat(body(login).get("userId").asText()).isEqualTo(user.toString());
+        assertCookie(login, false);
+        var restored = refresh(cookie(login));
+        assertThat(restored.statusCode()).isEqualTo(200);
+        assertThat(body(restored).get("userId").asText()).isEqualTo(user.toString());
+        assertCookie(restored, false);
+        assertProblem(send("POST", "/auth/login", json.writeValueAsString(Map.of("email", EMAIL, "password", "six666")), null, null, ORIGIN), 400, "VALIDATION_FAILED");
     }
 
     @Test void rotationReplayRevokesFamilyEvenAfterFailureResponseButNotOtherFamilies() throws Exception {

@@ -66,7 +66,7 @@ public class LoginRequest {
    * Get password
    * @return password
    */
-  @NotNull @Size(min = 8, max = 72)
+  @NotNull @Size(min = 7, max = 72)
 
   @JsonProperty("password")
   public String getPassword() {
