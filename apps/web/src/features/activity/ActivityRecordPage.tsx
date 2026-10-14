@@ -46,11 +46,16 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
   const { baseline, date, note, workout, workoutFields, study, climbing, start, end, operation, mode, error } = draft
   const [busy, setBusy] = useState(false), mounted = useRef(true), attempt = useRef(0)
   const [confirmingVoid, setConfirmingVoid] = useState(false)
-  const voidDescriptionId = useId(), voidButton = useRef<HTMLButtonElement>(null), continueButton = useRef<HTMLButtonElement>(null)
+  const voidDescriptionId = useId(), voidButton = useRef<HTMLButtonElement>(null), continueButton = useRef<HTMLButtonElement>(null), confirmationPanel = useRef<HTMLDivElement>(null)
   const previouslyConfirmingVoid = useRef(false)
   useEffect(() => {
-    if (confirmingVoid) continueButton.current?.focus()
-    else if (previouslyConfirmingVoid.current) voidButton.current?.focus()
+    if (confirmingVoid) {
+      continueButton.current?.focus()
+      confirmationPanel.current?.scrollIntoView?.({ block: 'center' })
+    } else if (previouslyConfirmingVoid.current) {
+      voidButton.current?.focus()
+      voidButton.current?.scrollIntoView?.({ block: 'center' })
+    }
     previouslyConfirmingVoid.current = confirmingVoid
   }, [confirmingVoid])
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; attempt.current++ } }, [])
@@ -143,7 +148,7 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
       <RecordTimeFields start={start} end={end} setStart={(value) => update({ start: value, startDirty: true })} setEnd={(value) => update({ end: value, endDirty: true })} />
       <label>기록 메모<textarea value={note} onChange={(event) => update({ note: event.target.value })} /></label>
     </fieldset><div className="form-actions"><button ref={voidButton} className="destructive" type="button" disabled={locked || confirmingVoid} onClick={() => setConfirmingVoid(true)}>기록 취소</button><button className="primary" disabled={locked || confirmingVoid}>{busy ? '저장 중…' : '수정 저장'}</button></div>
-      {confirmingVoid && <div className="void-confirmation" role="group" aria-label="기록 취소 확인" aria-describedby={voidDescriptionId}>
+      {confirmingVoid && <div ref={confirmationPanel} className="void-confirmation" role="group" aria-label="기록 취소 확인" aria-describedby={voidDescriptionId}>
         <p id={voidDescriptionId}>이 기록을 취소할까요? 기록 이력은 보존됩니다.</p>
         <div className="form-actions"><button ref={continueButton} className="secondary" type="button" onClick={() => setConfirmingVoid(false)}>계속 수정</button><button className="destructive" type="button" disabled={locked} onClick={() => { if (locked) return; setConfirmingVoid(false); void perform({ kind: 'void', body: { reason: '사용자 취소', version: baseline.version } }) }}>기록 취소 확정</button></div>
       </div>}

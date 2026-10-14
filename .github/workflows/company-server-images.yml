@@ -18,6 +18,9 @@ jobs:
       max-parallel: 3
       matrix:
         include:
+          - name: web
+            context: .
+            file: infra/nginx/Dockerfile
           - name: planner
             context: .
             file: services/planner-service/Dockerfile
@@ -27,9 +30,6 @@ jobs:
           - name: notification
             context: .
             file: services/notification-service/Dockerfile
-          - name: web
-            context: .
-            file: infra/nginx/Dockerfile
           - name: connect-init
             context: infra/docker/connect
             file: infra/docker/connect/Dockerfile
