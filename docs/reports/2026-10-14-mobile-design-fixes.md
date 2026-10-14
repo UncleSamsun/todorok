@@ -20,8 +20,22 @@
 
 첫 배포 후 실제 긴 기록에서 확인 버튼이 하단 메뉴 뒤에 가려지는 문제를 추가 발견했다(버튼 하단843.9px, 메뉴 시작783.3px). 확인 패널 및 편집 복귀 버튼을 화면 중앙으로 이동시키도록 보완했다. 추가 항목이 있는 긴 로컬 기록에서 버튼 하단673.1px < 메뉴 시작739.3px를 확인했고, 영향21개 테스트와 TypeScript/PWA build가 통과했다. 재배포 이미지의 웹 빌드를 먼저 시작하도록 CI 순서만 조정했다.
 
-- [ ] GHCR 웹 이미지 digest 게시와 web 단독 배포
-- [ ] 도메인의 새 화면과 실제 저장·수정·취소 확인, HTTPS smoke
-- [ ] 기존 서비스 상태·검증 데이터 정리·vault 정본 반영
+- [x] GHCR 웹 이미지 digest 게시와 web 단독 배포
+- [x] 도메인의 새 화면과 실제 저장·수정·취소 확인, HTTPS smoke
+- [x] 기존 서비스 상태·검증 데이터 정리·vault 정본 반영
 
 실제 iPhone Safari/PWA, 소프트키보드·잠금·Wake Lock·음성/진동·Push 수신 검증은 별도다.
+
+## 운영 배포·최종 재검증
+
+수정 source fbf036c 및 최종 b536ecf를 게시했다. Actions 38527439767의 이미지 5개 빌드가 성공했고, todorok-test의 web만 아래 digest로 배포했다. server dry-run·rollout이 통과했고 배포5개·StatefulSet2개 및 기존 SyncDoc/VODA가 모두 Ready1/1이다.
+
+- 웹: ghcr.io/unclesamsun/todorok-web@sha256:ce4d36740fbe4657b52d87e40b1cb92df39972c52c3d60bf1e992db2e200b936
+- 실제 URL: https://ai.dfocus.net/todorok/
+- 실제 로드된 최종 entry: /todorok/assets/index-CnKYo0TI.js
+
+실제 도메인390/360px에서 달력7열·클라이밍 가로 넘침 없음·입력 폼 상단·빈 프로그램 안내·항상 보이는 운동 라벨·어두운 메모·긴 제목 줄바꿈·한국어 상태를 확인했다. 최종 확인 버튼 하단717.2px < 고정 메뉴 시작783.3px(844px 화면)이며 확인 및 계속 수정 버튼이 모두 보인다. 확인 전 서버는 COMPLETED/10회/version0, 계속 수정으로12회를 저장한 뒤 명시 확인하면 VOIDED/12회/version2로 보존됐다. 로그인 안내 대비9.53:1, 마지막 오늘 화면 콘솔 오류0이다.
+
+최종 HTTPS smoke11개를 통과했다(인증·Secure HttpOnly/refresh 회전·PWA/asset404·일정 완료·VAPID·리마인더 예약/취소 CDC·기록→planner Kafka 왕복·정리/설정 복원/로그아웃). 자체 검증 일정3개를 정리하고 활동2개를 취소·템플릿을 보관했다. 기존 사용자 데이터는 유지했고 취소/보관 이력은 남긴다. 별도 smoke 데이터도 정리됐다.
+
+전체145개, 영향48개, 최종 스크롤 보완21개는 겹치는 테스트이므로 합산하지 않는다. initial gzip104,041 bytes/lazy7개 예산 통과. 전후 캡처·실측·로그의 로컬 보고서: C:/workspace/todorok/.local/mobile-fixes/report.html. 실제 iPhone 실기기 검증 범위는 위 제한을 따른다.
