@@ -9,6 +9,7 @@ const initial = () => ({ activityId: 'edit-1', taskId: 'task-1', userId: 'owner'
 async function open(options: { patch?: (body: any) => Promise<Response>; cancel?: () => Promise<Response>; read?: (value: ReturnType<typeof initial>) => Promise<Response>; initial?: Partial<ReturnType<typeof initial>> } = {}) {
   let remote = { ...initial(), ...options.initial }
   const writes: any[] = []
+  const voidWrites: any[] = []
   const session = new SessionClient({ fetcher: async (url, init) => {
     const path = String(url)
     if (path.endsWith('/refresh')) return Response.json({ accessToken: 'token', userId: 'owner', expiresAt: '2099-01-01T00:00:00Z' })
@@ -17,7 +18,7 @@ async function open(options: { patch?: (body: any) => Promise<Response>; cancel?
     if (path.includes('/calendar?')) return Response.json({ from: '2026-09-01', to: '2026-09-30', days: [] })
     if (path.includes('/calendar/')) return Response.json({ date: '2026-09-07', tasks: [] })
     if (path.endsWith('/activities/edit-1') && init?.method === 'PATCH') { const body = JSON.parse(String(init.body)); writes.push(body); return options.patch?.(body) ?? Response.json({ ...remote, ...body, version: 5 }) }
-    if (path.endsWith('/activities/edit-1/void')) return options.cancel?.() ?? Response.json({ ...remote, version: 5, status: 'VOIDED' })
+    if (path.endsWith('/activities/edit-1/void')) { voidWrites.push(JSON.parse(String(init?.body))); return options.cancel?.() ?? Response.json({ ...remote, version: 5, status: 'VOIDED' }) }
     if (path.endsWith('/activities/edit-1')) return options.read?.(remote) ?? Response.json(remote)
     if (path.includes('/activities?')) return Response.json({ items: [remote] })
     if (path.includes('/activities/summary')) return Response.json({ month: '2026-09', activityType: 'STUDY', completedCount: 1, durationSeconds: 2 })
@@ -27,9 +28,44 @@ async function open(options: { patch?: (body: any) => Promise<Response>; cancel?
   await act(async () => { render(<App session={session} queryClient={queries} />) })
   await act(async () => { history.pushState({}, '', '/study?activityId=edit-1'); dispatchEvent(new PopStateEvent('popstate')) })
   await screen.findByLabelText('기록 메모')
-  return { queries, writes, setRemote: (value: Partial<ReturnType<typeof initial>>) => { remote = { ...remote, ...value } } }
+  return { queries, writes, voidWrites, setRemote: (value: Partial<ReturnType<typeof initial>>) => { remote = { ...remote, ...value } } }
 }
 const submit = () => fireEvent.click(screen.getByRole('button', { name: '수정 저장' }))
+
+it('requires explicit confirmation before voiding and lets the user retain their draft', async () => {
+  const { voidWrites } = await open()
+  fireEvent.change(screen.getByLabelText('기록 메모'), { target: { value: '작성 중인 메모' } })
+  fireEvent.click(screen.getByRole('button', { name: '기록 취소' }))
+  expect(voidWrites).toHaveLength(0)
+  const confirmation = screen.getByRole('group', { name: '기록 취소 확인' })
+  expect(confirmation).toHaveTextContent(/이력.*보존/)
+  expect(screen.getByRole('button', { name: '계속 수정' })).toHaveFocus()
+  fireEvent.click(screen.getByRole('button', { name: '계속 수정' }))
+  expect(screen.queryByRole('group', { name: '기록 취소 확인' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '기록 취소' })).toHaveFocus()
+  expect(screen.getByLabelText('기록 메모')).toHaveValue('작성 중인 메모')
+  expect(voidWrites).toHaveLength(0)
+  fireEvent.click(screen.getByRole('button', { name: '기록 취소' }))
+  fireEvent.click(screen.getByRole('button', { name: '기록 취소 확정' }))
+  await screen.findByText('이 기록은 취소되었으며 이력은 보존됩니다.')
+  expect(voidWrites).toEqual([{ reason: '사용자 취소', version: 4 }])
+})
+
+it('retains the confirmed void request for an idempotent retry after an uncertain response', async () => {
+  let attempts = 0
+  const { voidWrites } = await open({ cancel: async () => {
+    if (++attempts === 1) throw new TypeError('network')
+    return Response.json({ ...initial(), version: 5, status: 'VOIDED' })
+  } })
+  fireEvent.click(screen.getByRole('button', { name: '기록 취소' }))
+  fireEvent.click(screen.getByRole('button', { name: '기록 취소 확정' }))
+  await screen.findByText(/초안과 달라/)
+  expect(screen.queryByRole('group', { name: '기록 취소 확인' })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('기록 메모')).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: '같은 요청 다시 보내기' }))
+  await screen.findByText('이 기록은 취소되었으며 이력은 보존됩니다.')
+  expect(voidWrites).toEqual([{ reason: '사용자 취소', version: 4 }, { reason: '사용자 취소', version: 4 }])
+})
 
 it('keeps v4 edit baseline when a background v5 arrives', async () => {
   const { queries, writes } = await open({ patch: async () => Response.json({ code: 'VERSION_CONFLICT' }, { status: 409 }) })
@@ -53,6 +89,7 @@ it('builds corrected input after a confirmed validation rejection', async () => 
   const { writes } = await open({ patch: async () => Response.json({ code: 'INVALID_INTERVAL', retryable: false }, { status: 400 }) })
   submit()
   await screen.findByText(/입력/)
+  expect(screen.getByRole('alert')).not.toHaveTextContent('INVALID_INTERVAL')
   fireEvent.change(screen.getByLabelText('기록 메모'), { target: { value: '수정한 입력' } })
   submit()
   await waitFor(() => expect(writes).toHaveLength(2))
@@ -81,7 +118,7 @@ it.each(['PATCH', 'void'])('observes %s PENDING through APPLIED and invalidates 
   const pending = { ...initial(), version: 5, syncState: 'PENDING', ...(operation === 'void' ? { status: 'VOIDED' } : {}) }
   const { queries, setRemote } = await open({ patch: async () => Response.json(pending), cancel: async () => Response.json(pending) })
   const invalidations = vi.spyOn(queries, 'invalidateQueries')
-  if (operation === 'void') fireEvent.click(screen.getByRole('button', { name: '기록 취소' })); else submit()
+  if (operation === 'void') { fireEvent.click(screen.getByRole('button', { name: '기록 취소' })); fireEvent.click(screen.getByRole('button', { name: '기록 취소 확정' })) } else submit()
   await screen.findByText('기록됨 · 일정 반영 중')
   setRemote({ ...pending, syncState: 'APPLIED' })
   await screen.findByText('일정 반영 완료', {}, { timeout: 4000 })
@@ -94,7 +131,7 @@ it.each(['PATCH', 'void'])('observes %s PENDING through APPLIED and invalidates 
 it.each(['PATCH', 'void'])('shows %s CONFLICT with manual status confirmation', async (operation) => {
   const pending = { ...initial(), version: 5, syncState: 'PENDING', ...(operation === 'void' ? { status: 'VOIDED' } : {}) }
   const { setRemote } = await open({ patch: async () => Response.json(pending), cancel: async () => Response.json(pending) })
-  if (operation === 'void') fireEvent.click(screen.getByRole('button', { name: '기록 취소' })); else submit()
+  if (operation === 'void') { fireEvent.click(screen.getByRole('button', { name: '기록 취소' })); fireEvent.click(screen.getByRole('button', { name: '기록 취소 확정' })) } else submit()
   await screen.findByText('기록됨 · 일정 반영 중')
   setRemote({ ...pending, syncState: 'CONFLICT' })
   await screen.findByText('기록됨 · 일정과 충돌', {}, { timeout: 4000 })

@@ -38,6 +38,8 @@ it('refreshes a previously visited domain after saving a past record', async () 
   expect(await screen.findByText('1회')).toBeVisible()
   expect(screen.getByText('30분')).toBeVisible()
   expect(await screen.findByRole('button', { name: /과거 공부 완료/ })).toBeVisible()
+  expect(screen.getByRole('button', { name: /과거 공부 완료/ })).toHaveTextContent('일정 반영 완료')
+  expect(screen.queryByText('APPLIED')).not.toBeInTheDocument()
 })
 
 it('shares the selected month between domain tabs and keeps partial failures explicit', async () => {

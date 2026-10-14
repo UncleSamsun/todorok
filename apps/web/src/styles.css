@@ -25,7 +25,7 @@
 .login-card {
   width: min(100%, 440px);
   padding: 36px;
-  background: white;
+  background: var(--color-surface);
   border: 1px solid #e1e4df;
   border-radius: 20px;
 }
@@ -218,7 +218,8 @@ button:disabled {
   cursor: default;
 }
 input,
-select {
+select,
+textarea {
   background: var(--color-surface);
   color: var(--color-text);
   border-color: var(--line);
@@ -499,11 +500,12 @@ select {
 .legacy-study { margin: 16px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; }
 .legacy-study h2 { margin: 0; font-size: 18px; }
 .legacy-study pre { max-width: 100%; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
-.record-heading { display: flex; align-items: center; gap: 12px; }
+.workspace-shell .record-heading { display: flex; align-items: flex-start; justify-content: flex-start; gap: 12px; }
 .record-heading > button { flex: 0 0 44px; padding: 0; font-size: 28px; }
-.record-heading h1 { margin: 0; }
-.record-heading p { margin: 4px 0 0; }
-.record-page fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin: 8px 0; }
+.record-heading > div, .record-heading > h1 { min-width: 0; flex: 1; }
+.record-heading h1 { margin: 0; overflow-wrap: anywhere; font-size: clamp(24px, 6vw, 32px); }
+.record-heading p { margin: 4px 0 0; overflow-wrap: anywhere; }
+.record-page fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin: 8px 0; min-width: 0; }
 .record-page .record-inputs { border: 0; padding: 0; margin: 0; }
 .detail-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; align-items: end; margin-bottom: 8px; }
 .check-label { display: flex; align-items: center; gap: 8px; min-height: 44px; }
@@ -532,16 +534,17 @@ select {
 .program-enrollment h3 { margin-bottom: 4px; }
 .program-enrollment label { display: grid; gap: 6px; }
 .program-enrollment small { color: var(--muted); }
-.domain-summary-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.workspace-shell .domain-summary-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
 .month-picker { display: flex; align-items: center; gap: 8px; }
 .month-picker strong { min-width: 104px; text-align: center; }
 .month-picker button { padding: 6px; font-size: 22px; }
-.domain-actions { display: flex; gap: 8px; }
+.domain-actions { display: flex; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .domain-actions button { white-space: nowrap; }
 @media (max-width: 480px) {
-  .domain-summary-heading { flex-direction: column; align-items: stretch; }
+  .workspace-shell .domain-summary-heading { flex-direction: column; align-items: stretch; }
   .month-picker { justify-content: space-between; }
-  .domain-actions { justify-content: flex-end; }
+  .domain-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .domain-actions button { width: 100%; white-space: normal; padding: 10px 8px; }
 }
 .domain-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 28px; }
 .domain-summary > div { min-height: 94px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 7px; padding: 10px 4px; }
@@ -555,6 +558,7 @@ select {
 .domain-history h2 { margin: 0 0 8px; font-size: 18px; }
 .history-row { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; align-items: center; width: 100%; text-align: left; background: transparent; border: 0; border-radius: 0; padding: 12px 2px; }
 .history-row span, .history-row small { color: var(--muted); }
+.history-row strong, .history-row small { min-width: 0; overflow-wrap: anywhere; }
 .domain-today { border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
 .domain-today .task-row { min-height: 52px; }
 .domain-today .completion-summary { display: block; color: var(--muted); }
@@ -611,15 +615,35 @@ select {
   background: var(--color-surface);
   color: var(--color-text);
 }
-.form-actions button:first-child {
-  background: var(--color-text);
+.form-actions button[type="submit"], .form-actions button:not([type]), button.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: var(--color-surface);
 }
+.form-actions button.secondary { background: var(--color-surface); color: var(--color-text); border-color: var(--line); }
+button.destructive { color: var(--danger-text, #ab3232); border-color: currentColor; background: var(--color-surface); }
+.void-confirmation { border: 1px solid var(--danger-text, #ab3232); border-radius: 10px; padding: 16px; margin-top: 16px; }
+.void-confirmation p { margin: 0 0 12px; }
+.workout-field { display: grid; gap: 6px; margin: 0 !important; min-width: 0; }
+.workout-field input { min-width: 0; }
+.program-empty { margin: 0; }
+.program-empty a { display: inline-flex; align-items: center; min-height: 44px; margin-top: 8px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--color-text); }
+.task-editor-slot { scroll-margin-top: 12px; }
+.task-editor-slot .task-form { padding-top: 0; border-top: 0; }
 .workspace-shell section p {
   color: var(--muted);
 }
 .workspace-shell [role="alert"] {
   color: #ab3232;
+}
+@media (max-width: 520px) {
+  .week-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 0; row-gap: 6px; }
+  .week-label, .week-category > span { grid-column: 1 / -1; }
+  .week-category > span { margin-top: 4px; }
+  .week-grid .date-button { min-width: 0; width: 100%; }
+  .week-grid .progress-cell { margin: 0 2px; }
+  .month-grid { min-width: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .month-grid .date-button { min-width: 0; width: 100%; }
 }
 @media (max-width: 420px) {
   .workspace-shell {
@@ -630,9 +654,14 @@ select {
     padding: 8px;
   }
   .week-grid {
-    grid-template-columns: 46px repeat(7, minmax(44px, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     column-gap: 0;
+    row-gap: 6px;
   }
+  .week-label, .week-category > span { grid-column: 1 / -1; }
+  .week-category > span { margin-top: 4px; }
+  .week-grid .date-button { min-width: 0; width: 100%; }
+  .week-grid .progress-cell { margin: 0 2px; }
   .calendar-month {
     width: 106px;
     font-size: 14px;
@@ -712,6 +741,8 @@ select {
   --line: #41474c;
   --muted: #aeb6bd;
   --selected: #303438;
+  --color-accent: #a3d0b3;
+  --danger-text: #f5a6a6;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
@@ -721,6 +752,8 @@ select {
     --line: #41474c;
     --muted: #aeb6bd;
     --selected: #303438;
+    --color-accent: #a3d0b3;
+    --danger-text: #f5a6a6;
   }
   .login-card {
     background: var(--color-surface);

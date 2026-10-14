@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { activity } from '@todorok/api-client'
+import { seoulToday } from '@todorok/client-domain'
+import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 
 const nameFor = (catalogs: activity.ProgramCatalogSummary[] | undefined, enrollment: activity.ProgramEnrollmentResponse) =>
@@ -49,7 +51,8 @@ export function ProgramPanel() {
     </article>)}</section>}
     {catalogs.isPending && <p role="status">프로그램을 불러오는 중…</p>}
     {catalogs.isError && <p role="alert">프로그램을 불러오지 못했습니다.</p>}
-    {catalogs.data && <section className="program-catalogs"><h3>프로그램 선택</h3>{catalogs.data.map((catalog) => <article key={`${catalog.catalogKey}:${catalog.catalogVersion}`}>
+    {catalogs.isSuccess && catalogs.data.length === 0 && <div className="program-empty"><p>아직 선택할 수 있는 운동 프로그램이 없습니다.</p><p>자유운동을 추가해 나만의 운동을 기록해 보세요.</p><Link to={`/today?date=${seoulToday()}&add=WORKOUT`}>자유운동 추가</Link></div>}
+    {catalogs.data && catalogs.data.length > 0 && <section className="program-catalogs"><h3>프로그램 선택</h3>{catalogs.data.map((catalog) => <article key={`${catalog.catalogKey}:${catalog.catalogVersion}`}>
       <div><strong>{catalog.name}</strong><p>{catalog.totalWeeks}주 · 주 {catalog.sessionsPerWeek}회</p><small className="program-source">{catalog.source.label}{catalog.source.url && <> · <a href={catalog.source.url} target="_blank" rel="noreferrer">출처 원문</a></>}</small>{catalog.source.conditions.length > 0 && <p className="program-source">조건: {catalog.source.conditions.join(' · ')}</p>}{catalog.source.cautions.length > 0 && <p className="program-source">주의: {catalog.source.cautions.join(' · ')}</p>}</div>
       <button onClick={() => begin(catalog)}>{catalog.name} 등록</button>
     </article>)}</section>}

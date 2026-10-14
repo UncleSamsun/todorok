@@ -102,6 +102,7 @@ it.each([true, false])('distinguishes retryable reference lag from a permanent c
   fireEvent.click(screen.getByRole('button', { name: 'task-1 기록' }))
   fireEvent.click(await screen.findByRole('button', { name: '기록 저장' }))
   await screen.findByText(retryable ? /할 일 정보가 기록 서비스/ : /충돌로 저장이 거절/)
+  expect(screen.getByRole('alert')).not.toHaveTextContent(/TASK_REFERENCE_PENDING|TASK_DELETED/)
   if (retryable) expect(screen.getByLabelText('기록 메모')).toBeDisabled()
   else expect(screen.getByLabelText('기록 메모')).toBeEnabled()
   if (retryable) expect(screen.getByRole('button', { name: '같은 요청 다시 보내기' })).toBeEnabled()

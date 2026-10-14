@@ -5,6 +5,40 @@ import { App } from '../../App'
 
 afterEach(() => { cleanup(); history.replaceState({}, '', '/') })
 
+it.each(['empty', 'error'])('distinguishes pending catalog from %s and offers the existing add flow for empty results', async (result) => {
+  let finish!: (response: Response) => void
+  const pending = new Promise<Response>((resolve) => { finish = resolve })
+  const session = new SessionClient({ fetcher: async (url) => {
+    const path = String(url)
+    if (path.endsWith('/refresh')) return Response.json({ accessToken: 'token', userId: 'owner', expiresAt: '2099-01-01T00:00:00Z' })
+    if (path.endsWith('/rollover')) return Response.json({ today: '2026-09-07', movedCount: 0 })
+    if (path.endsWith('/programs')) return pending
+    if (path.endsWith('/program-enrollments')) return Response.json([])
+    if (path.includes('/activities/summary')) return Response.json({ month: '2026-09', activityType: 'WORKOUT', completedCount: 0, durationSeconds: 0 })
+    if (path.includes('/calendar?')) return Response.json({ from: '2026-09-01', to: '2026-09-30', days: [] })
+    if (path.includes('/activities?')) return Response.json({ items: [] })
+    if (path.includes('/calendar/')) return Response.json({ date: '2026-09-07', tasks: [] })
+    return Response.json({}, { status: 404 })
+  } })
+  await act(async () => { render(<App session={session} />) })
+  fireEvent.click(await screen.findByRole('link', { name: '운동' }))
+  expect(await screen.findByText('프로그램을 불러오는 중…')).toBeVisible()
+  expect(screen.queryByText('아직 선택할 수 있는 운동 프로그램이 없습니다.')).not.toBeInTheDocument()
+  await act(async () => { finish(result === 'empty' ? Response.json([]) : Response.json({ code: 'INTERNAL_ERROR' }, { status: 503 })) })
+  if (result === 'error') {
+    expect(await screen.findByText('프로그램을 불러오지 못했습니다.')).toBeVisible()
+    expect(screen.queryByText('아직 선택할 수 있는 운동 프로그램이 없습니다.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '자유운동 추가' })).not.toBeInTheDocument()
+    return
+  }
+  expect(await screen.findByText('아직 선택할 수 있는 운동 프로그램이 없습니다.')).toBeVisible()
+  const add = screen.getByRole('link', { name: '자유운동 추가' })
+  expect(add.getAttribute('href')).toMatch(/^\/today\?date=\d{4}-\d{2}-\d{2}&add=WORKOUT$/)
+  fireEvent.click(add)
+  expect(location.pathname).toBe('/today')
+  expect(location.search).toContain('add=WORKOUT')
+})
+
 it('등록한 프로그램의 현재 회차와 권장 세트를 운동 탭에서 보여준다', async () => {
   const writes: Record<string, unknown>[] = []
   let enrolled = false

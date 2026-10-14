@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { activity, activityTimestamps, correctEditableActivity, getEditableActivity, matchesActivityCorrection, positiveActivityInterval, voidEditableActivity, type ActivityCorrection, type EditableActivity } from '@todorok/api-client'
 import { useNavigate } from 'react-router'
@@ -45,6 +45,14 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
   const previousInputs = usePreviousStudyInputs(activityId)
   const { baseline, date, note, workout, workoutFields, study, climbing, start, end, operation, mode, error } = draft
   const [busy, setBusy] = useState(false), mounted = useRef(true), attempt = useRef(0)
+  const [confirmingVoid, setConfirmingVoid] = useState(false)
+  const voidDescriptionId = useId(), voidButton = useRef<HTMLButtonElement>(null), continueButton = useRef<HTMLButtonElement>(null)
+  const previouslyConfirmingVoid = useRef(false)
+  useEffect(() => {
+    if (confirmingVoid) continueButton.current?.focus()
+    else if (previouslyConfirmingVoid.current) voidButton.current?.focus()
+    previouslyConfirmingVoid.current = confirmingVoid
+  }, [confirmingVoid])
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; attempt.current++ } }, [])
   const current = (id: number) => mounted.current && attempt.current === id && session.getSnapshot().generation === state.generation
   function initialize(value: EditableActivity) {
@@ -89,10 +97,8 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
     } catch (reason) {
       if (!current(id)) return
       const response = reason && typeof reason === 'object' && 'response' in reason ? (reason as { response: Response }).response : null
-      let problem: { code?: string; retryable?: boolean } | null = null
-      try { problem = response ? await response.clone().json() : null } catch { /* proxy responses can be non-JSON */ }
       if (!current(id)) return
-      if (response && [400, 413, 415, 422].includes(response.status)) update({ operation: null, mode: 'ready', error: `입력을 수정해 주세요. (${problem?.code ?? response.status})` })
+      if (response && [400, 413, 415, 422].includes(response.status)) update({ operation: null, mode: 'ready', error: '입력을 수정해 주세요. 기록 항목과 시작·종료 시간을 확인한 뒤 다시 저장해 주세요.' })
       else if (response?.status === 409) update({ mode: 'conflict', error: '다른 변경과 충돌했습니다. 작성 중인 내용은 보존했습니다. 현재 기록을 확인한 뒤 다시 열어 주세요.' })
       else {
         update({ error: '수정 결과를 확인하지 못했습니다. 원 요청과 초안을 보존했습니다.' })
@@ -101,7 +107,7 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
     } finally { if (current(id)) setBusy(false) }
   }
   function save() {
-    if (busy || mode !== 'ready') return
+    if (busy || mode !== 'ready' || confirmingVoid) return
     try { void perform({ kind: 'patch', body: structuredClone(build()) }) } catch (reason) { update({ error: reason instanceof Error ? reason.message : '입력을 확인해 주세요.' }) }
   }
   async function check() {
@@ -131,12 +137,17 @@ export function ActivityRecordPage({ type, activityId }: { type: RecordType; act
     <SyncStatus value={record.data ?? baseline} checking={busy || record.isFetching} check={() => void check()} />
     {record.isError && <p role="alert">상태를 불러오지 못했습니다. <button onClick={() => void check()}>상태 다시 확인</button></p>}
     {baseline.detailFormat === activity.DetailFormat.Legacy && baseline.legacyStudyPayloadRaw && <section className="legacy-study"><h2>기존 공부 자료</h2><p>검증되지 않은 이전 형식의 원문이며 읽기 전용입니다.</p><pre>{baseline.legacyStudyPayloadRaw}</pre></section>}
-    {voided ? <p>이 기록은 취소되었으며 이력은 보존됩니다.</p> : <form onSubmit={(event) => { event.preventDefault(); save() }}><fieldset className="record-inputs" disabled={locked}>
+    {voided ? <p>이 기록은 취소되었으며 이력은 보존됩니다.</p> : <form onSubmit={(event) => { event.preventDefault(); save() }}><fieldset className="record-inputs" disabled={locked || confirmingVoid}>
       <label>수행일<input type="date" value={date} onChange={(event) => update({ date: event.target.value, dateDirty: true })} required /></label>
       {type === 'WORKOUT' ? <><WorkoutFields sets={workout} change={(value) => update({ workout: value })} />{template && <StudyTemplateFields legend="사용자 기록 항목" definitions={template.fields} value={{ fields: workoutFields }} change={(value) => update({ workoutFields: value.fields ?? [] })} />}</> : type === 'STUDY' ? <StudyFields definitions={template?.fields} value={study} change={(value) => update({ study: value })} /> : <><ClimbingFields detail={climbing} change={(value) => update({ climbing: value })} />{template && <StudyTemplateFields legend="사용자 기록 항목" definitions={template.fields} value={{ fields: climbing.fields }} change={(value) => update({ climbing: { ...climbing, fields: value.fields ?? [] } })} />}</>}
       <RecordTimeFields start={start} end={end} setStart={(value) => update({ start: value, startDirty: true })} setEnd={(value) => update({ end: value, endDirty: true })} />
       <label>기록 메모<textarea value={note} onChange={(event) => update({ note: event.target.value })} /></label>
-    </fieldset><div className="form-actions"><button type="button" disabled={locked} onClick={() => void perform({ kind: 'void', body: { reason: '사용자 취소', version: baseline.version } })}>기록 취소</button><button disabled={locked}>{busy ? '저장 중…' : '수정 저장'}</button></div></form>}
+    </fieldset><div className="form-actions"><button ref={voidButton} className="destructive" type="button" disabled={locked || confirmingVoid} onClick={() => setConfirmingVoid(true)}>기록 취소</button><button className="primary" disabled={locked || confirmingVoid}>{busy ? '저장 중…' : '수정 저장'}</button></div>
+      {confirmingVoid && <div className="void-confirmation" role="group" aria-label="기록 취소 확인" aria-describedby={voidDescriptionId}>
+        <p id={voidDescriptionId}>이 기록을 취소할까요? 기록 이력은 보존됩니다.</p>
+        <div className="form-actions"><button ref={continueButton} className="secondary" type="button" onClick={() => setConfirmingVoid(false)}>계속 수정</button><button className="destructive" type="button" disabled={locked} onClick={() => { if (locked) return; setConfirmingVoid(false); void perform({ kind: 'void', body: { reason: '사용자 취소', version: baseline.version } }) }}>기록 취소 확정</button></div>
+      </div>}
+    </form>}
     {error && <p role="alert">{error}</p>}
     {previousInputs.map((previous, index) => <PreviousStudyInput key={index} {...previous} />)}
     {operation && <div className="form-actions"><button disabled={busy} onClick={() => void check()}>결과 다시 확인</button>{mode === 'uncertain' && <button disabled={busy} onClick={() => void perform(operation)}>같은 요청 다시 보내기</button>}<button disabled={busy} onClick={() => void reopen()}>초안을 버리고 현재 기록으로 다시 열기</button></div>}

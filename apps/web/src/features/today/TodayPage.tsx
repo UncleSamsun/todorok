@@ -62,6 +62,10 @@ export function TodayPage() {
   const [templateConflict, setTemplateConflict] = useState(false)
   const [addRejection, setAddRejection] = useState(0)
   const addRequest = useRef<(() => Promise<unknown>) | null>(null)
+  const editorSlot = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (adding || editing) editorSlot.current?.scrollIntoView?.({ block: 'start' })
+  }, [adding, editing?.taskId])
   const [today, setToday] = useState(seoulToday)
   const [rolloverEpoch, setRolloverEpoch] = useState(0)
   const [rolloverState, setRolloverState] = useState<
@@ -339,30 +343,7 @@ export function TodayPage() {
             </button>
           </p>
         )}
-        <TaskGroups
-          tasks={detail.data?.tasks ?? []}
-          busy={busy || !ready}
-          add={(type) => {
-            if (!busy && ready) {
-              setAdding(type)
-              setAddUncertain(false)
-              setTemplateConflict(false)
-              addRequest.current = null
-              setEditing(null)
-              setError('')
-            }
-          }}
-          check={check}
-          edit={(task) => void edit(task)}
-        />
-        <StickyNote
-          key={state.generation}
-          date={selected}
-          api={api.notes}
-          isCurrent={() =>
-            session.getSnapshot().generation === state.generation
-          }
-        />
+        {(adding || editing) && <div className="task-editor-slot" ref={editorSlot}>
         {adding && (
           <QuickAdd
             key={`${adding}-${selected}`}
@@ -475,6 +456,31 @@ export function TodayPage() {
             }
           />
         )}
+        </div>}
+        <TaskGroups
+          tasks={detail.data?.tasks ?? []}
+          busy={busy || !ready}
+          add={(type) => {
+            if (!busy && ready) {
+              setAdding(type)
+              setAddUncertain(false)
+              setTemplateConflict(false)
+              addRequest.current = null
+              setEditing(null)
+              setError('')
+            }
+          }}
+          check={check}
+          edit={(task) => void edit(task)}
+        />
+        <StickyNote
+          key={state.generation}
+          date={selected}
+          api={api.notes}
+          isCurrent={() =>
+            session.getSnapshot().generation === state.generation
+          }
+        />
         {error && !adding && !editing && <p role="alert">{error}</p>}
       </section>
     </div>

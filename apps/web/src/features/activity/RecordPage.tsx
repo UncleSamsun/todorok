@@ -80,16 +80,16 @@ export function RecordPage({ type }: { type: RecordType }) {
       if (!current(id)) return false
       const code = problem?.code
       if (response && [400, 413, 415, 422].includes(response.status)) {
-        update({ snapshot: null, uncertain: false, blocked: false, error: `기록을 저장하지 못했습니다. 입력을 수정해 주세요. (${code ?? response.status})` })
+        update({ snapshot: null, uncertain: false, blocked: false, error: '기록을 저장하지 못했습니다. 입력을 수정해 주세요.' })
       } else if (response?.status === 409 && code === 'TEMPLATE_VERSION_CONFLICT') {
         update({ snapshot: null, uncertain: false, blocked: false, error: '카테고리 정의가 변경되었습니다. 입력은 보존했으며 최신 항목을 다시 불러왔습니다.' })
         await recordTemplate.refetch()
       } else if (response?.status === 409 && (code === 'TASK_REFERENCE_PENDING' || code === 'TASK_NOT_READY') && problem?.retryable === true) {
-        update({ uncertain: true, blocked: false, error: '할 일 정보가 기록 서비스에 반영되는 중입니다. 잠시 뒤 같은 요청으로 다시 확인해 주세요. (TASK_REFERENCE_PENDING)' })
+        update({ uncertain: true, blocked: false, error: '할 일 정보가 기록 서비스에 반영되는 중입니다. 잠시 뒤 같은 요청으로 다시 확인해 주세요.' })
       } else if (response?.status === 409 && problem?.retryable === false) {
-        update({ snapshot: null, uncertain: false, blocked: true, error: `충돌로 저장이 거절되었습니다. 오늘 화면에서 할 일 상태를 확인해 주세요. (${code ?? 'CONFLICT'})` })
+        update({ snapshot: null, uncertain: false, blocked: true, error: '충돌로 저장이 거절되었습니다. 오늘 화면에서 할 일 상태를 확인해 주세요.' })
       } else {
-        update({ uncertain: true, blocked: false, error: `서버 응답을 확인하지 못했습니다. 같은 요청으로 결과를 확인해 주세요.${code ? ` (${code})` : ''}` })
+        update({ uncertain: true, blocked: false, error: '서버 응답을 확인하지 못했습니다. 같은 요청으로 결과를 확인해 주세요.' })
       }
       return false
     } finally { if (current(id)) setBusy(false) }
@@ -131,7 +131,7 @@ export function RecordPage({ type }: { type: RecordType }) {
       {templateChanged && currentTemplate && latestTemplate && <TemplateChange before={currentTemplate} after={latestTemplate} study={type === 'STUDY' ? study : type === 'WORKOUT' ? { fields: workoutFields } : { fields: climbing.fields }} apply={applyTemplate} disabled={busy || uncertain} />}
       {draft.previousInputs?.map((previous, index) => <PreviousStudyInput key={index} {...previous} />)}
       {error && <p role="alert">{error}</p>}
-      <div className="form-actions"><button type="button" onClick={leave}>{blocked ? '오늘에서 할 일 확인' : '취소'}</button><button disabled={busy || blocked || (templateChanged && !uncertain)}>{busy ? '저장 중…' : blocked ? '충돌 상태 확인 필요' : uncertain ? '같은 요청 다시 보내기' : '기록 저장'}</button></div>
+      <div className="form-actions"><button className="secondary" type="button" onClick={leave}>{blocked ? '오늘에서 할 일 확인' : '취소'}</button><button className="primary" type="submit" disabled={busy || blocked || (templateChanged && !uncertain)}>{busy ? '저장 중…' : blocked ? '충돌 상태 확인 필요' : uncertain ? '같은 요청 다시 보내기' : '기록 저장'}</button></div>
     </form>}
     {saved && error && <p role="alert">{error}</p>}
   </section>
