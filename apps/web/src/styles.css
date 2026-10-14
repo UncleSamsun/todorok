@@ -814,3 +814,64 @@ button.destructive:hover:not(:disabled) { background: color-mix(in srgb, var(--d
 .sync-status { border: 0; border-radius: 8px; padding: 12px 16px; background: var(--selected); }
 @media (prefers-reduced-motion: reduce) { button { transition: none; } }
 
+/* Programs, month controls, summary, and history have separate, predictable rows. */
+.program-panel { padding: 16px 0 24px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+.program-panel h2 { font-size: 14px; margin-bottom: 12px; }
+.program-empty { display: grid; gap: 6px; padding: 16px; background: var(--selected); border-radius: 8px; }
+.program-empty p { font-size: 13px; margin: 0; }
+.program-empty a { justify-self: start; border: 0; padding: 8px 0; margin: 0; font-size: 13px; font-weight: 600; text-decoration: none; }
+.program-empty a:hover { text-decoration: underline; }
+.program-current, .program-catalogs, .program-enrollment { border: 0; border-radius: 8px; }
+.workspace-shell .domain-summary-heading { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 16px; }
+.month-picker { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.month-picker strong { font-size: 14px; min-width: 0; font-weight: 650; }
+.month-picker button { font-size: 13px; }
+.domain-actions { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.domain-actions button { width: auto; white-space: normal; padding: 8px 12px; font-size: 12px; background: var(--selected); border-radius: 6px; }
+.domain-actions button:hover:not(:disabled) { background: color-mix(in srgb, var(--color-text) 12%, var(--color-surface)); }
+.domain-summary { gap: 0; padding: 12px 0; margin: 0 0 24px; border-bottom: 1px solid var(--line); }
+.domain-summary > div { min-height: 60px; gap: 4px; padding: 8px; }
+.domain-summary > div + div { border-left: 1px solid var(--line); }
+.domain-summary span { font-size: 12px; }
+.domain-summary strong { font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.domain-history { gap: 0; }
+.domain-history h2 { font-size: 14px; margin: 0; padding: 0 0 12px; border-bottom: 1px solid var(--line); }
+.history-row { grid-template-columns: 90px minmax(0, 1fr) auto; gap: 8px 12px; padding: 12px 4px; min-height: 60px; border-bottom: 1px solid var(--line); }
+.history-row span { font-size: 12px; }
+.history-row strong { font-size: 13px; font-weight: 550; }
+.history-row small { font-size: 11px; padding: 3px 6px; border-radius: 4px; background: var(--selected); }
+.domain-today { padding: 16px 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+.settings-page { max-width: 820px; margin: auto; }
+.settings-page h1 { margin-bottom: 24px; }
+.settings-page > label { display: block; font-size: 12px; color: var(--muted); }
+.workspace-shell .settings-page select { width: 100%; max-width: 100%; margin: 8px 0 24px; }
+.settings-page fieldset { min-width: 0; margin: 0 0 20px; padding: 12px 0; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.settings-page legend { padding: 0 8px 0 0; font-size: 12px; font-weight: 600; }
+.settings-page p { font-size: 13px; margin: 8px 0 16px; }
+.settings-page .check-label { justify-content: flex-start; gap: 12px; margin-bottom: 12px; }
+.settings-page input[type="time"] { margin-top: 6px; }
+.settings-page section[aria-label="기기 알림"] { margin-bottom: 24px; }
+.settings-page section[aria-label="기기 알림"] button { margin: 0 8px 8px 0; background: var(--selected); font-size: 12px; }
+.install-guide { border-top: 1px solid var(--line); padding-top: 20px; }
+.install-guide h2 { margin: 0; }
+@media (max-width: 767px) {
+  .workspace-shell { padding: 20px 18px 100px; }
+  .workspace-shell .app-header { margin-bottom: 16px; gap: 8px; }
+  .today-layout { gap: 16px; }
+  .calendar-panel, .day-panel { padding: 12px 0; }
+  .calendar-month { width: 104px; font-size: 13px; }
+  .calendar-toolbar { gap: 0; }
+  .calendar-toolbar > button { padding: 8px 4px; }
+  .week-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px 0; }
+  .week-label, .week-category > span { grid-column: 1 / -1; }
+  .week-grid .date-button { min-width: 0; width: 100%; }
+  .week-grid .progress-cell { margin: 0 2px; }
+  .month-grid { min-width: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .month-grid .date-button { min-width: 0; width: 100%; }
+  .history-row { grid-template-columns: 82px minmax(0, 1fr) auto; }
+  .history-row small { grid-column: auto; }
+}
+@media (min-width: 1024px) {
+  .calendar-panel { border-bottom: 0; border-right: 1px solid var(--line); padding-right: 24px; }
+  .day-panel { padding-left: 8px; }
+}
