@@ -1,8 +1,22 @@
 # 배포·migration 실패 대응
 
-목표는 AWS Lightsail 단일 VM이다. 실제 인스턴스·도메인·ECR/OIDC 대상 계정은 아직 확인하지 않았으므로 이 문서는 배포 준비 절차이며 운영 배포 증거가 아니다.
+현재 배포 대상은 회사 `ai-server`의 K3s이며 전용 namespace는 `todorok-test`, 초기 HTTPS 주소는 `https://211.45.127.56/todorok/`다. 2026-10-14 mjkim SSH와 kubectl 권한을 실측했다. 과거 AWS Lightsail 목표 및 아래 Compose 도구는 단일 VM 검증 경로로 보존한다.
 
-2026-10-12 사용자 후속 확인에서 실제 운영 대상은 회사 서버로 확인됐다. 현재 PC의 SSH 키가 이관되지 않아 서버 접속·배포는 실행하지 않았다. 아래 Compose 전환 도구는 단일 VM 기준의 로컬 검증 도구다. 회사 서버의 기존 컨테이너 플랫폼·Ingress·인증·배포 절차를 확인한 뒤 실제 대상에 맞춰야 하며, 기존 서비스의 80/443 포트를 임의로 점유하지 않는다.
+## 회사 K3s 배포
+
+`company-server-images.yml`이 별도 `codex/company-server-deploy` 브랜치에서 애플리케이션 5개를 빌드한다. GitHub Actions의 `image-*` artifact만 다운로드해 component→GHCR digest JSON으로 합친다. 공개 저장소의 패키지는 사용자 선택에 따라 Public으로 설정하고 익명 pull을 확인한다. 다른 앱의 인증 정보는 재사용하지 않는다.
+
+```powershell
+node scripts/render-company-deployment.mjs C:\release\images.json C:\release\manifests https://211.45.127.56 RELEASE_ID 10.43.0.10
+```
+
+기존 namespace가 있다면 `app.kubernetes.io/part-of=todorok` 소유권을 확인한다. public manifest를 server dry-run으로 검증하고, 별도 ACL 제한 로컬 디렉터리에 `generate-company-secrets.mjs`로 한 번 생성한 secret.json을 mode 600 서버 release 디렉터리에 배치한다. 명령 출력·Git·vault에 비밀값을 남기지 않는다. 기존 secret은 덮어 생성하지 않는다.
+
+`deploy-company-server.py RELEASE_DIRECTORY`는 foundation·secret·PostgreSQL/Kafka → 역할 → migration 3개 → 토픽·publication/slot → Connect·connector → bootstrap → runtime → HTTPS route 순으로 실행한다. 각 job은 의존 서비스 TCP 준비를 기다리고 실패 시 다음 단계로 넘어가지 않는다. PVC가 자신의 namespace에 속하는지 확인한 후 PV reclaim 정책만 Retain으로 변경한다. 기존 SyncDoc/VODA, 호스트 포트, 호스트 마운트와 sudo는 사용하지 않는다.
+
+단일 Kafka의 KRaft controller는 `127.0.0.1:9093`으로 통신해 readiness 이전 Service 의존을 피한다. Nginx 동적 DNS upstream은 `notification-service.todorok-test.svc.cluster.local`과 CoreDNS를 사용한다. `/todorok/` UI와 서비스 워커는 해당 범위에 한정하고 API의 고유 `/api/{planner,activity,notification}/` 경로는 그대로 사용한다.
+
+이미지 digest, manifest 수정 버전과 성공 job, DB history, connector 상태, 실제 HTTPS 로그인·생성·기록·CDC 및 기존 서비스 상태를 배포 기록에 남긴다. 실기기 push와 운영 백업 복원·장기 관찰은 별도 검증이다.
 
 ## 사전 조건
 

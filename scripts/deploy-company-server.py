@@ -3,6 +3,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import time
 
 directory = pathlib.Path(sys.argv[1]).resolve()
 namespace = 'todorok-test'
@@ -37,7 +38,17 @@ jobs = json.loads((directory / 'jobs.json').read_text())['items']
 def run_job(prefix):
     job = next(item for item in jobs if item['metadata']['name'].startswith(prefix + '-'))
     apply_phase('job-' + prefix, [job])
-    kube('-n', namespace, 'wait', '--for=condition=complete', 'job/' + job['metadata']['name'], '--timeout=600s')
+    deadline = time.monotonic() + 620
+    while time.monotonic() < deadline:
+        state = json.loads(kube('-n', namespace, 'get', 'job', job['metadata']['name'], '-o', 'json', capture=True))
+        conditions = state.get('status', {}).get('conditions', [])
+        if any(c['type'] == 'Complete' and c['status'] == 'True' for c in conditions):
+            print(job['metadata']['name'] + ' completed', flush=True)
+            return
+        if any(c['type'] == 'Failed' and c['status'] == 'True' for c in conditions):
+            raise SystemExit('Deployment stopped at failed job: ' + job['metadata']['name'])
+        time.sleep(3)
+    raise SystemExit('Deployment stopped at timed out job: ' + job['metadata']['name'])
 
 run_job('postgres-provision')
 for name in ['planner', 'activity', 'notification']:

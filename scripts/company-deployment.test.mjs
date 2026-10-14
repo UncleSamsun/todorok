@@ -21,6 +21,10 @@ test('company manifests isolate storage/network and pin application images witho
   assert.ok(all.some(x=>x.kind==='NetworkPolicy'))
   const nginx=result.foundation.find(x=>x.metadata.name==='todorok-nginx').data['nginx.conf']
   assert.ok(nginx.includes('notification-service.todorok-test.svc.cluster.local:8083 resolve'))
+  const kafka=result.infra.find(x=>x.kind==='StatefulSet'&&x.metadata.name==='kafka')
+  assert.equal(kafka.spec.template.spec.containers[0].env.find(x=>x.name==='KAFKA_CONTROLLER_QUORUM_VOTERS').value,'1@127.0.0.1:9093')
+  const web=result.runtime.find(x=>x.kind==='Deployment'&&x.metadata.name==='web').spec.template.spec.containers[0]
+  assert.equal(web.resources.requests.memory,'32Mi')
   assert.equal(result.runtime.filter(x=>x.kind==='Deployment').length,4)
   assert.ok(result.edge.find(x=>x.kind==='IngressRoute').spec.routes.some(x=>x.match.includes('/todorok/')))
   assert.ok(result.jobs.some(x=>x.metadata.name.startsWith('planner-migration-')))

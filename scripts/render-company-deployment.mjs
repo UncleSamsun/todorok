@@ -20,11 +20,16 @@ export async function renderCompanyDeployment({images,origin,release,dns}){
   const keysVolume={name:'keys',secret:{secretName:'todorok-secrets',items:['auth-public.pem','auth-private.pem','template-public.pem','template-private.pem','push-public.key','push-private.key','push-encryption.key'].map(key=>({key,path:key}))}}
   const setupMount={name:'setup',mountPath:'/setup',readOnly:true}
   const keysMount={name:'keys',mountPath:'/run/secrets',readOnly:true}
-  const resources=(memory,cpu='1000m')=>({requests:{cpu:'100m',memory:'128Mi'},limits:{cpu,memory}})
-  const pod=(name,container,volumes=[])=>({metadata:{labels:labels(name)},spec:{automountServiceAccountToken:false,imagePullSecrets:[{name:'ghcr-pull'}],containers:[{name,...container}],...(volumes.length?{volumes}:{})}})
+  const resources=(memory,cpu='1000m')=>({requests:{cpu:'100m',memory:memory==='64Mi'?'32Mi':'128Mi'},limits:{cpu,memory}})
+  const pod=(name,container,volumes=[])=>({metadata:{labels:labels(name)},spec:{automountServiceAccountToken:false,containers:[{name,...container}],...(volumes.length?{volumes}:{})}})
   const service=(name,port)=>resource('v1','Service',name,{type:'ClusterIP',selector:labels(name),ports:[{name:'http',port,targetPort:port}]})
   const deployment=(name,container,volumes=[])=>resource('apps/v1','Deployment',name,{replicas:1,strategy:{type:'Recreate'},selector:{matchLabels:labels(name)},template:pod(name,container,volumes)})
-  const job=(name,container,volumes=[])=>resource('batch/v1','Job',name+'-'+release,{backoffLimit:1,activeDeadlineSeconds:600,ttlSecondsAfterFinished:86400,template:{...pod(name,container,volumes),spec:{...pod(name,container,volumes).spec,restartPolicy:'Never'}}})
+  const job=(name,container,volumes=[])=>{
+    const [host,port]=name==='kafka-init'?['kafka',19092]:name==='connect-init'?['connect',8083]:['postgres',5432]
+    return resource('batch/v1','Job',name+'-'+release,{backoffLimit:1,activeDeadlineSeconds:600,ttlSecondsAfterFinished:86400,template:{...pod(name,container,volumes),spec:{...pod(name,container,volumes).spec,restartPolicy:'Never',initContainers:[{
+      name:'wait-dependency',image:'busybox:1.37.0',command:['sh','-ec',`for attempt in $(seq 1 90); do nc -z -w 2 ${host} ${port} && exit 0; sleep 2; done; exit 1`],resources:{requests:{cpu:'10m',memory:'16Mi'},limits:{cpu:'100m',memory:'32Mi'}},
+    }]}}})
+  }
   const httpProbe=(port,route)=>({httpGet:{port,path:route},periodSeconds:10,timeoutSeconds:5,failureThreshold:30})
   const script=async file=>(await readFile(file,'utf8')).replaceAll('\r\n','\n')
   const nginx=(await script('infra/nginx/nginx.conf'))
@@ -48,7 +53,7 @@ export async function renderCompanyDeployment({images,origin,release,dns}){
       resources:resources('512Mi','500m'),ports:[{containerPort:5432}],volumeMounts:[{name:'data',mountPath:'/var/lib/postgresql/data'}],
       readinessProbe:{exec:{command:['sh','-c','pg_isready -U postgres -d todorok']},periodSeconds:5},livenessProbe:{exec:{command:['sh','-c','pg_isready -U postgres -d todorok']},initialDelaySeconds:30,periodSeconds:20}}),
     volumeClaimTemplates:[{metadata:{name:'data'},spec:{accessModes:['ReadWriteOnce'],resources:{requests:{storage:'10Gi'}}}}]})
-  const kafkaEnv={KAFKA_NODE_ID:1,KAFKA_PROCESS_ROLES:'broker,controller',KAFKA_LISTENERS:'CONTROLLER://:9093,PLAINTEXT://:19092',KAFKA_ADVERTISED_LISTENERS:'PLAINTEXT://kafka:19092',KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT',KAFKA_CONTROLLER_LISTENER_NAMES:'CONTROLLER',KAFKA_INTER_BROKER_LISTENER_NAME:'PLAINTEXT',KAFKA_CONTROLLER_QUORUM_VOTERS:'1@kafka:9093',KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR:1,KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR:1,KAFKA_TRANSACTION_STATE_LOG_MIN_ISR:1,KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS:0,KAFKA_LOG_DIRS:'/var/lib/kafka/data/logs',KAFKA_HEAP_OPTS:'-Xms256m -Xmx384m'}
+  const kafkaEnv={KAFKA_NODE_ID:1,KAFKA_PROCESS_ROLES:'broker,controller',KAFKA_LISTENERS:'CONTROLLER://:9093,PLAINTEXT://:19092',KAFKA_ADVERTISED_LISTENERS:'PLAINTEXT://kafka:19092',KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT',KAFKA_CONTROLLER_LISTENER_NAMES:'CONTROLLER',KAFKA_INTER_BROKER_LISTENER_NAME:'PLAINTEXT',KAFKA_CONTROLLER_QUORUM_VOTERS:'1@127.0.0.1:9093',KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR:1,KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR:1,KAFKA_TRANSACTION_STATE_LOG_MIN_ISR:1,KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS:0,KAFKA_LOG_DIRS:'/var/lib/kafka/data/logs',KAFKA_HEAP_OPTS:'-Xms256m -Xmx384m'}
   const kafka=resource('apps/v1','StatefulSet','kafka',{serviceName:'kafka',replicas:1,selector:{matchLabels:labels('kafka')},
     template:pod('kafka',{image:'apache/kafka:4.3.1',env:Object.entries(kafkaEnv).map(([k,v])=>value(k,v)),resources:resources('768Mi'),ports:[{containerPort:19092},{containerPort:9093}],volumeMounts:[{name:'data',mountPath:'/var/lib/kafka/data'}],readinessProbe:{tcpSocket:{port:19092},initialDelaySeconds:15,periodSeconds:5}}),
     volumeClaimTemplates:[{metadata:{name:'data'},spec:{accessModes:['ReadWriteOnce'],resources:{requests:{storage:'10Gi'}}}}]})
