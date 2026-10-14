@@ -6,6 +6,8 @@
 
 Name | Type
 ------------ | -------------
+`scheduledTime` | string
+`reminderEnabled` | boolean
 `note` | string
 `title` | string
 `scheduledDate` | string
@@ -18,6 +20,8 @@ import type { UpdateTaskRequest } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "scheduledTime": null,
+  "reminderEnabled": null,
   "note": null,
   "title": null,
   "scheduledDate": null,

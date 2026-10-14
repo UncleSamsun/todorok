@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://todorok.app/schemas/events/task-reminder-changed/v1",
+  "allOf": [
+    {"$ref": "https://todorok.app/schemas/events/envelope/v1"},
+    {"properties": {
+      "type": {"const": "TASK_REMINDER_CHANGED"},
+      "version": {"const": 1},
+      "payload": {
+        "type": "object", "additionalProperties": false,
+        "required": ["taskId", "scheduledFor", "enabled"],
+        "properties": {
+          "taskId": {"type": "string", "format": "uuid"},
+          "scheduledFor": {"type": ["string", "null"], "format": "date-time"},
+          "enabled": {"type": "boolean"}
+        },
+        "if": {"properties": {"enabled": {"const": true}}},
+        "then": {"properties": {"scheduledFor": {"type": "string", "format": "date-time"}}}
+      }
+    }}
+  ]
+}

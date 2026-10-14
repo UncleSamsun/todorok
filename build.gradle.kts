@@ -79,6 +79,15 @@ registerContractTask(
     "libs/web-support/src/generated",
 )
 
+registerContractTask(
+    "generateNotificationSpring", "spring", "contracts/openapi/notification-v1.yaml",
+    "contracts/generator/notification-spring.yaml", "services/notification-service/src/generated",
+)
+registerContractTask(
+    "generateNotificationTypeScript", "typescript-fetch", "contracts/openapi/notification-v1.yaml",
+    "contracts/generator/notification-typescript.yaml", "packages/api-client/src/generated/notification",
+)
+
 tasks.register<Exec>("generateEventV2Java") {
     inputs.dir("contracts/events")
     inputs.file("scripts/generate-event-v2.mjs")
@@ -94,6 +103,7 @@ tasks.register("generateContracts") {
         "generateActivityTypeScript",
         "generateTemplateInternalSpring",
         "generateEventV2Java",
+        "generateNotificationSpring", "generateNotificationTypeScript",
     )
 }
 

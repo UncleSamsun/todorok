@@ -1,0 +1,10 @@
+additionalProperties:
+  dateLibrary: string
+  supportsES6: true
+  stringEnums: true
+  enumUnknownDefaultCase: true
+  hideGenerationTimestamp: true
+  npmName: '@todorok/api-client'
+  withInterfaces: true
+typeMappings:
+  date: string

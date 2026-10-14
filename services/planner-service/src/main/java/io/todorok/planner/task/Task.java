@@ -31,6 +31,12 @@ public class Task {
 
     String note;
 
+    @Column(name = "scheduled_time", length = 5)
+    String scheduledTime;
+
+    @Column(name = "reminder_enabled", nullable = false)
+    boolean reminderEnabled;
+
     @Column(name = "activity_id")
     UUID activityId;
 
@@ -95,6 +101,8 @@ public class Task {
             .seriesId(seriesId)
             .occurrenceDate(occurrenceDate)
             .note(note)
+            .scheduledTime(scheduledTime)
+            .reminderEnabled(reminderEnabled)
             .activityId(activityId)
             .performedAt(performedAt)
             .completionSummary(completionSummary)

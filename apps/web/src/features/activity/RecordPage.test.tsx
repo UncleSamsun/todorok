@@ -31,7 +31,9 @@ it('keeps zero and false, omits optional time, and returns to performed date', a
   const writes: unknown[] = []
   window.history.replaceState({}, '', '/today')
   render(<App session={sessionFor(writes)} />)
-  fireEvent.click(await screen.findByRole('button', { name: '볼더링 기록' }))
+  const recordButton=await screen.findByRole('button', { name: '볼더링 기록' })
+  await waitFor(()=>expect(recordButton).toBeEnabled())
+  fireEvent.click(recordButton)
   fireEvent.click(await screen.findByRole('button', { name: '라운드 추가' }))
   fireEvent.change(screen.getByLabelText('시도 횟수'), { target: { value: '0' } })
   fireEvent.change(screen.getByLabelText('완등 여부'), { target: { value: 'false' } })

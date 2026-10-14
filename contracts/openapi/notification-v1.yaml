@@ -1,0 +1,105 @@
+openapi: 3.1.0
+info:
+  title: 토도록 Notification API
+  version: 1.0.0
+servers:
+  - url: /api/notification/v1
+security:
+  - BearerAuth: []
+tags:
+  - name: Push
+paths:
+  /push/config:
+    get:
+      tags: [Push]
+      operationId: getPushConfig
+      responses:
+        '200':
+          description: Public VAPID key, empty when push is unavailable.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [publicKey]
+                properties:
+                  publicKey: { type: string }
+  /push/subscriptions:
+    post:
+      tags: [Push]
+      operationId: savePushSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PushSubscriptionRequest' }
+      responses:
+        '200':
+          description: Idempotent registration for this owner. Never returns subscription secrets.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id]
+                properties:
+                  id: { type: string, format: uuid }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
+    delete:
+      tags: [Push]
+      operationId: deletePushSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint]
+              properties:
+                endpoint: { type: string, maxLength: 4096 }
+      responses:
+        '204': { description: Deleted only if owned by the authenticated account. }
+  /deliveries:
+    get:
+      tags: [Push]
+      operationId: listNotificationDeliveries
+      responses:
+        '200':
+          description: Latest 50 deliveries for the authenticated owner.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, status, attempts, scheduledFor]
+                  properties:
+                    id: { type: string, format: uuid }
+                    status: { type: string, enum: [PENDING, CANCELED, EXPIRED, DELIVERED, FAILED] }
+                    attempts: { type: integer, minimum: 0 }
+                    scheduledFor: { type: string, format: date-time }
+                    errorCode: { type: string }
+components:
+  securitySchemes:
+    BearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  responses:
+    Problem:
+      description: Shared problem response.
+      content:
+        application/problem+json:
+          schema: { $ref: './common-v1.yaml#/components/schemas/ProblemDetails' }
+  schemas:
+    PushSubscriptionRequest:
+      type: object
+      additionalProperties: false
+      required: [endpoint, keys]
+      properties:
+        endpoint: { type: string, maxLength: 4096 }
+        keys:
+          type: object
+          additionalProperties: false
+          required: [p256dh, auth]
+          properties:
+            p256dh: { type: string, minLength: 87, maxLength: 88 }
+            auth: { type: string, minLength: 22, maxLength: 24 }

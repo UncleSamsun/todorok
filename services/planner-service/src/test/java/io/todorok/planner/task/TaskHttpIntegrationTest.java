@@ -32,6 +32,48 @@ import tools.jackson.databind.json.JsonMapper;
 )
 class TaskHttpIntegrationTest {
 
+    @Test void reminderFieldsDoNotChangeTheFingerprintOfAPreUpgradeCreationCommand()throws Exception {
+        UUID owner=UUID.randomUUID(),command=UUID.randomUUID();
+        String legacy="{\"commandId\":\""+command+"\",\"title\":\"기존 요청\",\"taskType\":\"GENERAL\",\"scheduledDate\":\"2026-10-13\"}";
+        var created=call(owner,"POST","/tasks","{\"title\":\"기존 요청\",\"taskType\":\"GENERAL\",\"scheduledDate\":\"2026-10-13\"}");assertThat(created.statusCode()).isEqualTo(201);
+        String fingerprint=io.todorok.web.security.TemplateServiceTokens.hash("TASK|{\"title\":\"기존 요청\",\"taskType\":\"GENERAL\",\"scheduledDate\":\"2026-10-13\",\"commandId\":\""+command+"\"}");
+        var oldResult=(tools.jackson.databind.node.ObjectNode)body(created);oldResult.remove("scheduledTime");oldResult.remove("reminderEnabled");
+        jdbc.update("insert into planner.planner_creation_command(owner_id,command_id,fingerprint,target_type,target_id,state,result) values (?,?,?,'TASK',?,'COMPLETE',cast(? as jsonb))",
+            owner,command,fingerprint,UUID.fromString(oldResult.path("taskId").asText()),oldResult.toString());
+        var replay=call(owner,"POST","/tasks",legacy);
+        assertThat(replay.statusCode()).as(replay.body()).isEqualTo(201);
+        assertThat(body(replay).path("taskId").asText()).isEqualTo(body(created).path("taskId").asText());
+    }
+
+    @Test void explicitReminderRoundTripsChangesAndCancelsWithTaskState() throws Exception {
+        UUID owner=UUID.randomUUID();
+        var created=call(owner,"POST","/tasks","{\"title\":\"알림\",\"taskType\":\"GENERAL\",\"scheduledDate\":\"2026-10-13\",\"scheduledTime\":\"09:30\",\"reminderEnabled\":true}");
+        assertThat(created.statusCode()).as(created.body()).isEqualTo(201);
+        var task=body(created);String id=task.path("taskId").asText();
+        assertThat(task.path("scheduledTime").asText()).isEqualTo("09:30");assertThat(task.path("reminderEnabled").asBoolean()).isTrue();
+        assertThat(body(call(owner,"GET","/tasks/"+id,null)).path("scheduledTime").asText()).isEqualTo("09:30");
+        assertThat(body(call(owner,"GET","/calendar/2026-10-13",null)).path("tasks").get(0).path("reminderEnabled").asBoolean()).isTrue();
+        var changed=call(owner,"PATCH","/tasks/"+id,"{\"title\":\"알림\",\"scheduledDate\":\"2026-10-14\",\"scheduledTime\":\"10:00\",\"reminderEnabled\":true,\"version\":0}");
+        assertThat(changed.statusCode()).as(changed.body()).isEqualTo(200);
+        assertThat(call(owner,"POST","/tasks/"+id+"/complete","{\"version\":1}").statusCode()).isEqualTo(200);
+        var events=jdbc.queryForList("select payload::text from planner.outbox_event where aggregateid=? and type='TASK_REMINDER_CHANGED' order by payload->>'aggregateVersion'",String.class,id);
+        assertThat(events).hasSize(3);assertThat(json.readTree(events.get(1)).path("payload").path("scheduledFor").asText()).isEqualTo("2026-10-14T01:00:00Z");
+        assertThat(json.readTree(events.get(2)).path("payload").path("enabled").asBoolean()).isFalse();
+        assertThat(call(UUID.randomUUID(),"PATCH","/tasks/"+id,"{\"title\":\"다른 계정\",\"scheduledDate\":\"2026-10-14\",\"version\":2,\"reminderEnabled\":true}").statusCode()).isEqualTo(404);
+    }
+
+    @Test void reminderRequiresExplicitValidTimeAndCanBeCleared() throws Exception {
+        UUID owner=UUID.randomUUID();String base="\"title\":\"검증\",\"taskType\":\"GENERAL\",\"scheduledDate\":\"2026-10-13\"";
+        for(String invalid:List.of(",\"reminderEnabled\":true",",\"scheduledTime\":\"25:00\"",",\"scheduledTime\":\"9:30\""))
+            assertThat(call(owner,"POST","/tasks","{"+base+invalid+"}").statusCode()).isEqualTo(400);
+        var task=body(call(owner,"POST","/tasks","{"+base+",\"scheduledTime\":\"09:30\",\"reminderEnabled\":true}"));
+        String id=task.path("taskId").asText();
+        var cleared=call(owner,"PATCH","/tasks/"+id,"{\"title\":\"검증\",\"scheduledDate\":\"2026-10-13\",\"version\":0,\"scheduledTime\":\"\",\"reminderEnabled\":false}");
+        assertThat(cleared.statusCode()).as(cleared.body()).isEqualTo(200);
+        assertThat(body(cleared).path("reminderEnabled").asBoolean()).isFalse();
+        assertThat(jdbc.queryForObject("select count(*) from planner.outbox_event where aggregateid=? and type='TASK_REMINDER_CHANGED'",Integer.class,id)).isEqualTo(2);
+    }
+
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.MethodSource("duplicateSelectionCases")
     void duplicateSelectionCannotHideCoercedVersion(String resource, String invalid) throws Exception {

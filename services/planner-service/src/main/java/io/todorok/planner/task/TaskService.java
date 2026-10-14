@@ -95,6 +95,7 @@ public class TaskService {
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public TaskResponse create(UUID owner, CreateTaskRequest request) {
         String title = title(request.getTitle());
+        validateReminder(request.getScheduledTime(), Boolean.TRUE.equals(request.getReminderEnabled()));
         return creation.create(owner, request.getCommandId(), "TASK", request.getTaskType(), request.getTemplateSelection(), request,
             TaskResponse.class, (target, link) -> {
         var task = new Task(
@@ -106,6 +107,8 @@ public class TaskService {
         task.id = target;
         task.templateLink(link);
         task.note = request.getNote();
+        task.scheduledTime = request.getScheduledTime();
+        task.reminderEnabled = Boolean.TRUE.equals(request.getReminderEnabled());
         tasks.saveAndFlush(task);
         publish(task, "CREATED");
         return task.response();
@@ -117,16 +120,25 @@ public class TaskService {
         Task task = owned(owner, id, request.getVersion());
         String title = title(request.getTitle());
         String note = request.getNote() == null ? task.note : request.getNote();
+        String scheduledTime = request.getScheduledTime() == null ? task.scheduledTime
+            : request.getScheduledTime().isEmpty() ? null : request.getScheduledTime();
+        boolean reminderEnabled = request.getReminderEnabled() == null ? task.reminderEnabled : request.getReminderEnabled();
+        validateReminder(scheduledTime, reminderEnabled);
+        boolean clearedTime = task.scheduledTime != null && scheduledTime == null;
         if (
             task.title.equals(title) &&
             task.scheduledDate.equals(request.getScheduledDate()) &&
-            java.util.Objects.equals(task.note, note)
+            java.util.Objects.equals(task.note, note) &&
+            java.util.Objects.equals(task.scheduledTime, scheduledTime) && task.reminderEnabled == reminderEnabled
         ) return task.response();
         task.title = title;
         task.note = note;
         task.scheduledDate = request.getScheduledDate();
+        task.scheduledTime = scheduledTime;
+        task.reminderEnabled = reminderEnabled;
         tasks.flush();
         publish(task, "UPDATED");
+        if (clearedTime) events.publishReminder(task);
         return task.response();
     }
 
@@ -184,6 +196,11 @@ public class TaskService {
             )
         );
         return title.strip();
+    }
+
+    private void validateReminder(String time, boolean enabled) {
+        if ((time != null && !time.matches("^(?:[01][0-9]|2[0-3]):[0-5][0-9]$")) || (enabled && time == null))
+            throw new ApiFailure(400, "INVALID_REMINDER", "Invalid reminder", "Choose a valid time before enabling a reminder.", false);
     }
 
     private static ApiFailure missing() {

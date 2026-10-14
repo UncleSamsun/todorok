@@ -2,11 +2,11 @@
 
 계획: `docs/superpowers/plans/2026-09-07-mvp-functional-implementation.md`
 기준: develop `5eea3c16a309c1828483d8c0bd627d4585d4b145`.
-작업 위치: `C:\workspace\todorok-worktrees\functional`.
+현재 작업 위치: `C:\workspace\todorok` (2026-10-12 사용자 지정). 이전 기능 worktree의 검증 기록은 아래 날짜별 이력에 보존한다.
 
 ## 현재 기준 — 사용자 흐름 중심
 
-이 문서가 기능 완료 상태와 검증 증거의 단일 기준이다. 과거 보고서는 증거 원본으로만 보존하고, 이후 상태 보고는 이 문서에 모은다. 다음 세션은 [MVP 기능 구현 인계](mvp-functional-handoff.md)에서 마지막 검증과 다음 흐름을 먼저 확인한다.
+이 문서가 기능 완료 상태와 검증 증거의 단일 기준이다. 과거 보고서는 증거 원본으로만 보존하고, 이후 상태 보고는 이 문서에 모은다. 다음 세션은 [2026-10-12 구현 및 workspace 인계](2026-10-12-workspace-handoff.md)와 [MVP 기능 구현 인계](mvp-functional-handoff.md)를 먼저 확인한다.
 
 | 사용자 흐름 | 상태 | 검증 근거·다음 작업 |
 | --- | --- | --- |
@@ -15,8 +15,28 @@
 | 사용자 정의 공부 기록 | 구현·관련 검증 완료 | `25bb401` 백엔드 + `cdb6ade` UI + `805fe34`·`44c0978` 보완. 관리·반복·기록·과거 수정·보관·충돌/재시도·pagination 실제 브라우저와 수정 범위 재리뷰 통과 |
 | 사용자 정의 자유 운동·클라이밍 기록 | 구현·관련 검증 완료 | `e00199b` 서버 + `31cef9f` 운동 UI + `ba21367` 클라이밍 UI. 관계형 값·기존 세트/라운드·수정/취소/이력·반복 Kafka·실제 브라우저 통과 |
 | 운동 프로그램·실제 catalog | 합성 프로그램 완료, 실제 catalog 남음 | 작업10은 catalog→등록→첫 Task→수행→Kafka 다음 Task·수정/취소·종료·운동 탭 UI까지 검증. 작업11은 외부 자료의 이용 범위 확인이 남음 |
-| 클라이밍 타이머·알림·PWA/설정 | 남음 | 원래 작업12–14. 기존 PWA 업데이트 문제 포함 |
+| 클라이밍 타이머·알림·PWA/설정 | 로컬 구현·자동 검증 완료, 실기기 남음 | Task 명시 시간·리마인더·22–07 만료·+30분 재시도 및 재활성화/경합 보완. notification 33개·planner HTTP 30개+호환성 1개·실제 Kafka 왕복·웹132개 통과. production/PWA build·예산·계약 drift 통과. 실제 provider·iPhone·설치 PWA 배포 전환은 별도 확인 필요 |
 | 최종 통합·운영 준비·실기기 검증 | 남음 | 원래 작업15–16의 필수 기준 유지. 원격 push·merge·배포는 별도 지시 없이 하지 않음 |
+
+### 2026-10-12 후속 검증 결과
+
+Task의 `scheduledTime`과 `reminderEnabled`를 생성·수정·조회·화면에 연결했다. 시간만 지정하면 알림은 켜지지 않으며 반복 일정은 각 Task에서 따로 선택한다. 전용 `task-reminder` 이벤트와 notification 최신 revision projection으로 같은 시간의 여러 Task, 중복/역순, 변경·완료·삭제·이월을 처리한다. 재활성화 시 미래 예약만 복구하고, Task 변경과 같은 advisory lock을 사용한다. 요약의 OFF→ON·시간 A→B→A 복구, 실제 마감 전 재시도와 이전 생성 command fingerprint도 검증했다.
+
+| 검증 | 결과 |
+| --- | --- |
+| planner 실제 HTTP / 이전 요청 직렬화 | 30개 / 1개 통과 |
+| notification 전체 suite | 33개 통과 |
+| 이벤트 계약 | 26개 통과 |
+| 실제 HTTP→outbox→Debezium→Kafka→notification | 서비스가 내려간 동안 Task 생성·완료 후 복구 1개 통과 |
+| 웹 | 21개 파일·132개 통과. Windows worker 시작 시간 제한 때문에 표준 threads pool에서 공부23개와 나머지109개를 분할 실행 |
+| 원본/생성 계약·Nginx 경로·worker·백업 단위 검사 | 11개 통과, 계약 drift 통과 |
+| 실제 Nginx | 3개 통과. 없는 옛 asset의 404를 추가한 focused 재검증도 통과 |
+| 운영 준비 | 암호화·변조/다른 키 거절, 격리 PostgreSQL 세 schema fixture 복원, 실패 migration의 기존 runtime 보존 통과 |
+| build | 공유 패키지, planner/notification assemble, 웹/PWA service worker 생성 통과. initial gzip 103,545 bytes·lazy 7개 예산 통과 |
+
+독립 코드 리뷰의 중요 보완과 최종 재검토를 마쳤다. 개발 중 테스트 컨텍스트의 이전 DB 주소 재사용과 Windows worker 시작/자원 경합 실패는 별도로 구분했다. 최종 웹 성공은 정상 threads pool의 두 묶음이며 실험한 VM pool의 결과를 성공 근거로 사용하지 않는다.
+
+사용자는 실제 배포 대상이 회사 서버라고 확인했다. 현재 PC에 기본 SSH 키 경로·agent가 없어 원격 접속·배포는 하지 않았다. [배포](../runbooks/deployment.md), [백업·복구](../runbooks/backup-restore.md), [출시 증거](../runbooks/release-checklist.md)를 준비했다. 회사 서버 플랫폼에 맞춘 배포, 실제 iPhone/provider 수신, 원문 이용 조건·실제 catalog, 운영 사용자 로그인/CDC 복구 및 4GB/7일 관찰은 남는다. 수정은 미커밋 상태로 보존했다.
 
 ### 공부 기록 흐름
 
@@ -293,4 +313,4 @@ PWA 설치·예산 보완: Settings는 standalone 실행 여부와 iPhone Safari
 
 ## 후속 필수 검증
 
-- 14 PWA/배포 업데이트: 작업08 frontend교체에서 기존 열린브라우저의 옛lazy chunk요청이 SPA fallback HTML(200/736bytes)을받아빈화면이발생했다. nginx12:12:23Z요청은 `DomainPage-DfclhuWz.js`/`StudyPage-DE_Ha1XF.js`, 직전새SW는새chunk를precache했다. 새로고침후새index와실제전체흐름은정상이다. 정적asset없는경로의정확한404와oldchunk/lazyimport실패복구, SW업데이트중열린페이지회귀를작업14에서검증한다. 새로고침복구를자동복구완료로간주하지않는다.
+- 14 PWA/배포 업데이트: 없는 `/assets/` 경로의 404와 preload 오류 자동 reload는 구현됐다. 2026-10-12 재개 시 탭 전체에서 한 번만 복구하던 guard 때문에 이후 배포는 복구하지 못하고, 재시도 후 오류도 숨기는 문제를 회귀 테스트로 재현했다. 빌드 UUID별 한 번으로 변경하고 storage 접근 실패 시 reload하지 않도록 보완했다. `pnpm --dir apps/web test src/main.test.ts src/App.test.tsx` 8/8 통과. 실제 설치 iPhone 및 열린 페이지의 서비스 워커 배포 전환 검증은 남는다. 이번 재개 시 Docker 엔진이 꺼져 있어 실제 Nginx 검사를 재실행하지 않았다.

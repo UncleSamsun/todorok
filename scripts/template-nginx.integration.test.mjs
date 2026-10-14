@@ -29,6 +29,10 @@ test('실제 Nginx 템플릿 경로는 1 MiB를 허용하고 chunked 초과를 �
     const address = docker('port', name, '80/tcp')
     const [host, port] = address.split(':')
 
+    const missingAsset=await fetch(`http://${address}/assets/obsolete-release-chunk.js`)
+    assert.equal(missingAsset.status,404,'An obsolete chunk must never return the SPA document with status 200')
+    await missingAsset.text()
+
     for (const suffix of ['/internal', '/internal/', '/internal/template-selections', '/internal/template-selections/child']) {
       const blocked = await fetch(`http://${address}/api/activity/v1${suffix}`, { method: 'POST', body: '{}' })
       assert.equal(blocked.status, 404, suffix)

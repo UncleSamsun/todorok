@@ -26,6 +26,35 @@ import tools.jackson.databind.json.JsonMapper;
 /** Actual HTTP -> service DB -> Debezium -> Kafka -> service listener -> ack -> HTTP. */
 class ActivityServiceRoundTripTest {
 
+    @Test void taskRemindersRecoverAfterNotificationIsStoppedWithoutBlockingTaskCompletion() throws Exception {
+        Flyway.configure().dataSource(infra.jdbcUrl("notification"),"postgres","postgres")
+            .schemas("notification").defaultSchema("notification").createSchemas(true)
+            .locations("filesystem:"+Path.of(System.getProperty("todorok.repository.root"),"services/notification-service/src/main/resources/db/migration").toString().replace('\\','/'))
+            .load().migrate();
+        UUID owner=UUID.randomUUID();
+        String date=LocalDate.now(ZoneId.of("Asia/Seoul")).plusDays(1).toString();
+        String request=JSON.writeValueAsString(Map.of("title","장애 중 일정","taskType","GENERAL","scheduledDate",date,
+            "scheduledTime","09:30","reminderEnabled",true));
+        // The notification application is down throughout both commands.
+        var task=ok(call("planner",owner,"POST","/tasks",request),201);String id=task.path("taskId").asText();
+        ok(call("planner",owner,"POST","/tasks/"+id+"/complete","{\"version\":0}"),200);
+        String open=ok(call("planner",owner,"POST","/tasks",request),201).path("taskId").asText();
+        try(var notification=app(io.todorok.notification.NotificationApplication.class,"notification")){
+            long deadline=System.nanoTime()+Duration.ofSeconds(45).toNanos();
+            while(System.nanoTime()<deadline){
+                var revisions=infra.database().queryForList("select revision from notification.task_reminder where task_id=?",Long.class,UUID.fromString(id));
+                if(!revisions.isEmpty()&&revisions.getFirst()==1L&&infra.database().queryForObject("select count(*) from notification.notification_delivery where task_id=? and status='PENDING'",Integer.class,UUID.fromString(open))==1)break;
+                Thread.sleep(100);
+            }
+            assertThat(infra.database().queryForObject("select enabled from notification.task_reminder where task_id=?",Boolean.class,UUID.fromString(id))).isFalse();
+            assertThat(infra.database().queryForObject("select count(*) from notification.notification_delivery where task_id=? and status='PENDING'",Integer.class,UUID.fromString(id))).isZero();
+            assertThat(infra.database().queryForObject("select count(*) from notification.notification_delivery where task_id=? and status='PENDING'",Integer.class,UUID.fromString(open))).isOne();
+            var event=JSON.readTree(infra.database().queryForObject("select payload::text from planner.outbox_event where aggregateid=? and type='TASK_REMINDER_CHANGED'",String.class,open));
+            var delivered=infra.consume("todorok.task-reminder.v1",UUID.fromString(event.path("eventId").asText()),Duration.ofSeconds(15));
+            assertThat(delivered.value().path("payload").has("title")).isFalse();
+        }
+    }
+
     @Test
     void templateServiceOutageAndLostApprovalResponseRecoverWithTheOriginalCommand() throws Exception {
         UUID owner=UUID.randomUUID(), command=UUID.randomUUID();

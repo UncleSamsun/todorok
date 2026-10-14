@@ -245,7 +245,7 @@ flowchart TD
 
 **파일:** notification 신규 `subscription/`, `schedule/`, `delivery/` 기능 패키지와 migration; planner 신규 `notification/NotificationPreferenceController.java`; `apps/web/src/features/settings/NotificationSettings.tsx`; 필요 event schema/fixture.
 
-- [ ] 외부 공개 API는 planner 설정/구독 접수로 두고 notification 소유 명령을 이벤트로 전달하는 안을 계약화한다. 구독 endpoint 같은 개인정보가 들어가는 event는 로그 마스킹·보존·접근 정책을 함께 명시한다.
+- [x] 계정 설정은 planner 이벤트를 유지하고 구독·상태는 notification 직접 API로 계약화한다. 2026-10-12 PRD AC-9의 구독 계약에 따라 구독 비밀값을 이벤트로 복제하지 않는다.
 - [ ] 알림 기본 OFF, 사용자 동작으로만 권한 요청, 요약 08시(변경 가능), 명시적 Task reminder만 생성한다.
 - [ ] 22–07시 개별 알림은 만료, 요약 10시·개별 예정+30분을 deadline으로 처리한다. 재시도는 deadline을 넘기지 않는다.
 - [ ] 예약 unique key·worker lease·발송 상태·재시도를 저장한다. provider 전송 성공 후 응답 유실은 서버만으로 정확히 한 번을 보장하지 못하므로 notification ID와 웹 알림 tag로 중복 표시를 줄인다.

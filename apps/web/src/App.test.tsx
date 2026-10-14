@@ -16,6 +16,7 @@ afterEach(() => {
   window.history.replaceState({}, '', '/')
   localStorage.clear()
   vi.restoreAllMocks()
+  vi.unstubAllEnvs()
 })
 const session = {
   accessToken: 'never-store-this-token',
@@ -30,6 +31,8 @@ const json = (body: unknown, status = 200) =>
 const calendarResponse = (url: unknown) =>
   String(url).includes('/notes/')
     ? json({ date: seoulToday(), content: '', version: null })
+    : String(url).endsWith('/preferences')
+      ? json({ theme: 'SYSTEM', notificationsEnabled: false, summaryTime: '08:00', revision: 0 })
     : String(url).endsWith('/rollover')
       ? json({ today: seoulToday(), movedCount: 0 })
       : String(url).includes('/calendar?')
@@ -39,6 +42,21 @@ const calendarResponse = (url: unknown) =>
           : null
 
 describe('App', () => {
+  it('opens today and keeps navigation inside the deployment prefix', async () => {
+    vi.stubEnv('BASE_URL', '/todorok/')
+    window.history.replaceState({}, '', '/todorok/')
+    const client = new SessionClient({
+      fetcher: async (url) => calendarResponse(url) ?? json(session),
+    })
+    render(<App session={client} />)
+    await screen.findByRole('region', { name: '선택 날짜' })
+    expect(window.location.pathname).toBe('/todorok/today')
+    for (const [name, path] of [['오늘', 'today'], ['운동', 'workout'], ['공부', 'study'], ['클라이밍', 'climbing'], ['설정', 'settings']]) {
+      expect(screen.getByRole('link', { name })).toHaveAttribute('href', `/todorok/${path}`)
+    }
+    fireEvent.click(screen.getByRole('link', { name: '설정' }))
+    await waitFor(() => expect(window.location.pathname).toBe('/todorok/settings'))
+  })
   it('starts on the Seoul date across the UTC midnight boundary', () => {
     vi.useFakeTimers()
     try {

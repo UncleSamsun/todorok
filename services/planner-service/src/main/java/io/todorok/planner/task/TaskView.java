@@ -20,7 +20,9 @@ public record TaskView(
     String completionSummary,
     java.time.OffsetDateTime startedAt,
     java.time.OffsetDateTime endedAt,
-    io.todorok.planner.template.TemplateLinkColumns templateLink
+    io.todorok.planner.template.TemplateLinkColumns templateLink,
+    String scheduledTime,
+    boolean reminderEnabled
 ) {
     TaskResponse response() {
         return new TaskResponse(
@@ -35,6 +37,8 @@ public record TaskView(
             .seriesId(series)
             .occurrenceDate(occurrence)
             .note(note)
+            .scheduledTime(scheduledTime)
+            .reminderEnabled(reminderEnabled)
             .activityId(activityId)
             .performedAt(performedAt)
             .completionSummary(completionSummary)

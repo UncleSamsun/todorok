@@ -2,6 +2,11 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
+test('notification API는 별도 서비스로 전달한다', async () => {
+  const nginx = await readFile('infra/nginx/nginx.conf', 'utf8')
+  assert.match(nginx, /location \/api\/notification\/v1\/\s*\{[\s\S]*?proxy_pass http:\/\/notification_backend;/)
+})
+
 test('Nginx가 planner와 activity 외부 API prefix를 보존한다', async () => {
   const nginx = await readFile('infra/nginx/nginx.conf', 'utf8')
   assert.match(
@@ -28,12 +33,20 @@ test('서비스 context path가 OpenAPI server 경로와 일치한다', async ()
   assert.match(activity, /context-path: \/api\/activity\/v1/)
 })
 
-test('템플릿 요청 크기 제한과 공통 413은 템플릿 경로에만 적용된다', async () => {
+test('템플릿과 활동 기록 요청에 1 MiB 제한과 공통 413을 적용한다', async () => {
   const nginx = await readFile('infra/nginx/nginx.conf', 'utf8')
-  assert.match(
-    nginx,
-    /location ~ \^\/api\/activity\/v1\/templates[\s\S]*?client_max_body_size 1m;[\s\S]*?error_page 413 = @template_payload_too_large;/,
-  )
+  const locations = [...nginx.matchAll(/location ~ (\S+) \{([^}]+)\}/g)]
+  for (const request of ['/api/activity/v1/templates', '/api/activity/v1/templates/id/versions',
+    '/api/activity/v1/activities', '/api/activity/v1/activities/id']) {
+    const location = locations.find(([, pattern]) => new RegExp(pattern).test(request))
+    assert.ok(location, `Missing route for ${request}`)
+    assert.match(location[2], /client_max_body_size 1m;/)
+    assert.match(location[2], /error_page 413 = @template_payload_too_large;/)
+  }
+  const limited = locations.filter(([, , body]) => body.includes('client_max_body_size'))
+  for (const request of ['/api/activity/v1/templates-extra', '/api/activity/v1/internal/templates']) {
+    assert.ok(limited.every(([, pattern]) => !new RegExp(pattern).test(request)))
+  }
   assert.match(nginx, /location @template_payload_too_large[\s\S]*?application\/problem\+json;[\s\S]*?"code":"PAYLOAD_TOO_LARGE"/)
   const generalActivity = nginx.match(/location \/api\/activity\/ \{([\s\S]*?)\n        \}/)?.[1] ?? ''
   assert.doesNotMatch(generalActivity, /client_max_body_size|template_payload_too_large/)

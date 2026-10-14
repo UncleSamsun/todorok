@@ -1,9 +1,9 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { SessionClient } from '@todorok/api-client'
 import { App } from '../../App'
 
-afterEach(() => { cleanup(); history.replaceState({}, '', '/') })
+afterEach(() => { cleanup(); history.replaceState({}, '', '/'); vi.useRealTimers() })
 
 it('refreshes a previously visited domain after saving a past record', async () => {
   let saved = false
@@ -41,6 +41,8 @@ it('refreshes a previously visited domain after saving a past record', async () 
 })
 
 it('shares the selected month between domain tabs and keeps partial failures explicit', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-09-07T03:00:00Z'))
   const requested: string[] = []
   const session = new SessionClient({ fetcher: async (url) => {
     const path = String(url); requested.push(path)

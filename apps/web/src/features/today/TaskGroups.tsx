@@ -28,7 +28,7 @@ export function TaskGroups({
                   {rows.length}
                 </small>
               </h3>
-              <button aria-label={`${label} 추가`} onClick={() => add(type)}>
+              <button aria-label={`${label} 추가`} disabled={busy} onClick={() => add(type)}>
                 +
               </button>
             </div>
@@ -53,6 +53,7 @@ export function TaskGroups({
                   aria-label={`${task.title} 수정`}
                 >
                   {task.title}
+                  {task.scheduledTime && <small> · {task.scheduledTime}{task.reminderEnabled ? ' 알림' : ''}</small>}
                   {task.seriesId && <small> · 반복</small>}
                   {task.status === 'SKIPPED' && <small> · 건너뜀</small>}
                   {task.completionSummary && <small className="completion-summary">{task.completionSummary}</small>}

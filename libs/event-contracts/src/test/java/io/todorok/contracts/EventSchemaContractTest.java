@@ -92,6 +92,7 @@ class EventSchemaContractTest {
     private static Stream<Arguments> eventContracts() {
         return Stream.of(
                 Arguments.of("task-scheduled", "TASK_SCHEDULED"),
+                Arguments.of("task-reminder-changed", "TASK_REMINDER_CHANGED"),
                 Arguments.of("task-changed", "TASK_CHANGED"),
                 Arguments.of("activity-completed", "ACTIVITY_COMPLETED"),
                 Arguments.of("activity-corrected", "ACTIVITY_CORRECTED"),

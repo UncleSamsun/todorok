@@ -1,0 +1,18 @@
+services:
+  notification-service:
+    environment:
+      PUSH_ENABLED: "true"
+      PUSH_WORKER_ENABLED: "true"
+      PUSH_PUBLIC_KEY_LOCATION: file:/run/secrets/push_public_key
+      PUSH_PRIVATE_KEY_LOCATION: file:/run/secrets/push_private_key
+      PUSH_ENCRYPTION_KEY_LOCATION: file:/run/secrets/push_encryption_key
+      PUSH_SUBJECT: ${PUSH_SUBJECT:?Set a mailto contact or HTTPS URL for VAPID}
+    secrets: [push_public_key, push_private_key, push_encryption_key]
+
+secrets:
+  push_public_key:
+    file: ${PUSH_PUBLIC_KEY_FILE:-../../.local/push/public.key}
+  push_private_key:
+    file: ${PUSH_PRIVATE_KEY_FILE:-../../.local/push/private.key}
+  push_encryption_key:
+    file: ${PUSH_ENCRYPTION_KEY_FILE:-../../.local/push/encryption.key}

@@ -26,6 +26,12 @@ import jakarta.annotation.Generated;
 public class UpdateTaskRequest {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String scheduledTime;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Boolean reminderEnabled;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private @Nullable String note;
 
   private String title;
@@ -46,6 +52,50 @@ public class UpdateTaskRequest {
     this.title = title;
     this.scheduledDate = scheduledDate;
     this.version = version;
+  }
+
+  public UpdateTaskRequest scheduledTime(@Nullable String scheduledTime) {
+    this.scheduledTime = scheduledTime;
+    return this;
+  }
+
+  /**
+   * Omit to preserve the existing time. Empty string clears it.
+   * @return scheduledTime
+   */
+  @Pattern(regexp = "^(?:(?:[01][0-9]|2[0-3]):[0-5][0-9])?$")
+
+  @JsonProperty("scheduledTime")
+  public @Nullable String getScheduledTime() {
+    return scheduledTime;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("scheduledTime")
+  public void setScheduledTime(@Nullable String scheduledTime) {
+    this.scheduledTime = scheduledTime;
+  }
+
+  public UpdateTaskRequest reminderEnabled(@Nullable Boolean reminderEnabled) {
+    this.reminderEnabled = reminderEnabled;
+    return this;
+  }
+
+  /**
+   * Omit to preserve the current selection. Enabling requires a time.
+   * @return reminderEnabled
+   */
+
+
+  @JsonProperty("reminderEnabled")
+  public @Nullable Boolean getReminderEnabled() {
+    return reminderEnabled;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("reminderEnabled")
+  public void setReminderEnabled(@Nullable Boolean reminderEnabled) {
+    this.reminderEnabled = reminderEnabled;
   }
 
   public UpdateTaskRequest note(@Nullable String note) {
@@ -143,7 +193,9 @@ public class UpdateTaskRequest {
       return false;
     }
     UpdateTaskRequest updateTaskRequest = (UpdateTaskRequest) o;
-    return Objects.equals(this.note, updateTaskRequest.note) &&
+    return Objects.equals(this.scheduledTime, updateTaskRequest.scheduledTime) &&
+        Objects.equals(this.reminderEnabled, updateTaskRequest.reminderEnabled) &&
+        Objects.equals(this.note, updateTaskRequest.note) &&
         Objects.equals(this.title, updateTaskRequest.title) &&
         Objects.equals(this.scheduledDate, updateTaskRequest.scheduledDate) &&
         Objects.equals(this.version, updateTaskRequest.version);
@@ -151,13 +203,15 @@ public class UpdateTaskRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(note, title, scheduledDate, version);
+    return Objects.hash(scheduledTime, reminderEnabled, note, title, scheduledDate, version);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class UpdateTaskRequest {\n");
+    sb.append("    scheduledTime: ").append(toIndentedString(scheduledTime)).append("\n");
+    sb.append("    reminderEnabled: ").append(toIndentedString(reminderEnabled)).append("\n");
     sb.append("    note: ").append(toIndentedString(note)).append("\n");
     sb.append("    title: ").append(toIndentedString(title)).append("\n");
     sb.append("    scheduledDate: ").append(toIndentedString(scheduledDate)).append("\n");

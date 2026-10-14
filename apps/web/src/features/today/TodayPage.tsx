@@ -378,7 +378,7 @@ export function TodayPage() {
             rejectedAttempt={addRejection}
             confirmTemplate={() => { setTemplateConflict(false); setError('') }}
             cancel={() => { setAdding(null); setAddUncertain(false); setTemplateConflict(false); addRequest.current = null }}
-            save={(title, date, commandId, templateSelection, repeat) =>
+            save={(title, date, commandId, templateSelection, repeat, reminder) =>
               void createSchedule(() =>
                 repeat
                   ? api.series.createSeries({
@@ -398,6 +398,7 @@ export function TodayPage() {
                         title,
                         taskType: adding,
                         scheduledDate: apiDate(date),
+                        ...reminder,
                       },
                     }),
               )
@@ -411,7 +412,7 @@ export function TodayPage() {
             busy={busy}
             error={error}
             cancel={() => setEditing(null)}
-            save={(title, date, note) =>
+            save={(title, date, note, reminder) =>
               void mutate(() =>
                 api.tasks.updateTask({
                   taskId: editing.taskId,
@@ -420,6 +421,7 @@ export function TodayPage() {
                     title,
                     scheduledDate: apiDate(date),
                     version: editing.version,
+                    ...reminder,
                   },
                 }),
               )

@@ -43,6 +43,18 @@ import {
 export interface TaskResponse {
     /**
      *
+     * @type {string}
+     * @memberof TaskResponse
+     */
+    scheduledTime?: string;
+    /**
+     *
+     * @type {boolean}
+     * @memberof TaskResponse
+     */
+    reminderEnabled?: boolean;
+    /**
+     *
      * @type {TemplateLink}
      * @memberof TaskResponse
      */
@@ -165,6 +177,8 @@ export function TaskResponseFromJSONTyped(json: any, ignoreDiscriminator: boolea
     }
     return {
 
+        'scheduledTime': json['scheduledTime'] == null ? undefined : json['scheduledTime'],
+        'reminderEnabled': json['reminderEnabled'] == null ? undefined : json['reminderEnabled'],
         'templateLink': json['templateLink'] == null ? undefined : TemplateLinkFromJSON(json['templateLink']),
         'taskId': json['taskId'],
         'activityId': json['activityId'] == null ? undefined : json['activityId'],
@@ -195,6 +209,8 @@ export function TaskResponseToJSONTyped(value?: TaskResponse | null, ignoreDiscr
 
     return {
 
+        'scheduledTime': value['scheduledTime'],
+        'reminderEnabled': value['reminderEnabled'],
         'templateLink': TemplateLinkToJSON(value['templateLink']),
         'taskId': value['taskId'],
         'activityId': value['activityId'],

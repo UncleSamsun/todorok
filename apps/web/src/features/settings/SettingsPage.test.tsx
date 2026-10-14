@@ -43,6 +43,7 @@ it('설정에서 홈 화면 설치 안내를 보여 준다', async () => {
   await act(async () => { render(<App session={session} />) })
   fireEvent.click(await screen.findByRole('link', { name: '설정' }))
   expect(await screen.findByText('홈 화면에 추가')).toBeVisible()
+  expect(screen.getByRole('button', { name: '이 기기에서 알림 받기' })).toBeDisabled()
 })
 
 it('오늘 요약 알림은 기본 OFF이며 명시적 토글만 저장한다', async () => {

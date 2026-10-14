@@ -39,6 +39,18 @@ export interface CreateTaskRequest {
      * @type {string}
      * @memberof CreateTaskRequest
      */
+    scheduledTime?: string;
+    /**
+     * Omitted means notifications are off. Preserve omission in command fingerprints for older requests.
+     * @type {boolean}
+     * @memberof CreateTaskRequest
+     */
+    reminderEnabled?: boolean;
+    /**
+     *
+     * @type {string}
+     * @memberof CreateTaskRequest
+     */
     commandId?: string;
     /**
      *
@@ -94,6 +106,8 @@ export function CreateTaskRequestFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
 
+        'scheduledTime': json['scheduledTime'] == null ? undefined : json['scheduledTime'],
+        'reminderEnabled': json['reminderEnabled'] == null ? undefined : json['reminderEnabled'],
         'commandId': json['commandId'] == null ? undefined : json['commandId'],
         'templateSelection': json['templateSelection'] == null ? undefined : TemplateSelectionFromJSON(json['templateSelection']),
         'note': json['note'] == null ? undefined : json['note'],
@@ -114,6 +128,8 @@ export function CreateTaskRequestToJSONTyped(value?: CreateTaskRequest | null, i
 
     return {
 
+        'scheduledTime': value['scheduledTime'],
+        'reminderEnabled': value['reminderEnabled'],
         'commandId': value['commandId'],
         'templateSelection': TemplateSelectionToJSON(value['templateSelection']),
         'note': value['note'],

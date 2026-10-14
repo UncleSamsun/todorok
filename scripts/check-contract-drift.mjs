@@ -67,8 +67,10 @@ async function main() {
     'libs/event-contracts/src/generated',
     'services/planner-service/src/generated',
     'services/activity-service/src/generated',
+    'services/notification-service/src/generated',
     'packages/api-client/src/generated/planner',
     'packages/api-client/src/generated/activity',
+    'packages/api-client/src/generated/notification',
   ]
 
   try {

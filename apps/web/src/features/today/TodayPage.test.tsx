@@ -22,6 +22,8 @@ it('keeps the draft and expected version together when the same task is clicked 
     title: '원래 제목',
     taskType: 'GENERAL',
     scheduledDate: '2026-09-07',
+    scheduledTime: '09:30',
+    reminderEnabled: true,
     status: 'PLANNED',
     version: 0,
   }
@@ -94,6 +96,8 @@ it('keeps the draft and expected version together when the same task is clicked 
     ...remote,
     title: '다른 탭 변경',
     scheduledDate: '2026-09-09',
+    scheduledTime: '11:30',
+    reminderEnabled: false,
     version: 1,
   }
   await act(async () => {
@@ -105,11 +109,15 @@ it('keeps the draft and expected version together when the same task is clicked 
     note: '',
     title: '내 초안',
     scheduledDate: '2026-09-08',
+    scheduledTime: '09:30',
+    reminderEnabled: true,
     version: 0,
   })
   expect(await screen.findByRole('alert')).toBeVisible()
   expect(screen.getByLabelText('제목 수정')).toHaveValue('내 초안')
   expect(screen.getByLabelText('날짜 수정')).toHaveValue('2026-09-08')
+  expect(screen.getByLabelText('예정 시간')).toHaveValue('09:30')
+  expect(screen.getByLabelText('이 시간에 알림 받기')).toBeChecked()
   expect(remote.title).toBe('다른 탭 변경')
   expect(remote.version).toBe(1)
 
@@ -119,6 +127,7 @@ it('keeps the draft and expected version together when the same task is clicked 
     '다른 탭 변경',
   )
   expect(screen.getByLabelText('날짜 수정')).toHaveValue('2026-09-09')
+  expect(screen.getByLabelText('예정 시간')).toHaveValue('11:30')
 })
 it('keeps four empty groups and preserves quick-add input after a failed save', async () => {
   const session = new SessionClient({

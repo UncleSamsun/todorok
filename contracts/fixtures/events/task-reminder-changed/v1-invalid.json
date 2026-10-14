@@ -1,0 +1,9 @@
+{
+  "eventId": "00000000-0000-0000-0000-000000000001",
+  "type": "TASK_REMINDER_CHANGED",
+  "version": 1,
+  "aggregateVersion": 0,
+  "occurredAt": "2026-10-12T00:00:00Z",
+  "userId": "00000000-0000-0000-0000-000000000002",
+  "payload": {"taskId": "00000000-0000-0000-0000-000000000003", "scheduledFor": null, "enabled": true}
+}

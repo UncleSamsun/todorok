@@ -1,5 +1,6 @@
 import { useState, type SubmitEvent } from 'react'
 import type { Task } from './model'
+import { TaskReminderFields, type TaskReminder } from './TaskReminderFields'
 export function TaskEditor({
   task,
   busy,
@@ -13,7 +14,7 @@ export function TaskEditor({
   task: Task
   busy: boolean
   error: string
-  save: (title: string, date: string, note: string) => void
+  save: (title: string, date: string, note: string, reminder: TaskReminder) => void
   remove: () => void
   skip: () => void
   reopen: () => void
@@ -22,9 +23,10 @@ export function TaskEditor({
   const [title, setTitle] = useState(task.title),
     [date, setDate] = useState(task.scheduledDate),
     [note, setNote] = useState(task.note ?? '')
+  const [reminder, setReminder] = useState<TaskReminder>({ scheduledTime: task.scheduledTime ?? '', reminderEnabled: task.reminderEnabled ?? false })
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (title.trim() && !busy) save(title.trim(), date, note)
+    if (title.trim() && !busy) save(title.trim(), date, note, reminder)
   }
   return (
     <form className="task-form" aria-label="할 일 수정" onSubmit={submit}>
@@ -45,6 +47,7 @@ export function TaskEditor({
         value={date}
         onChange={(e) => setDate(e.target.value)}
       />
+      <TaskReminderFields id="edit-task" value={reminder} change={setReminder} disabled={busy} />
       <label htmlFor="task-note">할 일 메모</label>
       <textarea
         id="task-note"

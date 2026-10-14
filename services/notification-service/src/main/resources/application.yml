@@ -38,6 +38,13 @@ management:
         enabled: true
 
 todorok:
+  push:
+    enabled: ${PUSH_ENABLED:false}
+    worker-enabled: ${PUSH_WORKER_ENABLED:false}
+    public-key-location: ${PUSH_PUBLIC_KEY_LOCATION:}
+    private-key-location: ${PUSH_PRIVATE_KEY_LOCATION:}
+    encryption-key-location: ${PUSH_ENCRYPTION_KEY_LOCATION:}
+    subject: ${PUSH_SUBJECT:}
   messaging:
     enabled: ${MESSAGING_ENABLED:false}
   auth:

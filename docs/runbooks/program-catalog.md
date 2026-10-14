@@ -13,6 +13,8 @@
 
 PRD에 기록된 두 Naver 원문은 자동 열람이 robots 정책으로 차단돼 있다. 이는 허가 거절의 증거는 아니지만, 2026-09-08 현재 이용 범위를 확인하는 증거도 아니다. 확인 전에는 이 문서의 import 절차를 실행하지 않는다.
 
+2026-10-12 후속 자동 열람도 두 원문 모두 non-retryable 오류로 실패했다. 이용 조건·작성자 확인이나 허가 확보로 판정하지 않았으며 실제 catalog를 임의로 복사하지 않았다.
+
 ## Private input 형식
 
 각 파일은 [`contracts/catalog/program-v1.schema.json`](../../contracts/catalog/program-v1.schema.json)을 만족해야 한다. 실제 입력에는 프로그램명, 원문 링크, 적용 조건, 주의사항, 주차·회차·세트와 checksum을 포함한다. `catalogKey`·`version`이 같은 다른 checksum은 import가 거절되며, 기존 enrollment는 이전 version을 계속 고정 참조한다.

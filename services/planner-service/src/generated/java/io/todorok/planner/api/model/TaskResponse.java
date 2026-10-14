@@ -32,6 +32,12 @@ import jakarta.annotation.Generated;
 public class TaskResponse {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String scheduledTime;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Boolean reminderEnabled = false;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private @Nullable TemplateLink templateLink;
 
   private UUID taskId;
@@ -92,6 +98,50 @@ public class TaskResponse {
     this.scheduledDate = scheduledDate;
     this.status = status;
     this.version = version;
+  }
+
+  public TaskResponse scheduledTime(@Nullable String scheduledTime) {
+    this.scheduledTime = scheduledTime;
+    return this;
+  }
+
+  /**
+   * Get scheduledTime
+   * @return scheduledTime
+   */
+  @Pattern(regexp = "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$")
+
+  @JsonProperty("scheduledTime")
+  public @Nullable String getScheduledTime() {
+    return scheduledTime;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("scheduledTime")
+  public void setScheduledTime(@Nullable String scheduledTime) {
+    this.scheduledTime = scheduledTime;
+  }
+
+  public TaskResponse reminderEnabled(Boolean reminderEnabled) {
+    this.reminderEnabled = reminderEnabled;
+    return this;
+  }
+
+  /**
+   * Get reminderEnabled
+   * @return reminderEnabled
+   */
+
+
+  @JsonProperty("reminderEnabled")
+  public Boolean getReminderEnabled() {
+    return reminderEnabled;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("reminderEnabled")
+  public void setReminderEnabled(Boolean reminderEnabled) {
+    this.reminderEnabled = reminderEnabled;
   }
 
   public TaskResponse templateLink(@Nullable TemplateLink templateLink) {
@@ -449,7 +499,9 @@ public class TaskResponse {
       return false;
     }
     TaskResponse taskResponse = (TaskResponse) o;
-    return Objects.equals(this.templateLink, taskResponse.templateLink) &&
+    return Objects.equals(this.scheduledTime, taskResponse.scheduledTime) &&
+        Objects.equals(this.reminderEnabled, taskResponse.reminderEnabled) &&
+        Objects.equals(this.templateLink, taskResponse.templateLink) &&
         Objects.equals(this.taskId, taskResponse.taskId) &&
         Objects.equals(this.activityId, taskResponse.activityId) &&
         Objects.equals(this.performedAt, taskResponse.performedAt) &&
@@ -469,13 +521,15 @@ public class TaskResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(templateLink, taskId, activityId, performedAt, completionSummary, startedAt, endedAt, seriesId, occurrenceDate, note, userId, title, taskType, scheduledDate, status, version);
+    return Objects.hash(scheduledTime, reminderEnabled, templateLink, taskId, activityId, performedAt, completionSummary, startedAt, endedAt, seriesId, occurrenceDate, note, userId, title, taskType, scheduledDate, status, version);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TaskResponse {\n");
+    sb.append("    scheduledTime: ").append(toIndentedString(scheduledTime)).append("\n");
+    sb.append("    reminderEnabled: ").append(toIndentedString(reminderEnabled)).append("\n");
     sb.append("    templateLink: ").append(toIndentedString(templateLink)).append("\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
     sb.append("    activityId: ").append(toIndentedString(activityId)).append("\n");

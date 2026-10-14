@@ -6,6 +6,9 @@ plugins {
     alias(libs.plugins.dependency.management)
 }
 
+sourceSets.main { java.srcDir("src/generated/java") }
+tasks.named("compileJava") { dependsOn(rootProject.tasks.named("generateNotificationSpring")) }
+
 springBoot {
     mainClass.set("io.todorok.notification.NotificationApplication")
 }
@@ -27,6 +30,10 @@ dependencies {
     implementation(project(":libs:messaging-support"))
     implementation(project(":libs:web-support"))
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("nl.martijndwars:web-push:5.1.2")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.86")
+    implementation("org.bitbucket.b_c:jose4j:0.9.6")
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-flyway")

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import { activity, type planner } from '@todorok/api-client'
 import { studyFieldSummary } from '../activity/StudyTemplateFields'
 import { StudyTemplateManager } from '../study/StudyTemplateManager'
+import { TaskReminderFields, type TaskReminder } from './TaskReminderFields'
 import {
   RecurrenceFields,
   initialRule,
@@ -33,12 +34,13 @@ export function QuickAdd({
   templateConflict?: boolean
   confirmTemplate?: () => void
   rejectedAttempt?: number
-  save: (title: string, date: string, commandId: string, templateSelection?: planner.TemplateSelection, repeat?: RepeatOptions) => void
+  save: (title: string, date: string, commandId: string, templateSelection?: planner.TemplateSelection, repeat?: RepeatOptions, reminder?: TaskReminder) => void
   cancel: () => void
 }) {
   const [title, setTitle] = useState(''),
     [scheduled, setScheduled] = useState(date)
   const [frequency, setFrequency] = useState('NONE')
+  const [reminder, setReminder] = useState<TaskReminder>({ scheduledTime: '', reminderEnabled: false })
   const [templateId, setTemplateId] = useState('')
   const [managingTemplates, setManagingTemplates] = useState<activity.TemplateKind | null>(null)
   const commandId = useRef(crypto.randomUUID())
@@ -71,7 +73,7 @@ export function QuickAdd({
       submitted.current = structuredClone([title.trim(), scheduled, commandId.current, supportsTemplate && selectedTemplate ? {
         templateId: selectedTemplate.templateId,
         expectedTemplateVersion: selectedTemplate.currentVersion.templateVersion,
-      } : undefined, frequency === 'NONE' ? undefined : repeat])
+      } : undefined, frequency === 'NONE' ? undefined : repeat, frequency === 'NONE' && reminder.scheduledTime ? reminder : undefined])
       save(...structuredClone(submitted.current))
     }
   }
@@ -98,6 +100,8 @@ export function QuickAdd({
           value={scheduled}
           onChange={(e) => setScheduled(e.target.value)}
         />
+        {frequency === 'NONE' && <TaskReminderFields id="new-task" value={reminder} change={setReminder} />}
+        {frequency !== 'NONE' && <p>시간·알림은 등록 후 각 회차의 할 일 수정에서 지정할 수 있습니다.</p>}
         <label htmlFor="task-repeat">반복</label>
         <select
           id="task-repeat"

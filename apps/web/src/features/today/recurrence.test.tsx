@@ -157,7 +157,7 @@ it('submits a weekly recurrence with explicit days and end date from quick add',
       monthDay: 7,
     },
     endDate: '2026-12-31',
-  })
+  }, undefined)
 })
 
 it('keeps a selected category across partial refresh and blocks a confirmed archived category', () => {

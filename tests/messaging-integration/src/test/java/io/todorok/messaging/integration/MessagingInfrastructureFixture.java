@@ -477,6 +477,8 @@ final class MessagingInfrastructureFixture implements AutoCloseable {
             admin.createTopics(List.of(
                     new NewTopic("todorok.task.v1", 3, (short) 1),
                     new NewTopic("todorok.activity.v1", 3, (short) 1),
+                    new NewTopic("todorok.task-reminder.v1", 3, (short) 1),
+                    new NewTopic("todorok.notification-preference.v1", 3, (short) 1),
                     new NewTopic("todorok.connect.configs", 1, (short) 1)
                             .configs(Map.of("cleanup.policy", "compact")),
                     new NewTopic("todorok.connect.offsets", 1, (short) 1)

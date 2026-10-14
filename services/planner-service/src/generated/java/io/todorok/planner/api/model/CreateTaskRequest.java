@@ -30,6 +30,12 @@ import jakarta.annotation.Generated;
 public class CreateTaskRequest {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String scheduledTime;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Boolean reminderEnabled;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private @Nullable UUID commandId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -56,6 +62,50 @@ public class CreateTaskRequest {
     this.title = title;
     this.taskType = taskType;
     this.scheduledDate = scheduledDate;
+  }
+
+  public CreateTaskRequest scheduledTime(@Nullable String scheduledTime) {
+    this.scheduledTime = scheduledTime;
+    return this;
+  }
+
+  /**
+   * Get scheduledTime
+   * @return scheduledTime
+   */
+  @Pattern(regexp = "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$")
+
+  @JsonProperty("scheduledTime")
+  public @Nullable String getScheduledTime() {
+    return scheduledTime;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("scheduledTime")
+  public void setScheduledTime(@Nullable String scheduledTime) {
+    this.scheduledTime = scheduledTime;
+  }
+
+  public CreateTaskRequest reminderEnabled(@Nullable Boolean reminderEnabled) {
+    this.reminderEnabled = reminderEnabled;
+    return this;
+  }
+
+  /**
+   * Omitted means notifications are off. Preserve omission in command fingerprints for older requests.
+   * @return reminderEnabled
+   */
+
+
+  @JsonProperty("reminderEnabled")
+  public @Nullable Boolean getReminderEnabled() {
+    return reminderEnabled;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("reminderEnabled")
+  public void setReminderEnabled(@Nullable Boolean reminderEnabled) {
+    this.reminderEnabled = reminderEnabled;
   }
 
   public CreateTaskRequest commandId(@Nullable UUID commandId) {
@@ -196,7 +246,9 @@ public class CreateTaskRequest {
       return false;
     }
     CreateTaskRequest createTaskRequest = (CreateTaskRequest) o;
-    return Objects.equals(this.commandId, createTaskRequest.commandId) &&
+    return Objects.equals(this.scheduledTime, createTaskRequest.scheduledTime) &&
+        Objects.equals(this.reminderEnabled, createTaskRequest.reminderEnabled) &&
+        Objects.equals(this.commandId, createTaskRequest.commandId) &&
         Objects.equals(this.templateSelection, createTaskRequest.templateSelection) &&
         Objects.equals(this.note, createTaskRequest.note) &&
         Objects.equals(this.title, createTaskRequest.title) &&
@@ -206,13 +258,15 @@ public class CreateTaskRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(commandId, templateSelection, note, title, taskType, scheduledDate);
+    return Objects.hash(scheduledTime, reminderEnabled, commandId, templateSelection, note, title, taskType, scheduledDate);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class CreateTaskRequest {\n");
+    sb.append("    scheduledTime: ").append(toIndentedString(scheduledTime)).append("\n");
+    sb.append("    reminderEnabled: ").append(toIndentedString(reminderEnabled)).append("\n");
     sb.append("    commandId: ").append(toIndentedString(commandId)).append("\n");
     sb.append("    templateSelection: ").append(toIndentedString(templateSelection)).append("\n");
     sb.append("    note: ").append(toIndentedString(note)).append("\n");

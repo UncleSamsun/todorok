@@ -6,6 +6,8 @@
 
 Name | Type
 ------------ | -------------
+`scheduledTime` | string
+`reminderEnabled` | boolean
 `templateLink` | [TemplateLink](TemplateLink.md)
 `taskId` | string
 `activityId` | string
@@ -30,6 +32,8 @@ import type { TaskResponse } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "scheduledTime": null,
+  "reminderEnabled": null,
   "templateLink": null,
   "taskId": null,
   "activityId": null,

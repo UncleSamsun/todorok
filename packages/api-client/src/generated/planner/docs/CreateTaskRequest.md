@@ -6,6 +6,8 @@
 
 Name | Type
 ------------ | -------------
+`scheduledTime` | string
+`reminderEnabled` | boolean
 `commandId` | string
 `templateSelection` | [TemplateSelection](TemplateSelection.md)
 `note` | string
@@ -20,6 +22,8 @@ import type { CreateTaskRequest } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "scheduledTime": null,
+  "reminderEnabled": null,
   "commandId": null,
   "templateSelection": null,
   "note": null,

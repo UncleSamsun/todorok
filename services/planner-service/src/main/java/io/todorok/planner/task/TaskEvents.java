@@ -55,6 +55,15 @@ public class TaskEvents {
                 payload
             )
         );
+        if (task.scheduledTime != null) publishReminder(task);
+    }
+
+    public void publishReminder(Task task) {
+        var scheduled = task.scheduledTime == null ? null : task.scheduledDate
+            .atTime(java.time.LocalTime.parse(task.scheduledTime)).atZone(java.time.ZoneId.of("Asia/Seoul")).toInstant();
+        outbox.append("task-reminder", task.id.toString(), new EventEnvelope<>(UUID.randomUUID(),
+            EventType.TASK_REMINDER_CHANGED, 1, task.version, clock.instant(), task.userId,
+            new TaskReminderChanged(task.id, scheduled, task.reminderEnabled && task.status == io.todorok.planner.api.model.TaskStatus.PLANNED)));
     }
 
     private TemplateBindingLink link(Task task) {

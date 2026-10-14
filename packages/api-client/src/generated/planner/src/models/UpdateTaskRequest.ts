@@ -20,6 +20,18 @@ import { mapValues } from '../runtime';
  */
 export interface UpdateTaskRequest {
     /**
+     * Omit to preserve the existing time. Empty string clears it.
+     * @type {string}
+     * @memberof UpdateTaskRequest
+     */
+    scheduledTime?: string;
+    /**
+     * Omit to preserve the current selection. Enabling requires a time.
+     * @type {boolean}
+     * @memberof UpdateTaskRequest
+     */
+    reminderEnabled?: boolean;
+    /**
      *
      * @type {string}
      * @memberof UpdateTaskRequest
@@ -65,6 +77,8 @@ export function UpdateTaskRequestFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
 
+        'scheduledTime': json['scheduledTime'] == null ? undefined : json['scheduledTime'],
+        'reminderEnabled': json['reminderEnabled'] == null ? undefined : json['reminderEnabled'],
         'note': json['note'] == null ? undefined : json['note'],
         'title': json['title'],
         'scheduledDate': json['scheduledDate'],
@@ -83,6 +97,8 @@ export function UpdateTaskRequestToJSONTyped(value?: UpdateTaskRequest | null, i
 
     return {
 
+        'scheduledTime': value['scheduledTime'],
+        'reminderEnabled': value['reminderEnabled'],
         'note': value['note'],
         'title': value['title'],
         'scheduledDate': value['scheduledDate'],

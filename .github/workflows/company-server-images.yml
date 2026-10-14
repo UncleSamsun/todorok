@@ -1,0 +1,74 @@
+name: Company server images
+on:
+  push:
+    branches: [codex/company-server-deploy]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+concurrency:
+  group: company-images-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - name: planner
+            context: .
+            file: services/planner-service/Dockerfile
+          - name: activity
+            context: .
+            file: services/activity-service/Dockerfile
+          - name: notification
+            context: .
+            file: services/notification-service/Dockerfile
+          - name: web
+            context: .
+            file: infra/nginx/Dockerfile
+          - name: connect-init
+            context: infra/docker/connect
+            file: infra/docker/connect/Dockerfile
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/unclesamsun/todorok-${{ matrix.name }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/unclesamsun/todorok
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: VITE_BASE_PATH=/todorok/
+          cache-from: type=gha,scope=company-${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=company-${{ matrix.name }}
+      - name: Save immutable image reference
+        env:
+          COMPONENT: ${{ matrix.name }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p image-reference
+          python3 - <<'PY'
+          import json, os
+          name=os.environ['COMPONENT']
+          ref='ghcr.io/unclesamsun/todorok-'+name+'@'+os.environ['DIGEST']
+          with open('image-reference/'+name+'.json','w') as f: json.dump({name:ref},f)
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-${{ matrix.name }}
+          path: image-reference/*.json
+          retention-days: 14

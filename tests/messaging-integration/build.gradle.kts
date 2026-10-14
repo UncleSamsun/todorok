@@ -16,6 +16,7 @@ sourceSets.test {
 dependencies {
     testImplementation(project(":services:planner-service"))
     testImplementation(project(":services:activity-service"))
+    testImplementation(project(":services:notification-service"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.kafka:spring-kafka")
     testImplementation("org.flywaydb:flyway-core")
