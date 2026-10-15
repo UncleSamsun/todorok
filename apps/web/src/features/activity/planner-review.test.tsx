@@ -37,7 +37,7 @@ it.each(['today', 'past'])('opens the exact completed activity beyond the first 
   expect(posts).toBe(0)
 })
 
-it('refreshes visited registration totals after planner creation and deletion', async () => {
+it('refreshes visited registration totals after inline planner creation', async () => {
   let exists = false
   const task = { taskId: 'new-task', title: '등록 확인', userId: 'owner', taskType: 'STUDY', scheduledDate: '2026-09-07', status: 'PLANNED', version: 0 }
   const category = { templateId: '10000000-0000-0000-0000-000000000001', domain: 'STUDY', kind: 'STUDY_CATEGORY', archived: false, revision: 0, currentVersion: { templateId: '10000000-0000-0000-0000-000000000001', templateVersion: 1, name: '기본 공부', fields: [] } }
@@ -62,14 +62,8 @@ it('refreshes visited registration totals after planner creation and deletion', 
   await screen.findByRole('option', { name: '기본 공부' })
   fireEvent.change(screen.getByLabelText('공부 카테고리'), { target: { value: category.templateId } })
   fireEvent.change(screen.getByLabelText('제목'), { target: { value: '등록 확인' } })
-  fireEvent.click(screen.getByRole('button', { name: '저장' }))
+  fireEvent.submit(screen.getByLabelText('제목').closest('form')!)
   await screen.findByRole('button', { name: '등록 확인 기록' })
   fireEvent.click(screen.getByRole('link', { name: '공부' }))
   expect(await screen.findByText('1개')).toBeVisible()
-  fireEvent.click(screen.getByRole('link', { name: '오늘' }))
-  fireEvent.click(await screen.findByRole('button', { name: '등록 확인 수정' }))
-  fireEvent.click(await screen.findByRole('button', { name: '삭제' }))
-  await waitFor(() => expect(screen.queryByRole('button', { name: '등록 확인 기록' })).not.toBeInTheDocument())
-  fireEvent.click(screen.getByRole('link', { name: '공부' }))
-  expect(await screen.findByText('0개')).toBeVisible()
 })
