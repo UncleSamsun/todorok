@@ -13,6 +13,7 @@ All URIs are relative to */api/activity/v1*
 | [**listActivities**](ActivityApi.md#listactivities) | **GET** /activities |  |
 | [**listProgramEnrollments**](ActivityApi.md#listprogramenrollments) | **GET** /program-enrollments |  |
 | [**listPrograms**](ActivityApi.md#listprograms) | **GET** /programs |  |
+| [**scheduleProgramSession**](ActivityApi.md#scheduleprogramsessionoperation) | **POST** /program-enrollments/{enrollmentId}/sessions |  |
 | [**voidActivity**](ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |  |
 
 
@@ -650,6 +651,81 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | Imported immutable program catalog summaries. |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## scheduleProgramSession
+
+> ProgramEnrollmentResponse scheduleProgramSession(enrollmentId, scheduleProgramSessionRequest)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  ActivityApi,
+} from '@todorok/api-client';
+import type { ScheduleProgramSessionOperationRequest } from '@todorok/api-client';
+
+async function example() {
+  console.log("🚀 Testing @todorok/api-client SDK...");
+  const config = new Configuration({
+    // Configure HTTP bearer authorization: BearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new ActivityApi(config);
+
+  const body = {
+    // string
+    enrollmentId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
+    // ScheduleProgramSessionRequest
+    scheduleProgramSessionRequest: ...,
+  } satisfies ScheduleProgramSessionOperationRequest;
+
+  try {
+    const data = await api.scheduleProgramSession(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **enrollmentId** | `string` |  | [Defaults to `undefined`] |
+| **scheduleProgramSessionRequest** | [ScheduleProgramSessionRequest](ScheduleProgramSessionRequest.md) |  | |
+
+### Return type
+
+[**ProgramEnrollmentResponse**](ProgramEnrollmentResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`, `application/problem+json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Selected session scheduled idempotently and current position persisted. |  -  |
+| **400** | 잘못된 요청 |  -  |
+| **404** | 대상을 찾을 수 없음 |  -  |
+| **409** | 버전 또는 상태 충돌 |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

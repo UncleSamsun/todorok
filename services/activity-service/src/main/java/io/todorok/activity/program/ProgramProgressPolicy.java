@@ -8,9 +8,13 @@ public final class ProgramProgressPolicy {
     public record Progress(int week, int session, boolean completed) {}
 
     public Progress calculate(int startWeek, int totalWeeks, int sessionsPerWeek, List<Attempt> history) {
-        if (startWeek < 1 || totalWeeks < startWeek || sessionsPerWeek < 1) throw new IllegalArgumentException("Invalid program bounds");
+        return calculate(startWeek,1,totalWeeks,sessionsPerWeek,history);
+    }
+
+    public Progress calculate(int startWeek, int startSession, int totalWeeks, int sessionsPerWeek, List<Attempt> history) {
+        if (startWeek < 1 || totalWeeks < startWeek || sessionsPerWeek < 1 || startSession < 1 || startSession > sessionsPerWeek) throw new IllegalArgumentException("Invalid program bounds");
         int week = startWeek;
-        int slot = 0;
+        int slot = startSession - 1;
         boolean failed = false;
         var ordered = history.stream().filter(attempt -> attempt.outcome() != Outcome.VOIDED)
             .sorted(java.util.Comparator.comparingLong(Attempt::sequence)).toList();

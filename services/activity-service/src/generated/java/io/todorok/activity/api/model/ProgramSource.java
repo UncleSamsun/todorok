@@ -34,7 +34,9 @@ public class ProgramSource {
   public enum KindEnum {
     SYNTHETIC("SYNTHETIC"),
 
-    PRIVATE_VERIFIED("PRIVATE_VERIFIED");
+    PRIVATE_VERIFIED("PRIVATE_VERIFIED"),
+
+    SOURCE_BASED("SOURCE_BASED");
 
     private final String value;
 

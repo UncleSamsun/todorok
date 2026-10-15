@@ -1,0 +1,2252 @@
+[
+  {
+    "catalogKey": "hundred-pushups-level-1",
+    "version": 1,
+    "name": "푸시업",
+    "source": {
+      "kind": "SOURCE_BASED",
+      "label": "Hundred Pushups",
+      "url": "https://hundredpushups.com/week1.html",
+      "conditions": [
+        "해당 난이도의 최소 횟수를 기준으로 수행"
+      ],
+      "cautions": [
+        "통증 발생 시 운동 중단"
+      ]
+    },
+    "sessionsPerWeek": 3,
+    "weeks": [
+      {
+        "week": 1,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              2,
+              3,
+              2,
+              2,
+              3
+            ],
+            "targetTotal": 12
+          },
+          {
+            "session": 2,
+            "sets": [
+              3,
+              4,
+              2,
+              3,
+              4
+            ],
+            "targetTotal": 16
+          },
+          {
+            "session": 3,
+            "sets": [
+              4,
+              5,
+              4,
+              4,
+              5
+            ],
+            "targetTotal": 22
+          }
+        ]
+      },
+      {
+        "week": 2,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              4,
+              6,
+              4,
+              4,
+              6
+            ],
+            "targetTotal": 24
+          },
+          {
+            "session": 2,
+            "sets": [
+              5,
+              6,
+              4,
+              4,
+              7
+            ],
+            "targetTotal": 26
+          },
+          {
+            "session": 3,
+            "sets": [
+              5,
+              7,
+              5,
+              5,
+              8
+            ],
+            "targetTotal": 30
+          }
+        ]
+      },
+      {
+        "week": 3,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              10,
+              12,
+              7,
+              7,
+              9
+            ],
+            "targetTotal": 45
+          },
+          {
+            "session": 2,
+            "sets": [
+              10,
+              12,
+              8,
+              8,
+              12
+            ],
+            "targetTotal": 50
+          },
+          {
+            "session": 3,
+            "sets": [
+              11,
+              13,
+              9,
+              9,
+              13
+            ],
+            "targetTotal": 55
+          }
+        ]
+      },
+      {
+        "week": 4,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              12,
+              14,
+              11,
+              10,
+              16
+            ],
+            "targetTotal": 63
+          },
+          {
+            "session": 2,
+            "sets": [
+              14,
+              16,
+              12,
+              12,
+              18
+            ],
+            "targetTotal": 72
+          },
+          {
+            "session": 3,
+            "sets": [
+              16,
+              18,
+              13,
+              13,
+              20
+            ],
+            "targetTotal": 80
+          }
+        ]
+      },
+      {
+        "week": 5,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              17,
+              19,
+              15,
+              15,
+              20
+            ],
+            "targetTotal": 86
+          },
+          {
+            "session": 2,
+            "sets": [
+              10,
+              10,
+              13,
+              13,
+              10,
+              10,
+              9,
+              25
+            ],
+            "targetTotal": 100
+          },
+          {
+            "session": 3,
+            "sets": [
+              13,
+              13,
+              15,
+              15,
+              12,
+              12,
+              10,
+              30
+            ],
+            "targetTotal": 120
+          }
+        ]
+      },
+      {
+        "week": 6,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              25,
+              30,
+              20,
+              15,
+              40
+            ],
+            "targetTotal": 130
+          },
+          {
+            "session": 2,
+            "sets": [
+              14,
+              14,
+              15,
+              15,
+              14,
+              14,
+              10,
+              10,
+              44
+            ],
+            "targetTotal": 150
+          },
+          {
+            "session": 3,
+            "sets": [
+              13,
+              13,
+              17,
+              17,
+              16,
+              16,
+              14,
+              14,
+              50
+            ],
+            "targetTotal": 170
+          }
+        ]
+      }
+    ],
+    "checksum": "ce6c9ea99c45d82b20a51b82da006d56422cca609ed8acaf5a2ca9c706e4aa02"
+  },
+  {
+    "catalogKey": "hundred-pushups-level-2",
+    "version": 1,
+    "name": "푸시업",
+    "source": {
+      "kind": "SOURCE_BASED",
+      "label": "Hundred Pushups",
+      "url": "https://hundredpushups.com/week1.html",
+      "conditions": [
+        "해당 난이도의 최소 횟수를 기준으로 수행"
+      ],
+      "cautions": [
+        "통증 발생 시 운동 중단"
+      ]
+    },
+    "sessionsPerWeek": 3,
+    "weeks": [
+      {
+        "week": 1,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              6,
+              6,
+              4,
+              4,
+              5
+            ],
+            "targetTotal": 25
+          },
+          {
+            "session": 2,
+            "sets": [
+              6,
+              8,
+              6,
+              6,
+              7
+            ],
+            "targetTotal": 33
+          },
+          {
+            "session": 3,
+            "sets": [
+              8,
+              10,
+              7,
+              7,
+              10
+            ],
+            "targetTotal": 42
+          }
+        ]
+      },
+      {
+        "week": 2,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              9,
+              11,
+              8,
+              8,
+              11
+            ],
+            "targetTotal": 47
+          },
+          {
+            "session": 2,
+            "sets": [
+              10,
+              12,
+              9,
+              9,
+              13
+            ],
+            "targetTotal": 53
+          },
+          {
+            "session": 3,
+            "sets": [
+              12,
+              13,
+              10,
+              10,
+              15
+            ],
+            "targetTotal": 60
+          }
+        ]
+      },
+      {
+        "week": 3,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              12,
+              17,
+              13,
+              13,
+              17
+            ],
+            "targetTotal": 72
+          },
+          {
+            "session": 2,
+            "sets": [
+              14,
+              19,
+              14,
+              14,
+              19
+            ],
+            "targetTotal": 80
+          },
+          {
+            "session": 3,
+            "sets": [
+              16,
+              21,
+              15,
+              15,
+              21
+            ],
+            "targetTotal": 88
+          }
+        ]
+      },
+      {
+        "week": 4,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              18,
+              22,
+              16,
+              16,
+              25
+            ],
+            "targetTotal": 97
+          },
+          {
+            "session": 2,
+            "sets": [
+              20,
+              25,
+              20,
+              20,
+              28
+            ],
+            "targetTotal": 113
+          },
+          {
+            "session": 3,
+            "sets": [
+              23,
+              28,
+              23,
+              23,
+              33
+            ],
+            "targetTotal": 130
+          }
+        ]
+      },
+      {
+        "week": 5,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              28,
+              35,
+              25,
+              22,
+              35
+            ],
+            "targetTotal": 145
+          },
+          {
+            "session": 2,
+            "sets": [
+              18,
+              18,
+              20,
+              20,
+              14,
+              14,
+              16,
+              40
+            ],
+            "targetTotal": 160
+          },
+          {
+            "session": 3,
+            "sets": [
+              18,
+              18,
+              20,
+              20,
+              17,
+              17,
+              20,
+              45
+            ],
+            "targetTotal": 175
+          }
+        ]
+      },
+      {
+        "week": 6,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              40,
+              50,
+              25,
+              25,
+              50
+            ],
+            "targetTotal": 190
+          },
+          {
+            "session": 2,
+            "sets": [
+              20,
+              20,
+              23,
+              23,
+              20,
+              20,
+              18,
+              18,
+              53
+            ],
+            "targetTotal": 215
+          },
+          {
+            "session": 3,
+            "sets": [
+              22,
+              22,
+              30,
+              30,
+              25,
+              25,
+              18,
+              18,
+              55
+            ],
+            "targetTotal": 245
+          }
+        ]
+      }
+    ],
+    "checksum": "686e2c57a40174fa4dd81f41fe17967b96f6393893ab580d4876330084cd9877"
+  },
+  {
+    "catalogKey": "hundred-pushups-level-3",
+    "version": 1,
+    "name": "푸시업",
+    "source": {
+      "kind": "SOURCE_BASED",
+      "label": "Hundred Pushups",
+      "url": "https://hundredpushups.com/week1.html",
+      "conditions": [
+        "해당 난이도의 최소 횟수를 기준으로 수행"
+      ],
+      "cautions": [
+        "통증 발생 시 운동 중단"
+      ]
+    },
+    "sessionsPerWeek": 3,
+    "weeks": [
+      {
+        "week": 1,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              10,
+              12,
+              7,
+              7,
+              9
+            ],
+            "targetTotal": 45
+          },
+          {
+            "session": 2,
+            "sets": [
+              10,
+              12,
+              8,
+              8,
+              12
+            ],
+            "targetTotal": 50
+          },
+          {
+            "session": 3,
+            "sets": [
+              11,
+              15,
+              9,
+              9,
+              13
+            ],
+            "targetTotal": 57
+          }
+        ]
+      },
+      {
+        "week": 2,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              14,
+              14,
+              10,
+              10,
+              15
+            ],
+            "targetTotal": 63
+          },
+          {
+            "session": 2,
+            "sets": [
+              14,
+              16,
+              12,
+              12,
+              17
+            ],
+            "targetTotal": 71
+          },
+          {
+            "session": 3,
+            "sets": [
+              16,
+              17,
+              14,
+              14,
+              20
+            ],
+            "targetTotal": 81
+          }
+        ]
+      },
+      {
+        "week": 3,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              14,
+              18,
+              14,
+              14,
+              20
+            ],
+            "targetTotal": 80
+          },
+          {
+            "session": 2,
+            "sets": [
+              20,
+              25,
+              15,
+              15,
+              25
+            ],
+            "targetTotal": 100
+          },
+          {
+            "session": 3,
+            "sets": [
+              22,
+              30,
+              20,
+              20,
+              28
+            ],
+            "targetTotal": 120
+          }
+        ]
+      },
+      {
+        "week": 4,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              21,
+              25,
+              21,
+              21,
+              32
+            ],
+            "targetTotal": 120
+          },
+          {
+            "session": 2,
+            "sets": [
+              25,
+              29,
+              25,
+              25,
+              36
+            ],
+            "targetTotal": 140
+          },
+          {
+            "session": 3,
+            "sets": [
+              29,
+              33,
+              29,
+              29,
+              40
+            ],
+            "targetTotal": 160
+          }
+        ]
+      },
+      {
+        "week": 5,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              36,
+              40,
+              30,
+              24,
+              40
+            ],
+            "targetTotal": 170
+          },
+          {
+            "session": 2,
+            "sets": [
+              19,
+              19,
+              22,
+              22,
+              18,
+              18,
+              22,
+              45
+            ],
+            "targetTotal": 185
+          },
+          {
+            "session": 3,
+            "sets": [
+              20,
+              20,
+              24,
+              24,
+              20,
+              20,
+              22,
+              50
+            ],
+            "targetTotal": 200
+          }
+        ]
+      },
+      {
+        "week": 6,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              45,
+              55,
+              35,
+              30,
+              55
+            ],
+            "targetTotal": 220
+          },
+          {
+            "session": 2,
+            "sets": [
+              22,
+              22,
+              30,
+              30,
+              24,
+              24,
+              18,
+              18,
+              58
+            ],
+            "targetTotal": 246
+          },
+          {
+            "session": 3,
+            "sets": [
+              26,
+              26,
+              33,
+              33,
+              26,
+              26,
+              22,
+              22,
+              60
+            ],
+            "targetTotal": 274
+          }
+        ]
+      }
+    ],
+    "checksum": "8d30608c77531c7bd165fc1792efbcc1d4a3a79d63b9115e3fe60fe241ae3808"
+  },
+  {
+    "catalogKey": "recon-ron-pullups",
+    "version": 1,
+    "name": "풀업",
+    "source": {
+      "kind": "SOURCE_BASED",
+      "label": "Recon Ron Pull-Up Program",
+      "url": "https://www.scribd.com/document/817585441/Recon-Ron-Pullup-Program",
+      "conditions": [
+        "정자세 풀업 10회 이상 가능"
+      ],
+      "cautions": [
+        "통증 발생 시 운동 중단"
+      ]
+    },
+    "sessionsPerWeek": 3,
+    "weeks": [
+      {
+        "week": 1,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              6,
+              5,
+              5,
+              4,
+              3
+            ],
+            "targetTotal": 23
+          },
+          {
+            "session": 2,
+            "sets": [
+              6,
+              5,
+              5,
+              4,
+              3
+            ],
+            "targetTotal": 23
+          },
+          {
+            "session": 3,
+            "sets": [
+              6,
+              5,
+              5,
+              4,
+              3
+            ],
+            "targetTotal": 23
+          }
+        ]
+      },
+      {
+        "week": 2,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              7,
+              6,
+              5,
+              4,
+              4
+            ],
+            "targetTotal": 26
+          },
+          {
+            "session": 2,
+            "sets": [
+              7,
+              6,
+              5,
+              4,
+              4
+            ],
+            "targetTotal": 26
+          },
+          {
+            "session": 3,
+            "sets": [
+              7,
+              6,
+              5,
+              4,
+              4
+            ],
+            "targetTotal": 26
+          }
+        ]
+      },
+      {
+        "week": 3,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              8,
+              6,
+              5,
+              5,
+              4
+            ],
+            "targetTotal": 28
+          },
+          {
+            "session": 2,
+            "sets": [
+              8,
+              6,
+              5,
+              5,
+              4
+            ],
+            "targetTotal": 28
+          },
+          {
+            "session": 3,
+            "sets": [
+              8,
+              6,
+              5,
+              5,
+              4
+            ],
+            "targetTotal": 28
+          }
+        ]
+      },
+      {
+        "week": 4,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              8,
+              7,
+              5,
+              5,
+              5
+            ],
+            "targetTotal": 30
+          },
+          {
+            "session": 2,
+            "sets": [
+              8,
+              7,
+              5,
+              5,
+              5
+            ],
+            "targetTotal": 30
+          },
+          {
+            "session": 3,
+            "sets": [
+              8,
+              7,
+              5,
+              5,
+              5
+            ],
+            "targetTotal": 30
+          }
+        ]
+      },
+      {
+        "week": 5,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              9,
+              7,
+              6,
+              5,
+              5
+            ],
+            "targetTotal": 32
+          },
+          {
+            "session": 2,
+            "sets": [
+              9,
+              7,
+              6,
+              5,
+              5
+            ],
+            "targetTotal": 32
+          },
+          {
+            "session": 3,
+            "sets": [
+              9,
+              7,
+              6,
+              5,
+              5
+            ],
+            "targetTotal": 32
+          }
+        ]
+      },
+      {
+        "week": 6,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              10,
+              7,
+              6,
+              6,
+              5
+            ],
+            "targetTotal": 34
+          },
+          {
+            "session": 2,
+            "sets": [
+              10,
+              7,
+              6,
+              6,
+              5
+            ],
+            "targetTotal": 34
+          },
+          {
+            "session": 3,
+            "sets": [
+              10,
+              7,
+              6,
+              6,
+              5
+            ],
+            "targetTotal": 34
+          }
+        ]
+      },
+      {
+        "week": 7,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              10,
+              8,
+              6,
+              6,
+              6
+            ],
+            "targetTotal": 36
+          },
+          {
+            "session": 2,
+            "sets": [
+              10,
+              8,
+              6,
+              6,
+              6
+            ],
+            "targetTotal": 36
+          },
+          {
+            "session": 3,
+            "sets": [
+              10,
+              8,
+              6,
+              6,
+              6
+            ],
+            "targetTotal": 36
+          }
+        ]
+      },
+      {
+        "week": 8,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              11,
+              8,
+              7,
+              6,
+              6
+            ],
+            "targetTotal": 38
+          },
+          {
+            "session": 2,
+            "sets": [
+              11,
+              8,
+              7,
+              6,
+              6
+            ],
+            "targetTotal": 38
+          },
+          {
+            "session": 3,
+            "sets": [
+              11,
+              8,
+              7,
+              6,
+              6
+            ],
+            "targetTotal": 38
+          }
+        ]
+      },
+      {
+        "week": 9,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              12,
+              8,
+              7,
+              7,
+              6
+            ],
+            "targetTotal": 40
+          },
+          {
+            "session": 2,
+            "sets": [
+              12,
+              8,
+              7,
+              7,
+              6
+            ],
+            "targetTotal": 40
+          },
+          {
+            "session": 3,
+            "sets": [
+              12,
+              8,
+              7,
+              7,
+              6
+            ],
+            "targetTotal": 40
+          }
+        ]
+      },
+      {
+        "week": 10,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              12,
+              9,
+              7,
+              7,
+              7
+            ],
+            "targetTotal": 42
+          },
+          {
+            "session": 2,
+            "sets": [
+              12,
+              9,
+              7,
+              7,
+              7
+            ],
+            "targetTotal": 42
+          },
+          {
+            "session": 3,
+            "sets": [
+              12,
+              9,
+              7,
+              7,
+              7
+            ],
+            "targetTotal": 42
+          }
+        ]
+      },
+      {
+        "week": 11,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              13,
+              9,
+              8,
+              7,
+              7
+            ],
+            "targetTotal": 44
+          },
+          {
+            "session": 2,
+            "sets": [
+              13,
+              9,
+              8,
+              7,
+              7
+            ],
+            "targetTotal": 44
+          },
+          {
+            "session": 3,
+            "sets": [
+              13,
+              9,
+              8,
+              7,
+              7
+            ],
+            "targetTotal": 44
+          }
+        ]
+      },
+      {
+        "week": 12,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              14,
+              9,
+              8,
+              8,
+              7
+            ],
+            "targetTotal": 46
+          },
+          {
+            "session": 2,
+            "sets": [
+              14,
+              9,
+              8,
+              8,
+              7
+            ],
+            "targetTotal": 46
+          },
+          {
+            "session": 3,
+            "sets": [
+              14,
+              9,
+              8,
+              8,
+              7
+            ],
+            "targetTotal": 46
+          }
+        ]
+      },
+      {
+        "week": 13,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              14,
+              10,
+              8,
+              8,
+              8
+            ],
+            "targetTotal": 48
+          },
+          {
+            "session": 2,
+            "sets": [
+              14,
+              10,
+              8,
+              8,
+              8
+            ],
+            "targetTotal": 48
+          },
+          {
+            "session": 3,
+            "sets": [
+              14,
+              10,
+              8,
+              8,
+              8
+            ],
+            "targetTotal": 48
+          }
+        ]
+      },
+      {
+        "week": 14,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              15,
+              10,
+              9,
+              8,
+              8
+            ],
+            "targetTotal": 50
+          },
+          {
+            "session": 2,
+            "sets": [
+              15,
+              10,
+              9,
+              8,
+              8
+            ],
+            "targetTotal": 50
+          },
+          {
+            "session": 3,
+            "sets": [
+              15,
+              10,
+              9,
+              8,
+              8
+            ],
+            "targetTotal": 50
+          }
+        ]
+      },
+      {
+        "week": 15,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              16,
+              10,
+              9,
+              9,
+              8
+            ],
+            "targetTotal": 52
+          },
+          {
+            "session": 2,
+            "sets": [
+              16,
+              10,
+              9,
+              9,
+              8
+            ],
+            "targetTotal": 52
+          },
+          {
+            "session": 3,
+            "sets": [
+              16,
+              10,
+              9,
+              9,
+              8
+            ],
+            "targetTotal": 52
+          }
+        ]
+      },
+      {
+        "week": 16,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              16,
+              11,
+              9,
+              9,
+              9
+            ],
+            "targetTotal": 54
+          },
+          {
+            "session": 2,
+            "sets": [
+              16,
+              11,
+              9,
+              9,
+              9
+            ],
+            "targetTotal": 54
+          },
+          {
+            "session": 3,
+            "sets": [
+              16,
+              11,
+              9,
+              9,
+              9
+            ],
+            "targetTotal": 54
+          }
+        ]
+      },
+      {
+        "week": 17,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              17,
+              11,
+              10,
+              9,
+              9
+            ],
+            "targetTotal": 56
+          },
+          {
+            "session": 2,
+            "sets": [
+              17,
+              11,
+              10,
+              9,
+              9
+            ],
+            "targetTotal": 56
+          },
+          {
+            "session": 3,
+            "sets": [
+              17,
+              11,
+              10,
+              9,
+              9
+            ],
+            "targetTotal": 56
+          }
+        ]
+      },
+      {
+        "week": 18,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              18,
+              11,
+              10,
+              10,
+              9
+            ],
+            "targetTotal": 58
+          },
+          {
+            "session": 2,
+            "sets": [
+              18,
+              11,
+              10,
+              10,
+              9
+            ],
+            "targetTotal": 58
+          },
+          {
+            "session": 3,
+            "sets": [
+              18,
+              11,
+              10,
+              10,
+              9
+            ],
+            "targetTotal": 58
+          }
+        ]
+      },
+      {
+        "week": 19,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              18,
+              12,
+              10,
+              10,
+              10
+            ],
+            "targetTotal": 60
+          },
+          {
+            "session": 2,
+            "sets": [
+              18,
+              12,
+              10,
+              10,
+              10
+            ],
+            "targetTotal": 60
+          },
+          {
+            "session": 3,
+            "sets": [
+              18,
+              12,
+              10,
+              10,
+              10
+            ],
+            "targetTotal": 60
+          }
+        ]
+      },
+      {
+        "week": 20,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              19,
+              12,
+              11,
+              10,
+              10
+            ],
+            "targetTotal": 62
+          },
+          {
+            "session": 2,
+            "sets": [
+              19,
+              12,
+              11,
+              10,
+              10
+            ],
+            "targetTotal": 62
+          },
+          {
+            "session": 3,
+            "sets": [
+              19,
+              12,
+              11,
+              10,
+              10
+            ],
+            "targetTotal": 62
+          }
+        ]
+      },
+      {
+        "week": 21,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              20,
+              12,
+              11,
+              11,
+              10
+            ],
+            "targetTotal": 64
+          },
+          {
+            "session": 2,
+            "sets": [
+              20,
+              12,
+              11,
+              11,
+              10
+            ],
+            "targetTotal": 64
+          },
+          {
+            "session": 3,
+            "sets": [
+              20,
+              12,
+              11,
+              11,
+              10
+            ],
+            "targetTotal": 64
+          }
+        ]
+      },
+      {
+        "week": 22,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              20,
+              13,
+              11,
+              11,
+              11
+            ],
+            "targetTotal": 66
+          },
+          {
+            "session": 2,
+            "sets": [
+              20,
+              13,
+              11,
+              11,
+              11
+            ],
+            "targetTotal": 66
+          },
+          {
+            "session": 3,
+            "sets": [
+              20,
+              13,
+              11,
+              11,
+              11
+            ],
+            "targetTotal": 66
+          }
+        ]
+      },
+      {
+        "week": 23,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              21,
+              13,
+              12,
+              11,
+              11
+            ],
+            "targetTotal": 68
+          },
+          {
+            "session": 2,
+            "sets": [
+              21,
+              13,
+              12,
+              11,
+              11
+            ],
+            "targetTotal": 68
+          },
+          {
+            "session": 3,
+            "sets": [
+              21,
+              13,
+              12,
+              11,
+              11
+            ],
+            "targetTotal": 68
+          }
+        ]
+      },
+      {
+        "week": 24,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              22,
+              13,
+              12,
+              12,
+              11
+            ],
+            "targetTotal": 70
+          },
+          {
+            "session": 2,
+            "sets": [
+              22,
+              13,
+              12,
+              12,
+              11
+            ],
+            "targetTotal": 70
+          },
+          {
+            "session": 3,
+            "sets": [
+              22,
+              13,
+              12,
+              12,
+              11
+            ],
+            "targetTotal": 70
+          }
+        ]
+      },
+      {
+        "week": 25,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              22,
+              14,
+              12,
+              12,
+              12
+            ],
+            "targetTotal": 72
+          },
+          {
+            "session": 2,
+            "sets": [
+              22,
+              14,
+              12,
+              12,
+              12
+            ],
+            "targetTotal": 72
+          },
+          {
+            "session": 3,
+            "sets": [
+              22,
+              14,
+              12,
+              12,
+              12
+            ],
+            "targetTotal": 72
+          }
+        ]
+      },
+      {
+        "week": 26,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              23,
+              14,
+              13,
+              12,
+              12
+            ],
+            "targetTotal": 74
+          },
+          {
+            "session": 2,
+            "sets": [
+              23,
+              14,
+              13,
+              12,
+              12
+            ],
+            "targetTotal": 74
+          },
+          {
+            "session": 3,
+            "sets": [
+              23,
+              14,
+              13,
+              12,
+              12
+            ],
+            "targetTotal": 74
+          }
+        ]
+      },
+      {
+        "week": 27,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              24,
+              14,
+              13,
+              13,
+              12
+            ],
+            "targetTotal": 76
+          },
+          {
+            "session": 2,
+            "sets": [
+              24,
+              14,
+              13,
+              13,
+              12
+            ],
+            "targetTotal": 76
+          },
+          {
+            "session": 3,
+            "sets": [
+              24,
+              14,
+              13,
+              13,
+              12
+            ],
+            "targetTotal": 76
+          }
+        ]
+      },
+      {
+        "week": 28,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              24,
+              15,
+              13,
+              13,
+              13
+            ],
+            "targetTotal": 78
+          },
+          {
+            "session": 2,
+            "sets": [
+              24,
+              15,
+              13,
+              13,
+              13
+            ],
+            "targetTotal": 78
+          },
+          {
+            "session": 3,
+            "sets": [
+              24,
+              15,
+              13,
+              13,
+              13
+            ],
+            "targetTotal": 78
+          }
+        ]
+      },
+      {
+        "week": 29,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              25,
+              15,
+              14,
+              13,
+              13
+            ],
+            "targetTotal": 80
+          },
+          {
+            "session": 2,
+            "sets": [
+              25,
+              15,
+              14,
+              13,
+              13
+            ],
+            "targetTotal": 80
+          },
+          {
+            "session": 3,
+            "sets": [
+              25,
+              15,
+              14,
+              13,
+              13
+            ],
+            "targetTotal": 80
+          }
+        ]
+      },
+      {
+        "week": 30,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              26,
+              15,
+              14,
+              14,
+              13
+            ],
+            "targetTotal": 82
+          },
+          {
+            "session": 2,
+            "sets": [
+              26,
+              15,
+              14,
+              14,
+              13
+            ],
+            "targetTotal": 82
+          },
+          {
+            "session": 3,
+            "sets": [
+              26,
+              15,
+              14,
+              14,
+              13
+            ],
+            "targetTotal": 82
+          }
+        ]
+      },
+      {
+        "week": 31,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              26,
+              16,
+              14,
+              14,
+              14
+            ],
+            "targetTotal": 84
+          },
+          {
+            "session": 2,
+            "sets": [
+              26,
+              16,
+              14,
+              14,
+              14
+            ],
+            "targetTotal": 84
+          },
+          {
+            "session": 3,
+            "sets": [
+              26,
+              16,
+              14,
+              14,
+              14
+            ],
+            "targetTotal": 84
+          }
+        ]
+      },
+      {
+        "week": 32,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              27,
+              16,
+              15,
+              14,
+              14
+            ],
+            "targetTotal": 86
+          },
+          {
+            "session": 2,
+            "sets": [
+              27,
+              16,
+              15,
+              14,
+              14
+            ],
+            "targetTotal": 86
+          },
+          {
+            "session": 3,
+            "sets": [
+              27,
+              16,
+              15,
+              14,
+              14
+            ],
+            "targetTotal": 86
+          }
+        ]
+      },
+      {
+        "week": 33,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              28,
+              16,
+              15,
+              15,
+              14
+            ],
+            "targetTotal": 88
+          },
+          {
+            "session": 2,
+            "sets": [
+              28,
+              16,
+              15,
+              15,
+              14
+            ],
+            "targetTotal": 88
+          },
+          {
+            "session": 3,
+            "sets": [
+              28,
+              16,
+              15,
+              15,
+              14
+            ],
+            "targetTotal": 88
+          }
+        ]
+      },
+      {
+        "week": 34,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              28,
+              17,
+              15,
+              15,
+              15
+            ],
+            "targetTotal": 90
+          },
+          {
+            "session": 2,
+            "sets": [
+              28,
+              17,
+              15,
+              15,
+              15
+            ],
+            "targetTotal": 90
+          },
+          {
+            "session": 3,
+            "sets": [
+              28,
+              17,
+              15,
+              15,
+              15
+            ],
+            "targetTotal": 90
+          }
+        ]
+      },
+      {
+        "week": 35,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              29,
+              17,
+              16,
+              15,
+              15
+            ],
+            "targetTotal": 92
+          },
+          {
+            "session": 2,
+            "sets": [
+              29,
+              17,
+              16,
+              15,
+              15
+            ],
+            "targetTotal": 92
+          },
+          {
+            "session": 3,
+            "sets": [
+              29,
+              17,
+              16,
+              15,
+              15
+            ],
+            "targetTotal": 92
+          }
+        ]
+      },
+      {
+        "week": 36,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              30,
+              17,
+              16,
+              16,
+              15
+            ],
+            "targetTotal": 94
+          },
+          {
+            "session": 2,
+            "sets": [
+              30,
+              17,
+              16,
+              16,
+              15
+            ],
+            "targetTotal": 94
+          },
+          {
+            "session": 3,
+            "sets": [
+              30,
+              17,
+              16,
+              16,
+              15
+            ],
+            "targetTotal": 94
+          }
+        ]
+      },
+      {
+        "week": 37,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              30,
+              18,
+              16,
+              16,
+              16
+            ],
+            "targetTotal": 96
+          },
+          {
+            "session": 2,
+            "sets": [
+              30,
+              18,
+              16,
+              16,
+              16
+            ],
+            "targetTotal": 96
+          },
+          {
+            "session": 3,
+            "sets": [
+              30,
+              18,
+              16,
+              16,
+              16
+            ],
+            "targetTotal": 96
+          }
+        ]
+      },
+      {
+        "week": 38,
+        "sessions": [
+          {
+            "session": 1,
+            "sets": [
+              31,
+              18,
+              17,
+              16,
+              16
+            ],
+            "targetTotal": 98
+          },
+          {
+            "session": 2,
+            "sets": [
+              31,
+              18,
+              17,
+              16,
+              16
+            ],
+            "targetTotal": 98
+          },
+          {
+            "session": 3,
+            "sets": [
+              31,
+              18,
+              17,
+              16,
+              16
+            ],
+            "targetTotal": 98
+          }
+        ]
+      }
+    ],
+    "checksum": "548ee4caeff6282c6b3f61e47d725ac2aa4b09a1ade2330a113bd869a0cb481d"
+  }
+]

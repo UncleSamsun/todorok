@@ -49,6 +49,12 @@ export interface EnrollProgramRequest {
      * @memberof EnrollProgramRequest
      */
     startWeek?: number;
+    /**
+     *
+     * @type {number}
+     * @memberof EnrollProgramRequest
+     */
+    startSession?: number;
 }
 
 /**
@@ -77,6 +83,7 @@ export function EnrollProgramRequestFromJSONTyped(json: any, ignoreDiscriminator
         'catalogVersion': json['catalogVersion'],
         'initialTestValue': json['initialTestValue'],
         'startWeek': json['startWeek'] == null ? undefined : json['startWeek'],
+        'startSession': json['startSession'] == null ? undefined : json['startSession'],
     };
 }
 
@@ -96,5 +103,6 @@ export function EnrollProgramRequestToJSONTyped(value?: EnrollProgramRequest | n
         'catalogVersion': value['catalogVersion'],
         'initialTestValue': value['initialTestValue'],
         'startWeek': value['startWeek'],
+        'startSession': value['startSession'],
     };
 }

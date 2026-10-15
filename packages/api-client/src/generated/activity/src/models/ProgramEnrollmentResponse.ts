@@ -29,6 +29,12 @@ import {
 export interface ProgramEnrollmentResponse {
     /**
      *
+     * @type {number}
+     * @memberof ProgramEnrollmentResponse
+     */
+    revision?: number;
+    /**
+     *
      * @type {string}
      * @memberof ProgramEnrollmentResponse
      */
@@ -120,6 +126,7 @@ export function ProgramEnrollmentResponseFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
 
+        'revision': json['revision'] == null ? undefined : json['revision'],
         'enrollmentId': json['enrollmentId'],
         'catalogKey': json['catalogKey'],
         'catalogVersion': json['catalogVersion'],
@@ -143,6 +150,7 @@ export function ProgramEnrollmentResponseToJSONTyped(value?: ProgramEnrollmentRe
 
     return {
 
+        'revision': value['revision'],
         'enrollmentId': value['enrollmentId'],
         'catalogKey': value['catalogKey'],
         'catalogVersion': value['catalogVersion'],

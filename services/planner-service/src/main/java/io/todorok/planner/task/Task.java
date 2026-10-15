@@ -88,7 +88,7 @@ public class Task {
         status = TaskStatus.PLANNED;
     }
 
-    TaskResponse response() {
+    public TaskResponse response() {
         return new TaskResponse(
             id,
             userId,
@@ -125,5 +125,11 @@ public class Task {
         task.occurrenceDate = occurrence;
         task.note = note;
         return task;
+    }
+
+    public void attachSeries(UUID series, LocalDate occurrence) {
+        if (seriesId != null || status != TaskStatus.PLANNED) throw new IllegalStateException("Only an unbound planned task can become the first occurrence");
+        seriesId = series;
+        occurrenceDate = occurrence;
     }
 }

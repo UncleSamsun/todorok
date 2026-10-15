@@ -62,12 +62,12 @@ public final class ProgramCatalogImporter {
     public Source parseSource(JsonNode source) {
         if (source == null || !source.isObject()) throw invalid("Catalog source is required.");
         String kind = requiredText(source, "kind", 32);
-        if (!Set.of("SYNTHETIC", "PRIVATE_VERIFIED").contains(kind)) throw invalid("Catalog source kind is invalid.");
+        if (!Set.of("SYNTHETIC", "PRIVATE_VERIFIED", "SOURCE_BASED").contains(kind)) throw invalid("Catalog source kind is invalid.");
         String url = optionalUrl(source), label = requiredText(source, "label", 200);
         var conditions = optionalTexts(source, "conditions");
         var cautions = optionalTexts(source, "cautions");
-        if (kind.equals("PRIVATE_VERIFIED") && (url == null || conditions.isEmpty() || cautions.isEmpty()))
-            throw invalid("Private verified catalog requires source url, conditions, and cautions.");
+        if (!kind.equals("SYNTHETIC") && (url == null || conditions.isEmpty() || cautions.isEmpty()))
+            throw invalid("Source-based catalog requires source url, conditions, and cautions.");
         return new Source(kind, label, url, conditions, cautions);
     }
 

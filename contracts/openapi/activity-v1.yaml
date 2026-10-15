@@ -67,6 +67,29 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ProgramEnrollmentResponse' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /program-enrollments/{enrollmentId}/sessions:
+    post:
+      tags: [Activity]
+      operationId: scheduleProgramSession
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ScheduleProgramSessionRequest' }
+      responses:
+        '200':
+          description: Selected session scheduled idempotently and current position persisted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProgramEnrollmentResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /tasks/{taskId}/record-template:
     get:
       tags: [Template]
@@ -397,7 +420,7 @@ components:
       additionalProperties: false
       required: [kind, label, conditions, cautions]
       properties:
-        kind: { type: string, enum: [SYNTHETIC, PRIVATE_VERIFIED] }
+        kind: { type: string, enum: [SYNTHETIC, PRIVATE_VERIFIED, SOURCE_BASED] }
         label: { type: string, minLength: 1, maxLength: 200 }
         url: { type: string, format: uri, maxLength: 2048 }
         conditions:
@@ -416,6 +439,16 @@ components:
         catalogVersion: { type: integer, format: int64, minimum: 1 }
         initialTestValue: { type: integer, minimum: 0 }
         startWeek: { type: integer, minimum: 1 }
+        startSession: { type: integer, minimum: 1, maximum: 7 }
+    ScheduleProgramSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [commandId, week, session, expectedRevision]
+      properties:
+        commandId: { type: string, format: uuid }
+        week: { type: integer, minimum: 1 }
+        session: { type: integer, minimum: 1, maximum: 7 }
+        expectedRevision: { type: integer, format: int64, minimum: 0 }
     ProgramSessionTarget:
       type: object
       additionalProperties: false
@@ -433,6 +466,7 @@ components:
       additionalProperties: false
       required: [enrollmentId, catalogKey, catalogVersion, recommendedWeek, startWeek, currentWeek, currentSession, status, target]
       properties:
+        revision: { type: integer, format: int64, minimum: 0 }
         enrollmentId: { type: string, format: uuid }
         catalogKey: { type: string }
         catalogVersion: { type: integer, format: int64, minimum: 1 }

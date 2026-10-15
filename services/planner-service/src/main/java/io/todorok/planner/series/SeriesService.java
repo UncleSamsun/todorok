@@ -46,6 +46,8 @@ public class SeriesService {
 
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public SeriesResponse create(UUID owner, CreateSeriesRequest request) {
+        if ((request.getSourceTaskId() == null) != (request.getSourceTaskVersion() == null)) throw invalid("Source task and version are required together.");
+        if (request.getSourceTaskId() != null && (request.getCommandId() == null || request.getTaskType() != TaskType.GENERAL || request.getTemplateSelection() != null)) throw invalid("Converting an existing general task requires a commandId.");
         var item = new TaskSeries(
             owner,
             title(request.getTitle()),
@@ -59,7 +61,17 @@ public class SeriesService {
         item.templateLink = link == null ? null : new io.todorok.planner.template.TemplateLinkColumns(link);
         series.saveAndFlush(item);
         publish(item, "CREATED");
-        generate(item, item.startDate.minusDays(1), "COMPLETED");
+        if (request.getSourceTaskId() == null) {
+            generate(item, item.startDate.minusDays(1), "COMPLETED");
+        } else {
+            var task = tasks.lock(owner, request.getSourceTaskId()).orElseThrow(SeriesService::missing);
+            var current = task.response();
+            if (!Objects.equals(current.getVersion(), request.getSourceTaskVersion()) || current.getSeriesId() != null || current.getStatus() != TaskStatus.PLANNED) throw conflict("VERSION_CONFLICT");
+            if (current.getTaskType() != TaskType.GENERAL || !current.getTitle().equals(request.getTitle().strip()) || !current.getScheduledDate().equals(request.getStartDate()) || !Objects.equals(current.getNote(), request.getNote())) throw conflict("VERSION_CONFLICT");
+            task.attachSeries(item.id, item.startDate);
+            tasks.flush();
+            events.publish(task, "UPDATED");
+        }
         return item.response();
         });
     }

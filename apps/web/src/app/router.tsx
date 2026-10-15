@@ -45,9 +45,6 @@ function ProtectedShell() {
       <header className="app-header">
         <div>
           <span className="brand">토도록</span>
-          <p className="brand-subtitle">
-            할 일은 가볍게, 기록은 필요할 때 자세하게.
-          </p>
         </div>
         <button disabled={busy} onClick={logout}>
           {busy ? '로그아웃 중…' : '로그아웃'}

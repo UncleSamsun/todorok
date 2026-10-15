@@ -35,6 +35,65 @@ import tools.jackson.databind.ObjectMapper;
     "todorok.messaging.enabled=false"
 })
 class StudyTemplateRecordHttpTest {
+    @Test void builtinCompletionEmitsNextTaskAfterRecommendedRestAndOnlyOnce() {
+        UUID owner=UUID.randomUUID();
+        var enrolled=enrollments.enroll(owner,UUID.randomUUID(),"hundred-pushups-level-1",1,0,1,3);
+        UUID task=jdbc.queryForObject("select task_id from program_session where id=?",UUID.class,enrolled.sessionId());
+        var performed=java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        UUID activity=UUID.randomUUID();
+        enrollments.recordOutcome(task,activity,1000,false,performed);
+        var next=enrollments.get(owner,enrolled.id());
+        assertThat(next.currentWeek()).isEqualTo(2);
+        assertThat(next.currentSession()).isOne();
+        assertThat(jdbc.queryForObject("select payload->'payload'->>'scheduledDate' from outbox_event where aggregateid=?",String.class,next.sessionId().toString()))
+            .isEqualTo(performed.plusDays(3).toString());
+        enrollments.recordOutcome(task,activity,1000,false,performed);
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?",Integer.class,enrolled.id())).isEqualTo(2);
+    }
+
+    @Test void selectedProgramWeekAndSessionPersistAndOldPendingSessionsDoNotRewindTheNewPosition() throws Exception {
+        UUID owner=UUID.randomUUID();
+        var initial=ok(send("POST","/program-enrollments",Map.of("commandId",UUID.randomUUID(),"catalogKey","hundred-pushups-level-1","catalogVersion",1,"initialTestValue",0,"startWeek",2,"startSession",2),owner),201);
+        assertThat(initial.path("currentWeek").asInt()).isEqualTo(2);
+        assertThat(initial.path("currentSession").asInt()).isEqualTo(2);
+        assertThat(initial.path("target").path("targetSets")).isEqualTo(mapper.readTree("[5,6,4,4,7]"));
+        String id=initial.path("enrollmentId").asText(),route="/program-enrollments/"+id+"/sessions";
+        UUID command=UUID.randomUUID();
+        var request=Map.of("commandId",command,"week",3,"session",3,"expectedRevision",initial.path("revision").asLong());
+        var selected=ok(send("POST",route,request,owner),200);
+        assertThat(selected.path("currentSession").asInt()).isEqualTo(3);
+        assertThat(selected.path("target").path("targetSets")).isEqualTo(mapper.readTree("[11,13,9,9,13]"));
+        assertThat(ok(send("POST",route,request,owner),200)).isEqualTo(selected);
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?::uuid",Integer.class,id)).isEqualTo(2);
+        assertThat(ok(send("GET","/program-enrollments/"+id,null,owner),200).path("currentWeek").asInt()).isEqualTo(3);
+        assertThat(send("POST",route,Map.of("commandId",UUID.randomUUID(),"week",4,"session",1,"expectedRevision",0),owner).statusCode()).isEqualTo(409);
+        assertThat(send("POST",route,request,UUID.randomUUID()).statusCode()).isEqualTo(404);
+        ok(send("POST",route,Map.of("commandId",UUID.randomUUID(),"week",3,"session",3,"expectedRevision",selected.path("revision").asLong()),owner),200);
+        assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?::uuid",Integer.class,id)).isEqualTo(2);
+        UUID oldTask=jdbc.queryForObject("select task_id from program_session where id=?::uuid",UUID.class,initial.path("target").path("sessionId").asText());
+        enrollments.recordOutcome(oldTask,UUID.randomUUID(),1000,false);
+        assertThat(ok(send("GET","/program-enrollments/"+id,null,owner),200).path("currentWeek").asInt()).isEqualTo(3);
+        UUID currentTask=jdbc.queryForObject("select task_id from program_session where id=?::uuid",UUID.class,selected.path("target").path("sessionId").asText());
+        enrollments.recordOutcome(currentTask,UUID.randomUUID(),1000,false);
+        var resumed=ok(send("GET","/program-enrollments/"+id,null,owner),200);
+        assertThat(resumed.path("currentWeek").asInt()).isEqualTo(4);
+        assertThat(resumed.path("currentSession").asInt()).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from program_enrollment where user_id=?",Integer.class,owner)).isOne();
+    }
+    @Test void builtinProgramsStartWithTheirPresetTargetsWithoutManualImport() throws Exception {
+        UUID owner=UUID.randomUUID();
+        var listed=ok(send("GET","/programs",null,owner),200);
+        var keys=new java.util.HashSet<String>();
+        listed.forEach(item->keys.add(item.path("catalogKey").asText()));
+        assertThat(keys).contains("hundred-pushups-level-1","hundred-pushups-level-2","hundred-pushups-level-3","recon-ron-pullups");
+        var pushupRequest=Map.of("commandId",UUID.randomUUID(),"catalogKey","hundred-pushups-level-1","catalogVersion",1,"initialTestValue",0,"startWeek",1);
+        var pushup=ok(send("POST","/program-enrollments",pushupRequest,owner),201);
+        assertThat(pushup.path("target").path("targetSets")).isEqualTo(mapper.readTree("[2,3,2,2,3]"));
+        assertThat(ok(send("POST","/program-enrollments",pushupRequest,owner),201)).isEqualTo(pushup);
+        var pullup=ok(send("POST","/program-enrollments",Map.of("commandId",UUID.randomUUID(),"catalogKey","recon-ron-pullups","catalogVersion",1,"initialTestValue",10,"startWeek",38),owner),201);
+        assertThat(pullup.path("target").path("targetSets")).isEqualTo(mapper.readTree("[31,18,17,16,16]"));
+        assertThat(send("GET","/program-enrollments/"+pullup.path("enrollmentId").asText(),null,UUID.randomUUID()).statusCode()).isEqualTo(404);
+    }
     static final KeyPair KEYS = keys();
     @Container static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17.11-alpine")
         .withDatabaseName("todorok").withUsername("postgres").withPassword("admin-password")
@@ -224,10 +283,12 @@ class StudyTemplateRecordHttpTest {
         catalogs.importCatalog(catalog);
         UUID owner = UUID.randomUUID(), command = UUID.randomUUID();
         var programs = ok(send("GET", "/programs", null, owner), 200);
-        assertThat(programs.get(0).path("catalogKey").asText()).isEqualTo("synthetic-pushup");
-        assertThat(programs.get(0).path("source").path("label").asText()).isEqualTo("테스트 전용 합성 자료");
-        assertThat(programs.get(0).path("source").path("conditions").get(0).asText()).isEqualTo("테스트용");
-        assertThat(programs.get(0).path("source").path("cautions").get(0).asText()).isEqualTo("실제 운동 처방이 아님");
+        JsonNode synthetic=null;
+        for(var program:programs)if(program.path("catalogKey").asText().equals("synthetic-pushup"))synthetic=program;
+        assertThat(synthetic).isNotNull();
+        assertThat(synthetic.path("source").path("label").asText()).isEqualTo("테스트 전용 합성 자료");
+        assertThat(synthetic.path("source").path("conditions").get(0).asText()).isEqualTo("테스트용");
+        assertThat(synthetic.path("source").path("cautions").get(0).asText()).isEqualTo("실제 운동 처방이 아님");
         var body = Map.of("commandId", command, "catalogKey", "synthetic-pushup", "catalogVersion", 1, "initialTestValue", 9, "startWeek", 2);
         var enrolled = ok(send("POST", "/program-enrollments", body, owner), 201);
         assertThat(enrolled.path("startWeek").asInt()).isEqualTo(2);

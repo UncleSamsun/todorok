@@ -12,14 +12,16 @@ function open(){
  }})
  render(<App session={session}/> )
 }
-it('opens add before the task list and sticky note in reading order',async()=>{
+it('opens the draft inside the matching list, after existing tasks and before the sticky note',async()=>{
  open();const add=await screen.findByRole('button',{name:'할 일 추가'});await waitFor(()=>expect(add).toBeEnabled());fireEvent.click(add)
  const form=(await screen.findByLabelText('제목')).closest('form')!
- expect(form.compareDocumentPosition(screen.getByRole('heading',{name:'할 일 0 / 1'}))&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+ expect(form.closest('.task-group')).toHaveTextContent('할 일')
+ expect(screen.getByRole('button',{name:'기존 일정 수정'}).compareDocumentPosition(form)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
  expect(form.compareDocumentPosition(screen.getByRole('region',{name:'오늘의 스티키노트'}))&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 })
-it('opens editing before the task list rather than below the sticky note',async()=>{
- open();fireEvent.click(await screen.findByRole('button',{name:'기존 일정 수정'}))
+it('opens settings underneath the selected task in its list',async()=>{
+ open();fireEvent.click(await screen.findByRole('button',{name:'기존 일정 메뉴'}));fireEvent.click(screen.getByRole('menuitem',{name:'일정 수정'}))
  const form=(await screen.findByLabelText('제목 수정')).closest('form')!
- expect(form.compareDocumentPosition(screen.getByRole('heading',{name:'할 일 0 / 1'}))&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+ expect(form.closest('.task-group')).toHaveTextContent('할 일')
+ expect(screen.getByRole('button',{name:'기존 일정 수정'}).compareDocumentPosition(form)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 })

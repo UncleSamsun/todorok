@@ -58,6 +58,7 @@ export interface ProgramSource {
 export enum ProgramSourceKindEnum {
     Synthetic = 'SYNTHETIC',
     PrivateVerified = 'PRIVATE_VERIFIED',
+    SourceBased = 'SOURCE_BASED',
     UnknownDefaultOpenApi = '11184809'
 }
 

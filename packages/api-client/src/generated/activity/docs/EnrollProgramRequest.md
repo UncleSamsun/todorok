@@ -11,6 +11,7 @@ Name | Type
 `catalogVersion` | number
 `initialTestValue` | number
 `startWeek` | number
+`startSession` | number
 
 ## Example
 
@@ -24,6 +25,7 @@ const example = {
   "catalogVersion": null,
   "initialTestValue": null,
   "startWeek": null,
+  "startSession": null,
 } satisfies EnrollProgramRequest
 
 console.log(example)

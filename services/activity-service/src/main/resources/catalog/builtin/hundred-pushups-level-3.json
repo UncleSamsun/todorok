@@ -1,0 +1,262 @@
+{
+  "catalogKey": "hundred-pushups-level-3",
+  "version": 1,
+  "name": "푸시업",
+  "source": {
+    "kind": "SOURCE_BASED",
+    "label": "Hundred Pushups",
+    "url": "https://hundredpushups.com/week1.html",
+    "conditions": [
+      "해당 난이도의 최소 횟수를 기준으로 수행"
+    ],
+    "cautions": [
+      "통증 발생 시 운동 중단"
+    ]
+  },
+  "sessionsPerWeek": 3,
+  "weeks": [
+    {
+      "week": 1,
+      "sessions": [
+        {
+          "session": 1,
+          "sets": [
+            10,
+            12,
+            7,
+            7,
+            9
+          ],
+          "targetTotal": 45
+        },
+        {
+          "session": 2,
+          "sets": [
+            10,
+            12,
+            8,
+            8,
+            12
+          ],
+          "targetTotal": 50
+        },
+        {
+          "session": 3,
+          "sets": [
+            11,
+            15,
+            9,
+            9,
+            13
+          ],
+          "targetTotal": 57
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "sessions": [
+        {
+          "session": 1,
+          "sets": [
+            14,
+            14,
+            10,
+            10,
+            15
+          ],
+          "targetTotal": 63
+        },
+        {
+          "session": 2,
+          "sets": [
+            14,
+            16,
+            12,
+            12,
+            17
+          ],
+          "targetTotal": 71
+        },
+        {
+          "session": 3,
+          "sets": [
+            16,
+            17,
+            14,
+            14,
+            20
+          ],
+          "targetTotal": 81
+        }
+      ]
+    },
+    {
+      "week": 3,
+      "sessions": [
+        {
+          "session": 1,
+          "sets": [
+            14,
+            18,
+            14,
+            14,
+            20
+          ],
+          "targetTotal": 80
+        },
+        {
+          "session": 2,
+          "sets": [
+            20,
+            25,
+            15,
+            15,
+            25
+          ],
+          "targetTotal": 100
+        },
+        {
+          "session": 3,
+          "sets": [
+            22,
+            30,
+            20,
+            20,
+            28
+          ],
+          "targetTotal": 120
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "sessions": [
+        {
+          "session": 1,
+          "sets": [
+            21,
+            25,
+            21,
+            21,
+            32
+          ],
+          "targetTotal": 120
+        },
+        {
+          "session": 2,
+          "sets": [
+            25,
+            29,
+            25,
+            25,
+            36
+          ],
+          "targetTotal": 140
+        },
+        {
+          "session": 3,
+          "sets": [
+            29,
+            33,
+            29,
+            29,
+            40
+          ],
+          "targetTotal": 160
+        }
+      ]
+    },
+    {
+      "week": 5,
+      "sessions": [
+        {
+          "session": 1,
+          "sets": [
+            36,
+            40,
+            30,
+            24,
+            40
+          ],
+          "targetTotal": 170
+        },
+        {
+          "session": 2,
+          "sets": [
+            19,
+            19,
+            22,
+            22,
+            18,
+            18,
+            22,
+            45
+          ],
+          "targetTotal": 185
+        },
+        {
+          "session": 3,
+          "sets": [
+            20,
+            20,
+            24,
+            24,
+            20,
+            20,
+            22,
+            50
+          ],
+          "targetTotal": 200
+        }
+      ]
+    },
+    {
+      "week": 6,
+      "sessions": [
+        {
+          "session": 1,
+          "sets": [
+            45,
+            55,
+            35,
+            30,
+            55
+          ],
+          "targetTotal": 220
+        },
+        {
+          "session": 2,
+          "sets": [
+            22,
+            22,
+            30,
+            30,
+            24,
+            24,
+            18,
+            18,
+            58
+          ],
+          "targetTotal": 246
+        },
+        {
+          "session": 3,
+          "sets": [
+            26,
+            26,
+            33,
+            33,
+            26,
+            26,
+            22,
+            22,
+            60
+          ],
+          "targetTotal": 274
+        }
+      ]
+    }
+  ],
+  "checksum": "8d30608c77531c7bd165fc1792efbcc1d4a3a79d63b9115e3fe60fe241ae3808"
+}

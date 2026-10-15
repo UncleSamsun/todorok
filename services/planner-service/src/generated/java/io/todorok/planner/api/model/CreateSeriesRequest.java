@@ -31,6 +31,12 @@ import jakarta.annotation.Generated;
 public class CreateSeriesRequest {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable UUID sourceTaskId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Long sourceTaskVersion;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private @Nullable UUID commandId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -64,6 +70,51 @@ public class CreateSeriesRequest {
     this.taskType = taskType;
     this.startDate = startDate;
     this.rule = rule;
+  }
+
+  public CreateSeriesRequest sourceTaskId(@Nullable UUID sourceTaskId) {
+    this.sourceTaskId = sourceTaskId;
+    return this;
+  }
+
+  /**
+   * 기존 일반 할 일을 첫 회차로 연결한다. sourceTaskVersion과 commandId가 필요하다.
+   * @return sourceTaskId
+   */
+  @Valid
+
+  @JsonProperty("sourceTaskId")
+  public @Nullable UUID getSourceTaskId() {
+    return sourceTaskId;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("sourceTaskId")
+  public void setSourceTaskId(@Nullable UUID sourceTaskId) {
+    this.sourceTaskId = sourceTaskId;
+  }
+
+  public CreateSeriesRequest sourceTaskVersion(@Nullable Long sourceTaskVersion) {
+    this.sourceTaskVersion = sourceTaskVersion;
+    return this;
+  }
+
+  /**
+   * Get sourceTaskVersion
+   * minimum: 0
+   * @return sourceTaskVersion
+   */
+  @Min(value = 0L)
+
+  @JsonProperty("sourceTaskVersion")
+  public @Nullable Long getSourceTaskVersion() {
+    return sourceTaskVersion;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("sourceTaskVersion")
+  public void setSourceTaskVersion(@Nullable Long sourceTaskVersion) {
+    this.sourceTaskVersion = sourceTaskVersion;
   }
 
   public CreateSeriesRequest commandId(@Nullable UUID commandId) {
@@ -247,7 +298,9 @@ public class CreateSeriesRequest {
       return false;
     }
     CreateSeriesRequest createSeriesRequest = (CreateSeriesRequest) o;
-    return Objects.equals(this.commandId, createSeriesRequest.commandId) &&
+    return Objects.equals(this.sourceTaskId, createSeriesRequest.sourceTaskId) &&
+        Objects.equals(this.sourceTaskVersion, createSeriesRequest.sourceTaskVersion) &&
+        Objects.equals(this.commandId, createSeriesRequest.commandId) &&
         Objects.equals(this.templateSelection, createSeriesRequest.templateSelection) &&
         Objects.equals(this.title, createSeriesRequest.title) &&
         Objects.equals(this.taskType, createSeriesRequest.taskType) &&
@@ -259,13 +312,15 @@ public class CreateSeriesRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(commandId, templateSelection, title, taskType, startDate, endDate, note, rule);
+    return Objects.hash(sourceTaskId, sourceTaskVersion, commandId, templateSelection, title, taskType, startDate, endDate, note, rule);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class CreateSeriesRequest {\n");
+    sb.append("    sourceTaskId: ").append(toIndentedString(sourceTaskId)).append("\n");
+    sb.append("    sourceTaskVersion: ").append(toIndentedString(sourceTaskVersion)).append("\n");
     sb.append("    commandId: ").append(toIndentedString(commandId)).append("\n");
     sb.append("    templateSelection: ").append(toIndentedString(templateSelection)).append("\n");
     sb.append("    title: ").append(toIndentedString(title)).append("\n");

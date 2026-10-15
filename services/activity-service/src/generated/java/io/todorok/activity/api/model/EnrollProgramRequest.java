@@ -35,6 +35,9 @@ public class EnrollProgramRequest {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private @Nullable Integer startWeek;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Integer startSession;
+
   public EnrollProgramRequest() {
     super();
   }
@@ -153,6 +156,29 @@ public class EnrollProgramRequest {
     this.startWeek = startWeek;
   }
 
+  public EnrollProgramRequest startSession(@Nullable Integer startSession) {
+    this.startSession = startSession;
+    return this;
+  }
+
+  /**
+   * Get startSession
+   * minimum: 1
+   * maximum: 7
+   * @return startSession
+   */
+  @Min(value = 1) @Max(value = 7)
+  @JsonProperty("startSession")
+  public @Nullable Integer getStartSession() {
+    return startSession;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("startSession")
+  public void setStartSession(@Nullable Integer startSession) {
+    this.startSession = startSession;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -166,12 +192,13 @@ public class EnrollProgramRequest {
         Objects.equals(this.catalogKey, enrollProgramRequest.catalogKey) &&
         Objects.equals(this.catalogVersion, enrollProgramRequest.catalogVersion) &&
         Objects.equals(this.initialTestValue, enrollProgramRequest.initialTestValue) &&
-        Objects.equals(this.startWeek, enrollProgramRequest.startWeek);
+        Objects.equals(this.startWeek, enrollProgramRequest.startWeek) &&
+        Objects.equals(this.startSession, enrollProgramRequest.startSession);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(commandId, catalogKey, catalogVersion, initialTestValue, startWeek);
+    return Objects.hash(commandId, catalogKey, catalogVersion, initialTestValue, startWeek, startSession);
   }
 
   @Override
@@ -183,6 +210,7 @@ public class EnrollProgramRequest {
     sb.append("    catalogVersion: ").append(toIndentedString(catalogVersion)).append("\n");
     sb.append("    initialTestValue: ").append(toIndentedString(initialTestValue)).append("\n");
     sb.append("    startWeek: ").append(toIndentedString(startWeek)).append("\n");
+    sb.append("    startSession: ").append(toIndentedString(startSession)).append("\n");
     sb.append("}");
     return sb.toString();
   }

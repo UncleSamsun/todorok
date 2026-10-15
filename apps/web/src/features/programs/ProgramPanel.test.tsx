@@ -5,7 +5,7 @@ import { App } from '../../App'
 
 afterEach(() => { cleanup(); history.replaceState({}, '', '/') })
 
-it.each(['empty', 'error'])('distinguishes pending catalog from %s and offers the existing add flow for empty results', async (result) => {
+it.each(['empty', 'error'])('keeps builtin cards visible while the catalog is %s without exposing source links', async (result) => {
   let finish!: (response: Response) => void
   const pending = new Promise<Response>((resolve) => { finish = resolve })
   const session = new SessionClient({ fetcher: async (url) => {
@@ -31,12 +31,13 @@ it.each(['empty', 'error'])('distinguishes pending catalog from %s and offers th
     expect(screen.queryByRole('link', { name: '자유운동 추가' })).not.toBeInTheDocument()
     return
   }
-  expect(await screen.findByText('아직 선택할 수 있는 운동 프로그램이 없습니다.')).toBeVisible()
-  const add = screen.getByRole('link', { name: '자유운동 추가' })
-  expect(add.getAttribute('href')).toMatch(/^\/today\?date=\d{4}-\d{2}-\d{2}&add=WORKOUT$/)
+  expect(screen.getByText('푸시업')).toBeVisible()
+  expect(screen.getByText('풀업')).toBeVisible()
+  expect(screen.queryByRole('link',{name:'원문'})).not.toBeInTheDocument()
+  const add = screen.getByRole('button', { name: '자유운동' })
   fireEvent.click(add)
-  expect(location.pathname).toBe('/today')
-  expect(location.search).toContain('add=WORKOUT')
+  expect(screen.getByRole('dialog',{name:'운동 추가'})).toBeVisible()
+  expect(location.pathname).toBe('/workout')
 })
 
 it('등록한 프로그램의 현재 회차와 권장 세트를 운동 탭에서 보여준다', async () => {
@@ -70,7 +71,7 @@ it('등록한 프로그램의 현재 회차와 권장 세트를 운동 탭에서
 
   expect(await screen.findByText('2주차 1회')).toBeVisible()
   expect(screen.getByText('4 · 3 · 3회')).toBeVisible()
-  expect(screen.getByText('테스트 전용 합성 자료')).toBeVisible()
+  expect(screen.queryByText('테스트 전용 합성 자료')).not.toBeInTheDocument()
   expect(writes[0]).toMatchObject({ catalogKey: 'synthetic-pushup', catalogVersion: 1, initialTestValue: 12, startWeek: 2 })
   expect(writes[0]?.commandId).toEqual(expect.any(String))
 })

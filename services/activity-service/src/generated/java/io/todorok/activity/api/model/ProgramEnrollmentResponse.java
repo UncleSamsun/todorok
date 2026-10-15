@@ -2,9 +2,12 @@ package io.todorok.activity.api.model;
 
 import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.Nulls;
 import io.todorok.activity.api.model.ProgramSessionTarget;
 import java.util.UUID;
 import org.springframework.lang.Nullable;
@@ -22,6 +25,9 @@ import jakarta.annotation.Generated;
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.24.0")
 public class ProgramEnrollmentResponse {
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Long revision;
 
   private UUID enrollmentId;
 
@@ -93,6 +99,28 @@ public class ProgramEnrollmentResponse {
     this.currentSession = currentSession;
     this.status = status;
     this.target = target;
+  }
+
+  public ProgramEnrollmentResponse revision(@Nullable Long revision) {
+    this.revision = revision;
+    return this;
+  }
+
+  /**
+   * Get revision
+   * minimum: 0
+   * @return revision
+   */
+  @Min(value = 0L)
+  @JsonProperty("revision")
+  public @Nullable Long getRevision() {
+    return revision;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("revision")
+  public void setRevision(@Nullable Long revision) {
+    this.revision = revision;
   }
 
   public ProgramEnrollmentResponse enrollmentId(UUID enrollmentId) {
@@ -289,7 +317,8 @@ public class ProgramEnrollmentResponse {
       return false;
     }
     ProgramEnrollmentResponse programEnrollmentResponse = (ProgramEnrollmentResponse) o;
-    return Objects.equals(this.enrollmentId, programEnrollmentResponse.enrollmentId) &&
+    return Objects.equals(this.revision, programEnrollmentResponse.revision) &&
+        Objects.equals(this.enrollmentId, programEnrollmentResponse.enrollmentId) &&
         Objects.equals(this.catalogKey, programEnrollmentResponse.catalogKey) &&
         Objects.equals(this.catalogVersion, programEnrollmentResponse.catalogVersion) &&
         Objects.equals(this.recommendedWeek, programEnrollmentResponse.recommendedWeek) &&
@@ -302,13 +331,14 @@ public class ProgramEnrollmentResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enrollmentId, catalogKey, catalogVersion, recommendedWeek, startWeek, currentWeek, currentSession, status, target);
+    return Objects.hash(revision, enrollmentId, catalogKey, catalogVersion, recommendedWeek, startWeek, currentWeek, currentSession, status, target);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ProgramEnrollmentResponse {\n");
+    sb.append("    revision: ").append(toIndentedString(revision)).append("\n");
     sb.append("    enrollmentId: ").append(toIndentedString(enrollmentId)).append("\n");
     sb.append("    catalogKey: ").append(toIndentedString(catalogKey)).append("\n");
     sb.append("    catalogVersion: ").append(toIndentedString(catalogVersion)).append("\n");

@@ -32,6 +32,26 @@ import tools.jackson.databind.json.JsonMapper;
 )
 class TaskHttpIntegrationTest {
 
+    @Test void existingGeneralTaskBecomesFirstOccurrenceWithoutDuplicationAndRetriesAreIdempotent() throws Exception {
+        UUID owner=UUID.randomUUID();
+        var made=call(owner,"POST","/tasks","{\"title\":\"산책\",\"taskType\":\"GENERAL\",\"scheduledDate\":\"2026-10-15\"}");
+        assertThat(made.statusCode()).isEqualTo(201);
+        String id=body(made).path("taskId").asText();
+        String request="{\"commandId\":\""+UUID.randomUUID()+"\",\"sourceTaskId\":\""+id+"\",\"sourceTaskVersion\":0,\"title\":\"산책\",\"taskType\":\"GENERAL\",\"startDate\":\"2026-10-15\",\"rule\":"+DAILY+"}";
+        var saved=call(owner,"POST","/series",request);
+        assertThat(saved.statusCode()).as(saved.body()).isEqualTo(201);
+        String seriesId=body(saved).path("seriesId").asText();
+        var replay=call(owner,"POST","/series",request);
+        assertThat(replay.statusCode()).as(replay.body()).isEqualTo(201);
+        assertThat(body(replay).path("seriesId").asText()).isEqualTo(seriesId);
+        var current=body(call(owner,"GET","/tasks/"+id,null));
+        assertThat(current.path("seriesId").asText()).isEqualTo(seriesId);
+        assertThat(jdbc.queryForObject("select count(*) from planner.task where user_id=?",Integer.class,owner)).isOne();
+        assertThat(call(owner,"POST","/tasks/"+id+"/complete","{\"version\":"+current.path("version").asLong()+"}").statusCode()).isEqualTo(200);
+        assertThat(jdbc.queryForObject("select count(*) from planner.task where user_id=?",Integer.class,owner)).isEqualTo(2);
+        assertThat(call(UUID.randomUUID(),"POST","/series",request).statusCode()).isEqualTo(404);
+    }
+
     @Test void reminderFieldsDoNotChangeTheFingerprintOfAPreUpgradeCreationCommand()throws Exception {
         UUID owner=UUID.randomUUID(),command=UUID.randomUUID();
         String legacy="{\"commandId\":\""+command+"\",\"title\":\"기존 요청\",\"taskType\":\"GENERAL\",\"scheduledDate\":\"2026-10-13\"}";

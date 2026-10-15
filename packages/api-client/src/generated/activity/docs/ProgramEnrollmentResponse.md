@@ -6,6 +6,7 @@
 
 Name | Type
 ------------ | -------------
+`revision` | number
 `enrollmentId` | string
 `catalogKey` | string
 `catalogVersion` | number
@@ -23,6 +24,7 @@ import type { ProgramEnrollmentResponse } from '@todorok/api-client'
 
 // TODO: Update the object below with actual values
 const example = {
+  "revision": null,
   "enrollmentId": null,
   "catalogKey": null,
   "catalogVersion": null,

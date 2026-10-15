@@ -490,6 +490,14 @@ components:
       additionalProperties: false
       required: [title, taskType, startDate, rule]
       properties:
+        sourceTaskId:
+          type: string
+          format: uuid
+          description: 기존 일반 할 일을 첫 회차로 연결한다. sourceTaskVersion과 commandId가 필요하다.
+        sourceTaskVersion:
+          type: integer
+          format: int64
+          minimum: 0
         commandId: { type: string, format: uuid }
         templateSelection: { $ref: '#/components/schemas/TemplateSelection' }
         title: { type: string, minLength: 1, maxLength: 120 }

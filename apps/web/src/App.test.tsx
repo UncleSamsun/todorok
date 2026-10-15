@@ -15,6 +15,7 @@ afterEach(() => {
   cleanup()
   window.history.replaceState({}, '', '/')
   localStorage.clear()
+  sessionStorage.clear()
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
 })
@@ -42,6 +43,23 @@ const calendarResponse = (url: unknown) =>
           : null
 
 describe('App', () => {
+  it('shows saved ID and skips automatic restoration when disabled in a fresh browser session', async () => {
+    localStorage.setItem('todorok.login.email', 'owner@example.com')
+    localStorage.setItem('todorok.login.auto', 'false')
+    const fetcher = vi.fn(async () => json(session))
+    render(<App session={new SessionClient({ fetcher })} />)
+    expect(await screen.findByRole('button', { name: '로그인' })).toBeVisible()
+    expect(screen.getByLabelText('이메일')).toHaveValue('owner@example.com')
+    expect(screen.getByRole('checkbox', { name: '아이디 저장' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: '자동 로그인' })).not.toBeChecked()
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+  it('keeps refresh signed in during the same browser session with auto login off', async () => {
+    localStorage.setItem('todorok.login.auto', 'false')
+    sessionStorage.setItem('todorok.login.active', 'true')
+    render(<App session={new SessionClient({ fetcher: async (url) => calendarResponse(url) ?? json(session) })} />)
+    expect(await screen.findByRole('region', { name: '선택 날짜' })).toBeVisible()
+  })
   it('opens today and keeps navigation inside the deployment prefix', async () => {
     vi.stubEnv('BASE_URL', '/todorok/')
     window.history.replaceState({}, '', '/todorok/')
@@ -86,17 +104,23 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText('비밀번호'), {
       target: { value: 'my-password' },
     })
+    fireEvent.click(screen.getByRole('checkbox', { name: '아이디 저장' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: '자동 로그인' }))
     fireEvent.click(screen.getByRole('button', { name: '로그인' }))
     expect(await screen.findByRole('alert')).toBeVisible()
     expect(screen.getByLabelText('이메일')).toHaveValue('owner@example.com')
     expect(screen.getByLabelText('비밀번호')).toHaveValue('my-password')
+    expect(localStorage.getItem('todorok.login.email')).toBeNull()
     reject = false
     fireEvent.click(screen.getByRole('button', { name: '로그인' }))
     expect(
       await screen.findByRole('region', { name: '선택 날짜' }),
     ).toBeVisible()
     expect(window.location.pathname).toBe('/today')
-    expect(storage).not.toHaveBeenCalled()
+    expect(localStorage.getItem('todorok.login.email')).toBe('owner@example.com')
+    expect(localStorage.getItem('todorok.login.auto')).toBe('false')
+    expect(sessionStorage.getItem('todorok.login.active')).toBe('true')
+    expect(JSON.stringify(storage.mock.calls)).not.toMatch(/never-store-this-token|my-password/)
   })
   it('restores to Seoul today even from a past domain URL and clears query cache after logout', async () => {
     window.history.replaceState({}, '', '/study?date=2020-01-01')

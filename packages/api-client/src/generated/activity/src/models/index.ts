@@ -29,6 +29,7 @@ export * from './ProgramCatalogSummary';
 export * from './ProgramEnrollmentResponse';
 export * from './ProgramSessionTarget';
 export * from './ProgramSource';
+export * from './ScheduleProgramSessionRequest';
 export * from './StudyDetail';
 export * from './StudyDetailResponse';
 export * from './TaskRecordTemplateResponse';

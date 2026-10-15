@@ -194,7 +194,8 @@ public class ActivityService {
         if (complete && request.getActivityType() == ActivityType.WORKOUT && programs != null) {
             int repetitions = request.getDetail().getWorkout() == null || request.getDetail().getWorkout().getSets() == null ? 0
                 : request.getDetail().getWorkout().getSets().stream().mapToInt(set -> set.getReps() == null ? 0 : set.getReps()).sum();
-            programs.recordOutcome(request.getTaskId(), id, repetitions, false);
+            programs.recordOutcome(request.getTaskId(), id, repetitions, false,
+                request.getPerformedAt().atZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDate());
         }
         if (complete) outbox.append(
             "activity",
@@ -404,7 +405,8 @@ public class ActivityService {
             if (old.getDetailFormat() == DetailFormat.TEMPLATE) jdbc.update("update study_detail set values_json=cast(? as jsonb) where activity_id=?",
                 mapper.writeValueAsString(templateValues), id);
         } else details.replace(id, old.getActivityType(), request.getDetail(), old.getTemplateSnapshot(), templateValues);
-        if (complete && old.getActivityType() == ActivityType.WORKOUT && programs != null) programs.recordOutcome(old.getTaskId(), id, repetitions(request.getDetail()), false);
+        if (complete && old.getActivityType() == ActivityType.WORKOUT && programs != null) programs.recordOutcome(old.getTaskId(), id, repetitions(request.getDetail()), false,
+            request.getPerformedAt().atZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDate());
         var summaryRequest = new CreateActivityRequest().activityType(old.getActivityType()).detail(request.getDetail());
         outbox.append("activity", id.toString(), new EventEnvelope<>(UUID.randomUUID(), EventType.ACTIVITY_CORRECTED,
             1, old.getVersion() + 1, Instant.now(), owner,

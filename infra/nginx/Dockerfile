@@ -4,6 +4,7 @@ RUN corepack enable && corepack prepare pnpm@11.24.0 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/web ./apps/web
 COPY packages ./packages
+COPY contracts/catalog/builtin ./contracts/catalog/builtin
 ARG VITE_BASE_PATH=/
 ENV VITE_BASE_PATH=$VITE_BASE_PATH
 RUN pnpm install --frozen-lockfile \

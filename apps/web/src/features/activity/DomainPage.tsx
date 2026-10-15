@@ -7,6 +7,8 @@ import { useAuth } from '../auth/AuthProvider'
 import { useActivityMonth } from './ActivityMonth'
 import { StudyTemplateManager } from '../study/StudyTemplateManager'
 import { displaySyncState, syncLabels } from './syncPresentation'
+import { DomainTemplateCards } from './DomainTemplateCards'
+import { FloatingScheduleAdd } from './FloatingScheduleAdd'
 
 type RecordType = 'WORKOUT' | 'STUDY' | 'CLIMBING'
 const apiType = (type: RecordType) => activity.ActivityType[type[0] + type.slice(1).toLowerCase() as 'Workout' | 'Study' | 'Climbing']
@@ -17,6 +19,7 @@ const performedDate = (value: Date) => new Intl.DateTimeFormat('en-CA', { timeZo
 export function DomainPage({ type, title }: { type: RecordType; title: string }) {
   const { session, state } = useAuth(), navigate = useNavigate(), today = seoulToday(), { month, previous, next, atCurrent } = useActivityMonth()
   const [pastOpen, setPastOpen] = useState(false), [pastDate, setPastDate] = useState(today), [managingTemplates, setManagingTemplates] = useState<activity.TemplateKind | null>(null)
+  const [adding,setAdding]=useState<{templateId?:string;title?:string}|null>(null)
   const apis = useMemo(() => ({ calendar: new planner.CalendarApi(new planner.Configuration({ basePath: '/api/planner/v1', fetchApi: session.fetch })), activities: new activity.ActivityApi(new activity.Configuration({ basePath: '/api/activity/v1', fetchApi: session.fetch })) }), [session])
   const range = monthRange(month), owner = state.userId ?? 'session'
   const activitySummary = useQuery({ queryKey: ['activity-summary', owner, month, type], queryFn: ({ signal }) => apis.activities.getMonthlyActivitySummary({ month, activityType: apiType(type) }, { signal }) })
@@ -31,7 +34,9 @@ export function DomainPage({ type, title }: { type: RecordType; title: string })
       ? { domain: activity.TemplateDomain.Climbing, kind: managingTemplates, section: '클라이밍', noun: managingTemplates === activity.TemplateKind.FreeHangboard ? '행보드 유형' : '세션 유형' }
       : {})} />
   return <section className="domain-page">
-    <header className="domain-summary-heading"><div className="month-picker"><button aria-label="이전 달" onClick={previous}>‹</button><strong>{displayMonth(month)}</strong><button aria-label="다음 달" disabled={atCurrent} onClick={next}>›</button></div><div className="domain-actions">{type === 'STUDY' && <button onClick={() => setManagingTemplates(activity.TemplateKind.StudyCategory)}>카테고리 관리</button>}{type === 'WORKOUT' && <button onClick={() => setManagingTemplates(activity.TemplateKind.FreeWorkout)}>기록 유형 관리</button>}{type === 'CLIMBING' && <><button onClick={() => setManagingTemplates(activity.TemplateKind.ClimbingSession)}>세션 유형 관리</button><button onClick={() => setManagingTemplates(activity.TemplateKind.FreeHangboard)}>행보드 유형 관리</button></>}<button onClick={() => navigate(`/today?date=${today}&add=${type}`)}>추가</button><button onClick={() => setPastOpen((value) => !value)}>지난 기록</button></div></header>
+    {type !== 'WORKOUT' && <DomainTemplateCards type={type} title={title} add={template=>setAdding(template?{templateId:template.templateId,title:template.currentVersion.name}:{})} />}
+    {adding&&<FloatingScheduleAdd key={`${adding.templateId??'free'}-${adding.title??''}`} type={type} initialTemplateId={adding.templateId} initialTitle={adding.title} close={()=>setAdding(current=>current===adding?null:current)}/>}
+    <header className="domain-summary-heading"><div className="month-picker"><button aria-label="이전 달" onClick={previous}>‹</button><strong>{displayMonth(month)}</strong><button aria-label="다음 달" disabled={atCurrent} onClick={next}>›</button></div><div className="domain-actions">{type === 'STUDY' && <button onClick={() => setManagingTemplates(activity.TemplateKind.StudyCategory)}>카테고리 관리</button>}{type === 'WORKOUT' && <button onClick={() => setManagingTemplates(activity.TemplateKind.FreeWorkout)}>기록 유형 관리</button>}{type === 'CLIMBING' && <><button onClick={() => setManagingTemplates(activity.TemplateKind.ClimbingSession)}>세션 유형 관리</button><button onClick={() => setManagingTemplates(activity.TemplateKind.FreeHangboard)}>행보드 유형 관리</button></>}<button onClick={() => setAdding({})}>추가</button><button onClick={() => setPastOpen((value) => !value)}>지난 기록</button></div></header>
     <section className="domain-summary" aria-label={`${title} 월간 요약`}>
       <div><span>완료</span>{activitySummary.isError ? <><strong>—</strong><p role="alert">활동 요약을 불러오지 못했습니다.</p><button onClick={() => void activitySummary.refetch()}>다시 시도</button></> : <strong>{activitySummary.data ? `${activitySummary.data.completedCount}회` : '…'}</strong>}</div>
       <div><span>시간</span>{activitySummary.isError ? <strong>—</strong> : <strong>{activitySummary.data ? `${Math.floor(activitySummary.data.durationSeconds / 60)}분` : '…'}</strong>}</div>

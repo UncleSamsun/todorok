@@ -6,11 +6,15 @@ export function SeriesEditor({
   busy,
   save,
   archive,
+  expanded = false,
+  close,
 }: {
   series: Readonly<planner.SeriesResponse>
   busy: boolean
   save: (request: planner.UpdateSeriesRequest) => void
   archive: () => void
+  expanded?: boolean
+  close?: () => void
 }) {
   const [title, setTitle] = useState(series.title)
   const [note, setNote] = useState(series.note ?? '')
@@ -21,7 +25,7 @@ export function SeriesEditor({
   if (series.archived)
     return <p>반복이 중단되었습니다. 이 할 일은 남아 있습니다.</p>
   return (
-    <details className="task-form">
+    <details className="task-form" open={expanded || undefined}>
       <summary>반복 설정</summary>
       <form
         onSubmit={(e) => {
@@ -38,8 +42,8 @@ export function SeriesEditor({
             })
         }}
       >
-        <p>시작일 {series.startDate}. 수정 내용은 다음 회차부터 적용합니다.</p>
-        <label htmlFor="series-title">반복 제목</label>
+        {!expanded && <p>시작일 {series.startDate}. 수정 내용은 다음 회차부터 적용합니다.</p>}
+        {!expanded && <><label htmlFor="series-title">반복 제목</label>
         <input
           id="series-title"
           required
@@ -54,6 +58,7 @@ export function SeriesEditor({
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
+        </>}
         <label htmlFor="series-frequency">반복 종류</label>
         <select
           id="series-frequency"
@@ -81,6 +86,7 @@ export function SeriesEditor({
           <button type="button" disabled={busy} onClick={archive}>
             반복 중단
           </button>
+          {close && <button type="button" disabled={busy} onClick={close}>닫기</button>}
         </div>
       </form>
     </details>

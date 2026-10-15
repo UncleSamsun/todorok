@@ -88,7 +88,10 @@ export class SessionClient {
     }).finally(() => { this.refreshing = null })
     return this.refreshing
   }
-  restore = async () => { try { await this.refresh(null) } catch { /* snapshot is safe for rendering */ } }
+  restore = async (enabled = true) => {
+    if (!enabled) { this.accept(null, false); return }
+    try { await this.refresh(null) } catch { /* snapshot is safe for rendering */ }
+  }
   login = async (email: string, password: string) => {
     try {
       await this.exclusive(async () => {

@@ -98,7 +98,12 @@ public class ActivityController implements ActivityApi {
 
     @Override
     public ResponseEntity<ProgramEnrollmentResponse> enrollProgram(EnrollProgramRequest request) {
-        return ResponseEntity.status(201).body(response(enrollments.enroll(owner(), request.getCommandId(), request.getCatalogKey(), request.getCatalogVersion(), request.getInitialTestValue(), request.getStartWeek())));
+        return ResponseEntity.status(201).body(response(enrollments.enroll(owner(), request.getCommandId(), request.getCatalogKey(), request.getCatalogVersion(), request.getInitialTestValue(), request.getStartWeek(),request.getStartSession())));
+    }
+
+    @Override
+    public ResponseEntity<ProgramEnrollmentResponse> scheduleProgramSession(UUID enrollmentId, ScheduleProgramSessionRequest request) {
+        return ResponseEntity.ok(response(enrollments.schedule(owner(),enrollmentId,request.getCommandId(),request.getWeek(),request.getSession(),request.getExpectedRevision())));
     }
 
     @Override
@@ -108,6 +113,6 @@ public class ActivityController implements ActivityApi {
 
     private ProgramEnrollmentResponse response(ProgramEnrollmentService.Enrollment value) {
         return new ProgramEnrollmentResponse(value.id(), value.catalogKey(), value.catalogVersion(), value.recommendedWeek(), value.startWeek(), value.currentWeek(), value.currentSession(), ProgramEnrollmentResponse.StatusEnum.fromValue(value.status()),
-            new ProgramSessionTarget(value.sessionId(), value.currentWeek(), value.currentSession(), value.targetSets()));
+            new ProgramSessionTarget(value.sessionId(), value.currentWeek(), value.currentSession(), value.targetSets())).revision(value.revision());
     }
 }

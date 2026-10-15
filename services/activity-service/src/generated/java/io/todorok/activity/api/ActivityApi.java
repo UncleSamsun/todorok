@@ -18,6 +18,7 @@ import org.springframework.lang.Nullable;
 import io.todorok.activity.api.model.ProblemDetails;
 import io.todorok.activity.api.model.ProgramCatalogSummary;
 import io.todorok.activity.api.model.ProgramEnrollmentResponse;
+import io.todorok.activity.api.model.ScheduleProgramSessionRequest;
 import java.util.UUID;
 import io.todorok.activity.api.model.VoidActivityRequest;
 import org.springframework.http.ResponseEntity;
@@ -213,6 +214,29 @@ public interface ActivityApi {
     )
     ResponseEntity<List<ProgramCatalogSummary>> listPrograms(
 
+    );
+
+
+    String PATH_SCHEDULE_PROGRAM_SESSION = "/program-enrollments/{enrollmentId}/sessions";
+    /**
+     * POST /program-enrollments/{enrollmentId}/sessions
+     *
+     * @param enrollmentId  (required)
+     * @param scheduleProgramSessionRequest  (required)
+     * @return Selected session scheduled idempotently and current position persisted. (status code 200)
+     *         or 잘못된 요청 (status code 400)
+     *         or 대상을 찾을 수 없음 (status code 404)
+     *         or 버전 또는 상태 충돌 (status code 409)
+     */
+    @RequestMapping(
+        method = RequestMethod.POST,
+        value = ActivityApi.PATH_SCHEDULE_PROGRAM_SESSION,
+        produces = { "application/json", "application/problem+json" },
+        consumes = { "application/json" }
+    )
+    ResponseEntity<ProgramEnrollmentResponse> scheduleProgramSession(
+         @PathVariable("enrollmentId") UUID enrollmentId,
+         @Valid @RequestBody ScheduleProgramSessionRequest scheduleProgramSessionRequest
     );
 
 

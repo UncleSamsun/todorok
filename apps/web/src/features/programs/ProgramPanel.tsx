@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { activity } from '@todorok/api-client'
-import { seoulToday } from '@todorok/client-domain'
-import { Link } from 'react-router'
+import { builtinPrograms } from './builtinPrograms'
 import { useAuth } from '../auth/AuthProvider'
+import { useRecordTemplates } from '../study/useStudyTemplates'
+import { FloatingScheduleAdd } from '../activity/FloatingScheduleAdd'
+import { TaskFloatingPanel } from '../today/TaskFloatingPanel'
+import { ProgramPresetDialog } from './ProgramPresetDialog'
 
 const nameFor = (catalogs: activity.ProgramCatalogSummary[] | undefined, enrollment: activity.ProgramEnrollmentResponse) =>
   catalogs?.find((catalog) => catalog.catalogKey === enrollment.catalogKey && catalog.catalogVersion === enrollment.catalogVersion)?.name ?? enrollment.catalogKey
@@ -14,6 +17,12 @@ export function ProgramPanel() {
   const catalogs = useQuery({ queryKey: ['program-catalogs'], queryFn: ({ signal }) => api.listPrograms({ signal }) })
   const enrollments = useQuery({ queryKey: ['program-enrollments', owner], queryFn: ({ signal }) => api.listProgramEnrollments({ signal }) })
   const [selected, setSelected] = useState<activity.ProgramCatalogSummary | null>(null)
+  const [selectedBuiltin,setSelectedBuiltin]=useState<typeof builtinPrograms[number]|null>(()=>builtinPrograms.find(program=>program.key===new URLSearchParams(location.search).get('program'))??null)
+  const [adding,setAdding]=useState<{templateId?:string;title?:string}|null>(null)
+  const templatesApi=useMemo(()=>new activity.TemplateApi(new activity.Configuration({basePath:'/api/activity/v1',fetchApi:session.fetch})),[session])
+  const customTypes=useRecordTemplates(templatesApi,state.userId,activity.TemplateDomain.Workout,activity.TemplateKind.FreeWorkout,false)
+  const customTemplates=customTypes.data?.pages.flatMap(page=>page.items).filter(item=>!item.archived)??[]
+  const otherCatalogs=catalogs.data?.filter(catalog=>!builtinPrograms.some(program=>catalog.catalogKey===program.key||catalog.catalogKey.startsWith(program.key+'-')||catalog.source.url===program.source))??[]
   const [initialTest, setInitialTest] = useState(''), [startWeek, setStartWeek] = useState(''), [error, setError] = useState('')
   const register = useMutation({
     mutationFn: (request: activity.EnrollProgramRequest) => api.enrollProgram({ enrollProgramRequest: request }),
@@ -27,6 +36,7 @@ export function ProgramPanel() {
   const active = (enrollments.data ?? []).filter((enrollment) => enrollment.status === activity.ProgramEnrollmentResponseStatusEnum.Active)
 
   function begin(catalog: activity.ProgramCatalogSummary) {
+    setAdding(null)
     setSelected(catalog); setInitialTest(''); setStartWeek(''); setError('')
   }
   function submit(event: React.FormEvent) {
@@ -42,6 +52,17 @@ export function ProgramPanel() {
 
   return <section className="program-panel" aria-label="운동 프로그램">
     <h2>운동 프로그램</h2>
+    <section className="program-catalogs builtin-programs" aria-label="기본 운동 프로그램">
+      {builtinPrograms.map(program => {
+        return <button type="button" className="builtin-program-card" key={program.key} onClick={()=>{setAdding(null);setSelected(null);setSelectedBuiltin(program)}}>{program.name}</button>
+      })}
+      <button type="button" className="builtin-program-card free-workout-card" onClick={()=>setAdding({})}>자유운동</button>
+      {otherCatalogs.map(catalog=><button type="button" className="builtin-program-card" key={`${catalog.catalogKey}:${catalog.catalogVersion}`} aria-label={`${catalog.name} 등록`} onClick={()=>begin(catalog)}>{catalog.name}</button>)}
+      {customTemplates.map(template=><button type="button" className="builtin-program-card" key={template.templateId} onClick={()=>setAdding({templateId:template.templateId,title:template.currentVersion.name})}>{template.currentVersion.name}</button>)}
+    </section>
+    {selectedBuiltin&&<ProgramPresetDialog key={selectedBuiltin.key} program={selectedBuiltin} loading={enrollments.isPending||enrollments.isError} enrollment={enrollments.data?.find(item=>item.catalogKey===selectedBuiltin.key||item.catalogKey.startsWith(selectedBuiltin.key+'-'))} close={()=>setSelectedBuiltin(null)}/>}
+    {customTypes.hasNextPage&&<button type="button" disabled={customTypes.isFetchingNextPage} onClick={()=>void customTypes.fetchNextPage()}>더 보기</button>}
+    {adding&&<FloatingScheduleAdd key={`${adding.templateId??'free'}-${adding.title??''}`} type="WORKOUT" initialTitle={adding.title} initialTemplateId={adding.templateId} close={()=>setAdding(current=>current===adding?null:current)}/>}
     {enrollments.isPending && <p role="status">등록한 프로그램을 불러오는 중…</p>}
     {enrollments.isError && <p role="alert">등록한 프로그램을 불러오지 못했습니다.</p>}
     {active.length > 0 && <section className="program-current"><h3>진행 중인 프로그램</h3>{active.map((enrollment) => <article key={enrollment.enrollmentId}>
@@ -51,17 +72,12 @@ export function ProgramPanel() {
     </article>)}</section>}
     {catalogs.isPending && <p role="status">프로그램을 불러오는 중…</p>}
     {catalogs.isError && <p role="alert">프로그램을 불러오지 못했습니다.</p>}
-    {catalogs.isSuccess && catalogs.data.length === 0 && <div className="program-empty"><p>아직 선택할 수 있는 운동 프로그램이 없습니다.</p><p>자유운동을 추가해 나만의 운동을 기록해 보세요.</p><Link to={`/today?date=${seoulToday()}&add=WORKOUT`}>자유운동 추가</Link></div>}
-    {catalogs.data && catalogs.data.length > 0 && <section className="program-catalogs"><h3>프로그램 선택</h3>{catalogs.data.map((catalog) => <article key={`${catalog.catalogKey}:${catalog.catalogVersion}`}>
-      <div><strong>{catalog.name}</strong><p>{catalog.totalWeeks}주 · 주 {catalog.sessionsPerWeek}회</p><small className="program-source">{catalog.source.label}{catalog.source.url && <> · <a href={catalog.source.url} target="_blank" rel="noreferrer">출처 원문</a></>}</small>{catalog.source.conditions.length > 0 && <p className="program-source">조건: {catalog.source.conditions.join(' · ')}</p>}{catalog.source.cautions.length > 0 && <p className="program-source">주의: {catalog.source.cautions.join(' · ')}</p>}</div>
-      <button onClick={() => begin(catalog)}>{catalog.name} 등록</button>
-    </article>)}</section>}
-    {selected && <form className="program-enrollment" onSubmit={submit}>
+    {selected && <TaskFloatingPanel label={selected.name} busy={register.isPending} close={()=>setSelected(null)}><form className="program-enrollment" onSubmit={submit}>
       <h3>{selected.name} 등록</h3>
       <label>초기 검사 횟수<input aria-label="초기 검사 횟수" type="number" min="0" step="1" required value={initialTest} onChange={(event) => setInitialTest(event.target.value)} /></label>
-      <label>시작 주차<input aria-label="시작 주차" type="number" min="1" max={selected.totalWeeks} step="1" value={startWeek} onChange={(event) => setStartWeek(event.target.value)} /><small>비우면 권장 주차에서 시작합니다.</small></label>
+      <label>시작 주차<input aria-label="시작 주차" type="number" min="1" max={selected.totalWeeks} step="1" value={startWeek} onChange={(event) => setStartWeek(event.target.value)} /></label>
       {error && <p role="alert">{error}</p>}
-      <div className="form-actions"><button type="button" onClick={() => setSelected(null)}>취소</button><button disabled={register.isPending} type="submit">{register.isPending ? '등록 중…' : '프로그램 시작'}</button></div>
-    </form>}
+      <div className="form-actions"><button type="button" onClick={() => setSelected(null)}>닫기</button><button disabled={register.isPending} type="submit">{register.isPending ? '등록 중…' : '프로그램 시작'}</button></div>
+    </form></TaskFloatingPanel>}
   </section>
 }

@@ -10,6 +10,7 @@ export function TaskEditor({
   skip,
   reopen,
   cancel,
+  mode = 'full',
 }: {
   task: Task
   busy: boolean
@@ -19,6 +20,7 @@ export function TaskEditor({
   skip: () => void
   reopen: () => void
   cancel: () => void
+  mode?: 'full' | 'schedule' | 'memo'
 }) {
   const [title, setTitle] = useState(task.title),
     [date, setDate] = useState(task.scheduledDate),
@@ -30,6 +32,7 @@ export function TaskEditor({
   }
   return (
     <form className="task-form" aria-label="할 일 수정" onSubmit={submit}>
+      {mode !== 'memo' && <>
       <label htmlFor="edit-title">제목 수정</label>
       <input
         autoFocus
@@ -47,26 +50,30 @@ export function TaskEditor({
         value={date}
         onChange={(e) => setDate(e.target.value)}
       />
-      <TaskReminderFields id="edit-task" value={reminder} change={setReminder} disabled={busy} />
+      </>}
+      {mode === 'full' && <TaskReminderFields id="edit-task" value={reminder} change={setReminder} disabled={busy} />}
+      {mode !== 'schedule' && <>
       <label htmlFor="task-note">할 일 메모</label>
       <textarea
+        autoFocus={mode === 'memo'}
         id="task-note"
         maxLength={20000}
         value={note}
         onChange={(e) => setNote(e.target.value)}
       />
-      {task.seriesId && (
+      {mode === 'full' && task.seriesId && (
         <p>
           이 메모는 이번 할 일에 저장됩니다. 다음 회차의 메모는 아래 반복
           설정에서 수정할 수 있습니다.
         </p>
       )}
+      </>}
       {error && <p role="alert">{error}</p>}
       <div className="form-actions">
         <button disabled={busy || !title.trim()} type="submit">
-          수정 저장
+          {mode === 'memo' ? '메모 저장' : '수정 저장'}
         </button>
-        <button type="button" disabled={busy} onClick={remove}>
+        {mode === 'full' && <><button type="button" disabled={busy} onClick={remove}>
           삭제
         </button>
         {task.status === 'PLANNED' && (
@@ -80,6 +87,7 @@ export function TaskEditor({
             다시 할 일로
           </button>
         )}
+        </>}
         <button type="button" disabled={busy} onClick={cancel}>
           닫기
         </button>

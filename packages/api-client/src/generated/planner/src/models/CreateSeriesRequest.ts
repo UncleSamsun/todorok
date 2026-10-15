@@ -42,6 +42,18 @@ import {
  */
 export interface CreateSeriesRequest {
     /**
+     * 기존 일반 할 일을 첫 회차로 연결한다. sourceTaskVersion과 commandId가 필요하다.
+     * @type {string}
+     * @memberof CreateSeriesRequest
+     */
+    sourceTaskId?: string;
+    /**
+     *
+     * @type {number}
+     * @memberof CreateSeriesRequest
+     */
+    sourceTaskVersion?: number;
+    /**
      *
      * @type {string}
      * @memberof CreateSeriesRequest
@@ -114,6 +126,8 @@ export function CreateSeriesRequestFromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
 
+        'sourceTaskId': json['sourceTaskId'] == null ? undefined : json['sourceTaskId'],
+        'sourceTaskVersion': json['sourceTaskVersion'] == null ? undefined : json['sourceTaskVersion'],
         'commandId': json['commandId'] == null ? undefined : json['commandId'],
         'templateSelection': json['templateSelection'] == null ? undefined : TemplateSelectionFromJSON(json['templateSelection']),
         'title': json['title'],
@@ -136,6 +150,8 @@ export function CreateSeriesRequestToJSONTyped(value?: CreateSeriesRequest | nul
 
     return {
 
+        'sourceTaskId': value['sourceTaskId'],
+        'sourceTaskVersion': value['sourceTaskVersion'],
         'commandId': value['commandId'],
         'templateSelection': TemplateSelectionToJSON(value['templateSelection']),
         'title': value['title'],

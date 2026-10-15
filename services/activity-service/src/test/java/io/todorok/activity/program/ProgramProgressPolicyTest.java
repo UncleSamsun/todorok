@@ -7,6 +7,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ProgramProgressPolicyTest {
+    @Test void selectedStartingSessionAdvancesFromThatSessionAndRepeatsOnFailure() {
+        assertThat(policy.calculate(2,2,6,3,List.of(attempt(1,ProgramProgressPolicy.Outcome.SUCCESS))))
+            .isEqualTo(new ProgramProgressPolicy.Progress(2,3,false));
+        assertThat(policy.calculate(2,2,6,3,List.of(attempt(1,ProgramProgressPolicy.Outcome.SUCCESS),attempt(2,ProgramProgressPolicy.Outcome.SUCCESS))))
+            .isEqualTo(new ProgramProgressPolicy.Progress(3,1,false));
+        assertThat(policy.calculate(2,2,6,3,List.of(attempt(1,ProgramProgressPolicy.Outcome.FAILURE),attempt(2,ProgramProgressPolicy.Outcome.SUCCESS))))
+            .isEqualTo(new ProgramProgressPolicy.Progress(2,1,false));
+    }
     private final ProgramProgressPolicy policy = new ProgramProgressPolicy();
     private static ProgramProgressPolicy.Attempt attempt(long sequence, ProgramProgressPolicy.Outcome outcome) {
         return new ProgramProgressPolicy.Attempt(sequence, outcome);

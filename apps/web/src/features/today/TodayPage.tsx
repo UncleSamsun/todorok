@@ -16,6 +16,7 @@ import { QuickAdd } from './QuickAdd'
 import { TaskGroups } from './TaskGroups'
 import { TaskEditor } from './TaskEditor'
 import { SeriesEditor } from './SeriesEditor'
+import { TaskRepeatEditor } from './TaskRepeatEditor'
 import { StickyNote } from './StickyNote'
 import { ActivityReturnStatus } from '../activity/ActivityReturnStatus'
 import type { Task } from './model'
@@ -60,11 +61,12 @@ export function TodayPage() {
     [error, setError] = useState(''),
     [addUncertain, setAddUncertain] = useState(false)
   const [templateConflict, setTemplateConflict] = useState(false)
+  const [editMode, setEditMode] = useState<'task' | 'repeat' | 'memo'>('task')
   const [addRejection, setAddRejection] = useState(0)
   const addRequest = useRef<(() => Promise<unknown>) | null>(null)
   const editorSlot = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (adding || editing) editorSlot.current?.scrollIntoView?.({ block: 'start' })
+    if (adding) editorSlot.current?.scrollIntoView?.({ block: 'nearest' })
   }, [adding, editing?.taskId])
   const [today, setToday] = useState(seoulToday)
   const [rolloverEpoch, setRolloverEpoch] = useState(0)
@@ -158,10 +160,12 @@ export function TodayPage() {
       setEditing(null)
       await queries.invalidateQueries({ queryKey: ['calendar'] })
       await queries.invalidateQueries({ queryKey: ['task'] })
+      return true
     } catch {
       setError(
         '저장하지 못했습니다. 연결이나 변경된 내용을 확인한 뒤 다시 시도해 주세요.',
       )
+      return false
     } finally {
       setBusy(false)
     }
@@ -206,10 +210,12 @@ export function TodayPage() {
           }),
     )
   }
-  async function edit(task: Task) {
+  async function edit(task: Task, mode: 'task' | 'repeat' | 'memo' = 'task') {
     // Keep the draft and expected version on the same edit-session snapshot.
     // Closing the editor explicitly allows a fresh snapshot on the next open.
-    if (busy || editing?.taskId === task.taskId) return
+    if (busy) return
+    setEditMode(mode)
+    if (editing?.taskId === task.taskId) return
     setBusy(true)
     setError('')
     try {
@@ -343,9 +349,15 @@ export function TodayPage() {
             </button>
           </p>
         )}
-        {(adding || editing) && <div className="task-editor-slot" ref={editorSlot}>
+        <TaskGroups
+          adding={adding}
+          addForm={<div className="task-editor-slot" ref={adding ? editorSlot : undefined}>
+
         {adding && (
           <QuickAdd
+            inline
+            initialTemplateId={new URLSearchParams(location.search).get('template') ?? ''}
+            chooseProgram={key => void navigate(`/workout?program=${key}`)}
             key={`${adding}-${selected}`}
             date={selected}
             type={adding}
@@ -386,9 +398,16 @@ export function TodayPage() {
             }
           />
         )}
-        {editing && (
+          </div>}
+          editingTaskId={editing?.taskId}
+          closeEdit={() => setEditing(null)}
+          editLabel={editMode === 'task' ? '일정 수정' : editMode === 'repeat' ? '반복 설정' : '메모'}
+          rename={async (task,title) => Boolean(await mutate(() => api.tasks.updateTask({taskId:task.taskId,updateTaskRequest:{title,scheduledDate:task.scheduledDate,version:task.version,scheduledTime:task.scheduledTime ?? '',reminderEnabled:task.reminderEnabled ?? false}})))}
+          editForm={<div className="task-editor-slot" ref={editing ? editorSlot : undefined}>
+        {editing && editMode !== 'repeat' && (
           <TaskEditor
-            key={editing.taskId}
+            key={`${editing.taskId}-${editMode}`}
+            mode={editMode === 'memo' ? 'memo' : 'schedule'}
             task={editing}
             busy={busy}
             error={error}
@@ -433,8 +452,25 @@ export function TodayPage() {
             }
           />
         )}
-        {editing && editingSeries && (
+        {editing && editMode === 'repeat' && !editingSeries && <TaskRepeatEditor
+          key={editing.taskId} task={editing} busy={busy} error={error} close={() => setEditing(null)}
+          save={async request => {
+            setBusy(true); setError('')
+            try {
+              await api.series.createSeries({createSeriesRequest:request})
+              setEditing(null)
+              await queries.invalidateQueries({queryKey:['calendar']})
+              await queries.invalidateQueries({queryKey:['task']})
+            } catch (reason) {
+              const failure=await requestFailure(reason)
+              setError(failure.rejected ? '반복 설정을 적용하지 못했습니다. 현재 일정을 확인해 주세요.' : '저장 결과를 확인하지 못했습니다. 같은 요청을 다시 보내 주세요.')
+              throw failure.rejected ? 'rejected' : 'uncertain'
+            } finally { setBusy(false) }
+          }} />}
+        {editing && editMode === 'repeat' && editingSeries && (
           <SeriesEditor
+            expanded
+            close={() => setEditing(null)}
             key={`${editing.taskId}-${editingSeries.version}`}
             series={editingSeries}
             busy={busy}
@@ -456,8 +492,8 @@ export function TodayPage() {
             }
           />
         )}
-        </div>}
-        <TaskGroups
+
+          </div>}
           tasks={detail.data?.tasks ?? []}
           busy={busy || !ready}
           add={(type) => {
@@ -471,7 +507,7 @@ export function TodayPage() {
             }
           }}
           check={check}
-          edit={(task) => void edit(task)}
+          edit={(task, mode) => void edit(task, mode)}
         />
         <StickyNote
           key={state.generation}

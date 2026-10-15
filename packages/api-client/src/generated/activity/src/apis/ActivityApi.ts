@@ -64,6 +64,11 @@ import {
     ProgramEnrollmentResponseToJSON,
 } from '../models/ProgramEnrollmentResponse';
 import {
+    type ScheduleProgramSessionRequest,
+    ScheduleProgramSessionRequestFromJSON,
+    ScheduleProgramSessionRequestToJSON,
+} from '../models/ScheduleProgramSessionRequest';
+import {
     type VoidActivityRequest,
     VoidActivityRequestFromJSON,
     VoidActivityRequestToJSON,
@@ -99,6 +104,11 @@ export interface ListActivitiesRequest {
     date?: string;
     cursor?: string;
     limit?: number;
+}
+
+export interface ScheduleProgramSessionOperationRequest {
+    enrollmentId: string;
+    scheduleProgramSessionRequest: ScheduleProgramSessionRequest;
 }
 
 export interface VoidActivityOperationRequest {
@@ -307,6 +317,29 @@ export interface ActivityApiInterface {
     /**
      */
     listPrograms(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ProgramCatalogSummary>>;
+
+    /**
+     * Creates request options for scheduleProgramSession without sending the request
+     * @param {string} enrollmentId
+     * @param {ScheduleProgramSessionRequest} scheduleProgramSessionRequest
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    scheduleProgramSessionRequestOpts(requestParameters: ScheduleProgramSessionOperationRequest): Promise<runtime.RequestOpts>;
+
+    /**
+     *
+     * @param {string} enrollmentId
+     * @param {ScheduleProgramSessionRequest} scheduleProgramSessionRequest
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ActivityApiInterface
+     */
+    scheduleProgramSessionRaw(requestParameters: ScheduleProgramSessionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProgramEnrollmentResponse>>;
+
+    /**
+     */
+    scheduleProgramSession(requestParameters: ScheduleProgramSessionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProgramEnrollmentResponse>;
 
     /**
      * Creates request options for voidActivity without sending the request
@@ -814,6 +847,67 @@ export class ActivityApi extends runtime.BaseAPI implements ActivityApiInterface
      */
     async listPrograms(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ProgramCatalogSummary>> {
         const response = await this.listProgramsRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for scheduleProgramSession without sending the request
+     */
+    async scheduleProgramSessionRequestOpts(requestParameters: ScheduleProgramSessionOperationRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['enrollmentId'] == null) {
+            throw new runtime.RequiredError(
+                'enrollmentId',
+                'Required parameter "enrollmentId" was null or undefined when calling scheduleProgramSession().'
+            );
+        }
+
+        if (requestParameters['scheduleProgramSessionRequest'] == null) {
+            throw new runtime.RequiredError(
+                'scheduleProgramSessionRequest',
+                'Required parameter "scheduleProgramSessionRequest" was null or undefined when calling scheduleProgramSession().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/program-enrollments/{enrollmentId}/sessions`;
+        urlPath = urlPath.replace('{enrollmentId}', encodeURIComponent(String(requestParameters['enrollmentId'])));
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ScheduleProgramSessionRequestToJSON(requestParameters['scheduleProgramSessionRequest']),
+        };
+    }
+
+    /**
+     */
+    async scheduleProgramSessionRaw(requestParameters: ScheduleProgramSessionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProgramEnrollmentResponse>> {
+        const requestOptions = await this.scheduleProgramSessionRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ProgramEnrollmentResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async scheduleProgramSession(requestParameters: ScheduleProgramSessionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProgramEnrollmentResponse> {
+        const response = await this.scheduleProgramSessionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

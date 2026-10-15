@@ -12,6 +12,21 @@ class ProgramCatalogImporterTest {
     private final ProgramCatalogImporter importer = new ProgramCatalogImporter(mapper);
     private Path fixture(String name) { return Path.of(System.getProperty("todorok.repository.root"), "contracts", "fixtures", "catalog", name); }
 
+    @Test void builtinPresetsHaveFullVerifiedWeekAndSetBounds() {
+        Path resources=Path.of(System.getProperty("todorok.repository.root"),"services","activity-service","src","main","resources","catalog","builtin");
+        var pushup=importer.read(resources.resolve("hundred-pushups-level-1.json"));
+        assertThat(pushup.source().kind()).isEqualTo("SOURCE_BASED");
+        assertThat(pushup.weeks()).hasSize(6);
+        assertThat(pushup.weeks().getFirst().sessions().getFirst().sets()).containsExactly(2,3,2,2,3);
+        assertThat(pushup.weeks().getLast().sessions().getLast().sets()).hasSize(9);
+        for(int level=1;level<=3;level++)assertThat(importer.read(resources.resolve("hundred-pushups-level-"+level+".json")).weeks()).hasSize(6);
+        var pullup=importer.read(resources.resolve("recon-ron-pullups.json"));
+        assertThat(pullup.weeks()).hasSize(38);
+        assertThat(pullup.weeks().getFirst().sessions().getFirst().sets()).containsExactly(6,5,5,4,3);
+        assertThat(pullup.weeks().getLast().sessions().getFirst().sets()).containsExactly(31,18,17,16,16);
+        assertThat(pullup.weeks().getLast().sessions().getFirst().targetTotal()).isEqualTo(98);
+    }
+
     @Test void readsSyntheticCatalogWithContiguousWeeksAndExactSetTotals() {
         var catalog = importer.read(fixture("program-v1-valid.json"));
         assertThat(catalog.catalogKey()).isEqualTo("synthetic-pushup");

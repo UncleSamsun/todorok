@@ -80,10 +80,11 @@ it('keeps the draft and expected version together when the same task is clicked 
   fireEvent.click(
     await screen.findByRole(
       'button',
-      { name: '원래 제목 수정' },
+      { name: '원래 제목 메뉴' },
       { timeout: 5000 },
     ),
   )
+  fireEvent.click(screen.getByRole('menuitem',{name:'일정 수정'}))
   expect(await screen.findByLabelText('제목 수정')).toHaveValue('원래 제목')
   fireEvent.change(screen.getByLabelText('제목 수정'), {
     target: { value: '내 초안' },
@@ -100,9 +101,8 @@ it('keeps the draft and expected version together when the same task is clicked 
     reminderEnabled: false,
     version: 1,
   }
-  await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: '원래 제목 수정' }))
-  })
+  fireEvent.click(screen.getByRole('button', { name: '원래 제목 메뉴' }))
+  fireEvent.click(screen.getByRole('menuitem',{name:'일정 수정'}))
   fireEvent.click(screen.getByRole('button', { name: '수정 저장' }))
   await waitFor(() => expect(writes).toHaveLength(1))
   expect(writes[0]).toEqual({
@@ -116,18 +116,19 @@ it('keeps the draft and expected version together when the same task is clicked 
   expect(await screen.findByRole('alert')).toBeVisible()
   expect(screen.getByLabelText('제목 수정')).toHaveValue('내 초안')
   expect(screen.getByLabelText('날짜 수정')).toHaveValue('2026-09-08')
-  expect(screen.getByLabelText('예정 시간')).toHaveValue('09:30')
-  expect(screen.getByLabelText('이 시간에 알림 받기')).toBeChecked()
+  expect(screen.queryByLabelText('예정 시간')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('할 일 메모')).not.toBeInTheDocument()
   expect(remote.title).toBe('다른 탭 변경')
   expect(remote.version).toBe(1)
 
   fireEvent.click(screen.getByRole('button', { name: '닫기' }))
-  fireEvent.click(screen.getByRole('button', { name: '원래 제목 수정' }))
+  fireEvent.click(screen.getByRole('button', { name: '원래 제목 메뉴' }))
+  fireEvent.click(screen.getByRole('menuitem',{name:'일정 수정'}))
   expect(await screen.findByLabelText('제목 수정')).toHaveValue(
     '다른 탭 변경',
   )
   expect(screen.getByLabelText('날짜 수정')).toHaveValue('2026-09-09')
-  expect(screen.getByLabelText('예정 시간')).toHaveValue('11:30')
+  expect(screen.queryByLabelText('예정 시간')).not.toBeInTheDocument()
 })
 it('keeps four empty groups and preserves quick-add input after a failed save', async () => {
   const session = new SessionClient({
@@ -171,7 +172,7 @@ it('keeps four empty groups and preserves quick-add input after a failed save', 
   fireEvent.change(screen.getByLabelText('제목'), {
     target: { value: '입력 보존' },
   })
-  fireEvent.click(screen.getByRole('button', { name: '저장' }))
+  fireEvent.blur(screen.getByLabelText('제목'), {relatedTarget: document.body})
   expect(await screen.findByRole('alert')).toBeVisible()
   expect(screen.getByLabelText('제목')).toHaveValue('입력 보존')
 })

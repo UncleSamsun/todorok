@@ -65,6 +65,7 @@ All URIs are relative to */api/activity/v1*
 *ActivityApi* | [**listActivities**](docs/ActivityApi.md#listactivities) | **GET** /activities |
 *ActivityApi* | [**listProgramEnrollments**](docs/ActivityApi.md#listprogramenrollments) | **GET** /program-enrollments |
 *ActivityApi* | [**listPrograms**](docs/ActivityApi.md#listprograms) | **GET** /programs |
+*ActivityApi* | [**scheduleProgramSession**](docs/ActivityApi.md#scheduleprogramsessionoperation) | **POST** /program-enrollments/{enrollmentId}/sessions |
 *ActivityApi* | [**voidActivity**](docs/ActivityApi.md#voidactivityoperation) | **POST** /activities/{activityId}/void |
 *TemplateApi* | [**archiveTemplate**](docs/TemplateApi.md#archivetemplateoperation) | **POST** /templates/{templateId}/archive |
 *TemplateApi* | [**createTemplate**](docs/TemplateApi.md#createtemplateoperation) | **POST** /templates |
@@ -106,6 +107,7 @@ All URIs are relative to */api/activity/v1*
 - [ProgramEnrollmentResponse](docs/ProgramEnrollmentResponse.md)
 - [ProgramSessionTarget](docs/ProgramSessionTarget.md)
 - [ProgramSource](docs/ProgramSource.md)
+- [ScheduleProgramSessionRequest](docs/ScheduleProgramSessionRequest.md)
 - [StudyDetail](docs/StudyDetail.md)
 - [StudyDetailResponse](docs/StudyDetailResponse.md)
 - [TaskRecordTemplateResponse](docs/TaskRecordTemplateResponse.md)
