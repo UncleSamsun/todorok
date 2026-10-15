@@ -878,3 +878,20 @@ button.destructive:hover:not(:disabled) { background: color-mix(in srgb, var(--d
 @media (max-width: 420px) {
   .domain-actions:has(button:nth-child(4)) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 }
+
+/* Keep form focus quiet; other controls retain their keyboard focus ring. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* iOS zooms focused fields below 16px and can retain that scale after login. */
+@media (max-width: 1023px), (hover: none) and (pointer: coarse) {
+  input,
+  select,
+  textarea,
+  .sticky-note textarea {
+    font-size: 16px;
+  }
+}
