@@ -10,6 +10,7 @@ export function TaskGroups({
   add,
   check,
   edit,
+  remove,
   adding,
   addForm,
   editingTaskId,
@@ -23,6 +24,7 @@ export function TaskGroups({
   add: (type: planner.TaskType) => void
   check: (task: Task) => void
   edit: (task: Task, mode?: 'task' | 'repeat' | 'memo') => void
+  remove?: (task: Task) => void
   adding?: planner.TaskType | null
   addForm?: ReactNode
   editingTaskId?: string
@@ -80,7 +82,7 @@ export function TaskGroups({
                   {task.completionSummary && <small className="completion-summary">{task.completionSummary}</small>}
                   {task.startedAt && task.endedAt && <small className="time-block">{task.startedAt.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Seoul' })}–{task.endedAt.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Seoul' })}</small>}
                 </button>}
-                <TaskMenu task={task} busy={busy} edit={(mode) => edit(task, mode)} />
+                <TaskMenu task={task} busy={busy} edit={(mode) => edit(task, mode)} remove={remove ? () => remove(task) : undefined} />
               </div>
               {editingTaskId === task.taskId && <TaskFloatingPanel label={editLabel} close={closeEdit} busy={busy}>{editForm}</TaskFloatingPanel>}
               </div>

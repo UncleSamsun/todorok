@@ -11,6 +11,7 @@ Name | Type
 `expectedTemplateVersion` | number
 `activityType` | [ActivityType](ActivityType.md)
 `completionStatus` | [ActivityCompletionStatus](ActivityCompletionStatus.md)
+`repeatProgramWeek` | boolean
 `performedAt` | Date
 `startedAt` | Date
 `endedAt` | Date
@@ -29,6 +30,7 @@ const example = {
   "expectedTemplateVersion": null,
   "activityType": null,
   "completionStatus": null,
+  "repeatProgramWeek": null,
   "performedAt": null,
   "startedAt": null,
   "endedAt": null,

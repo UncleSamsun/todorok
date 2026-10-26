@@ -105,6 +105,7 @@ All URIs are relative to */api/activity/v1*
 - [ProblemDetailsFieldErrorsInner](docs/ProblemDetailsFieldErrorsInner.md)
 - [ProgramCatalogSummary](docs/ProgramCatalogSummary.md)
 - [ProgramEnrollmentResponse](docs/ProgramEnrollmentResponse.md)
+- [ProgramSessionContext](docs/ProgramSessionContext.md)
 - [ProgramSessionTarget](docs/ProgramSessionTarget.md)
 - [ProgramSource](docs/ProgramSource.md)
 - [ScheduleProgramSessionRequest](docs/ScheduleProgramSessionRequest.md)

@@ -508,6 +508,7 @@ export function TodayPage() {
           }}
           check={check}
           edit={(task, mode) => void edit(task, mode)}
+          remove={task => void mutate(() => api.tasks.deleteTask({ taskId: task.taskId, version: task.version }))}
         />
         <StickyNote
           key={state.generation}

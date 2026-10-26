@@ -109,24 +109,42 @@ public class ProgramEnrollmentService {
     }
 
     @Transactional
-    public void recordOutcome(UUID taskId, UUID activityId, int actualRepetitions, boolean voided) {
+    public void recordOutcome(UUID taskId, UUID activityId, Integer actualRepetitions, boolean voided) {
         recordOutcome(taskId, activityId, actualRepetitions, voided, LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul"))));
     }
 
     @Transactional
-    public void recordOutcome(UUID taskId, UUID activityId, int actualRepetitions, boolean voided, LocalDate performedDate) {
+    public void recordOutcome(UUID taskId, UUID activityId, Integer actualRepetitions, boolean voided, LocalDate performedDate) {
+        recordOutcome(taskId, activityId, actualRepetitions, voided, performedDate, null);
+    }
+
+    @Transactional
+    public void recordOutcome(UUID taskId, UUID activityId, Integer actualRepetitions, boolean voided, LocalDate performedDate, Boolean repeatWeekChoice) {
         var sessions = jdbc.queryForList("select * from program_session where task_id=? for update", taskId);
-        if (sessions.isEmpty()) return;
+        if (sessions.isEmpty()) {
+            if (Boolean.TRUE.equals(repeatWeekChoice)) throw invalid("PROGRAM_REPEAT_INVALID", "Only the current final program session can repeat its week.");
+            return;
+        }
         var session = sessions.getFirst();
         UUID enrollmentId = (UUID) session.get("enrollment_id");
         var enrollment = jdbc.queryForMap("select * from program_enrollment where id=? for update", enrollmentId);
+        var catalog = importer.parse(mapper.readTree(String.valueOf(jdbc.queryForObject("select definition::text from program_catalog where catalog_key=? and catalog_version=?", String.class, enrollment.get("catalog_key"), enrollment.get("catalog_version")))));
+        if (Boolean.TRUE.equals(repeatWeekChoice) &&
+            (((Number) session.get("session")).intValue() != catalog.sessionsPerWeek()
+                || !"ACTIVE".equals(enrollment.get("status"))
+                || !Objects.equals(session.get("progress_epoch"), enrollment.get("progress_epoch"))
+                || !Objects.equals(session.get("cycle"), enrollment.get("current_cycle"))
+                || !Objects.equals(session.get("session"), enrollment.get("current_session"))))
+            throw invalid("PROGRAM_REPEAT_INVALID", "Only the current final program session can repeat its week.");
+        boolean repeatWeek = repeatWeekChoice == null ? Boolean.TRUE.equals(session.get("repeat_week")) : repeatWeekChoice;
         int target = 0;
         for (var value : mapper.readTree(String.valueOf(jdbc.queryForObject("select target_sets::text from program_session where id=?", String.class, session.get("id"))))) target += value.asInt();
-        String outcome = voided ? "VOIDED" : actualRepetitions >= target ? "SUCCESS" : "FAILURE";
-        if (outcome.equals(session.get("outcome")) && Objects.equals(voided ? null : activityId, session.get("activity_id"))) return;
-        jdbc.update("update program_session set activity_id=?,outcome=? where id=?", voided ? null : activityId, outcome, session.get("id"));
+        // Completion without optional rep details is a declared success; explicit zero remains a failure.
+        String outcome = voided ? "VOIDED" : repeatWeek ? "FAILURE" : actualRepetitions == null || actualRepetitions >= target ? "SUCCESS" : "FAILURE";
+        if (outcome.equals(session.get("outcome")) && Objects.equals(voided ? null : activityId, session.get("activity_id"))
+            && repeatWeek == Boolean.TRUE.equals(session.get("repeat_week"))) return;
+        jdbc.update("update program_session set activity_id=?,outcome=?,repeat_week=? where id=?", voided ? null : activityId, outcome, repeatWeek, session.get("id"));
         if(((Number)session.get("progress_epoch")).longValue()!=((Number)enrollment.get("progress_epoch")).longValue())return;
-        var catalog = importer.parse(mapper.readTree(String.valueOf(jdbc.queryForObject("select definition::text from program_catalog where catalog_key=? and catalog_version=?", String.class, enrollment.get("catalog_key"), enrollment.get("catalog_version")))));
         var history = jdbc.query("select row_number() over(order by created_at,id) as sequence,outcome from program_session where enrollment_id=? and progress_epoch=? and outcome is not null", (row, index) -> new ProgramProgressPolicy.Attempt(row.getLong("sequence"), ProgramProgressPolicy.Outcome.valueOf(row.getString("outcome"))), enrollmentId,enrollment.get("progress_epoch"));
         int startSession=((Number)enrollment.get("epoch_start_session")).intValue();
         var progress = new ProgramProgressPolicy().calculate(((Number) enrollment.get("epoch_start_week")).intValue(),startSession, catalog.weeks().size(), catalog.sessionsPerWeek(), history);

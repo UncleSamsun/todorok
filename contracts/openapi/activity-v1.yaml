@@ -401,6 +401,16 @@ components:
         linked: { type: boolean }
         templateLink: { $ref: '#/components/schemas/TemplateLink' }
         template: { $ref: '#/components/schemas/TemplateResponse' }
+        programSession: { $ref: '#/components/schemas/ProgramSessionContext' }
+    ProgramSessionContext:
+      type: object
+      additionalProperties: false
+      required: [week, session, sessionsPerWeek, canRepeatWeek]
+      properties:
+        week: { type: integer, minimum: 1 }
+        session: { type: integer, minimum: 1, maximum: 7 }
+        sessionsPerWeek: { type: integer, minimum: 1, maximum: 7 }
+        canRepeatWeek: { type: boolean, description: True only for the current active final session of its week. }
     ProblemDetails:
       $ref: './common-v1.yaml#/components/schemas/ProblemDetails'
     ProgramCatalogSummary:
@@ -709,6 +719,7 @@ components:
         expectedTemplateVersion: { type: integer, format: int64, minimum: 1, description: Required for template-linked tasks; forbidden for unlinked tasks. Compared with current version under lock after successful command replay. }
         activityType: { $ref: '#/components/schemas/ActivityType' }
         completionStatus: { $ref: '#/components/schemas/ActivityCompletionStatus' }
+        repeatProgramWeek: { type: boolean, description: When true, save a completed current final program session and restart its week at session one. The choice survives later record corrections. }
         performedAt: { type: string, format: date-time }
         startedAt: { type: string, format: date-time, description: Optional actual interval start; requires endedAt and same Seoul date as performedAt. }
         endedAt: { type: string, format: date-time, description: Optional actual interval end; must follow startedAt on the same Seoul date. }

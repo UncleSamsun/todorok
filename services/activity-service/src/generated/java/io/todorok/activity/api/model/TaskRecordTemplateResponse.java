@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import io.todorok.activity.api.model.ProgramSessionContext;
 import io.todorok.activity.api.model.TemplateLink;
 import io.todorok.activity.api.model.TemplateResponse;
 import org.springframework.lang.Nullable;
@@ -32,6 +33,9 @@ public class TaskRecordTemplateResponse {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private @Nullable TemplateResponse template;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable ProgramSessionContext programSession;
 
   public TaskRecordTemplateResponse() {
     super();
@@ -106,6 +110,27 @@ public class TaskRecordTemplateResponse {
     this.template = template;
   }
 
+  public TaskRecordTemplateResponse programSession(@Nullable ProgramSessionContext programSession) {
+    this.programSession = programSession;
+    return this;
+  }
+
+  /**
+   * Get programSession
+   * @return programSession
+   */
+  @Valid
+  @JsonProperty("programSession")
+  public @Nullable ProgramSessionContext getProgramSession() {
+    return programSession;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("programSession")
+  public void setProgramSession(@Nullable ProgramSessionContext programSession) {
+    this.programSession = programSession;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -117,12 +142,13 @@ public class TaskRecordTemplateResponse {
     TaskRecordTemplateResponse taskRecordTemplateResponse = (TaskRecordTemplateResponse) o;
     return Objects.equals(this.linked, taskRecordTemplateResponse.linked) &&
         Objects.equals(this.templateLink, taskRecordTemplateResponse.templateLink) &&
-        Objects.equals(this.template, taskRecordTemplateResponse.template);
+        Objects.equals(this.template, taskRecordTemplateResponse.template) &&
+        Objects.equals(this.programSession, taskRecordTemplateResponse.programSession);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(linked, templateLink, template);
+    return Objects.hash(linked, templateLink, template, programSession);
   }
 
   @Override
@@ -132,6 +158,7 @@ public class TaskRecordTemplateResponse {
     sb.append("    linked: ").append(toIndentedString(linked)).append("\n");
     sb.append("    templateLink: ").append(toIndentedString(templateLink)).append("\n");
     sb.append("    template: ").append(toIndentedString(template)).append("\n");
+    sb.append("    programSession: ").append(toIndentedString(programSession)).append("\n");
     sb.append("}");
     return sb.toString();
   }

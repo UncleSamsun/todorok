@@ -27,6 +27,7 @@ export * from './ProblemDetails';
 export * from './ProblemDetailsFieldErrorsInner';
 export * from './ProgramCatalogSummary';
 export * from './ProgramEnrollmentResponse';
+export * from './ProgramSessionContext';
 export * from './ProgramSessionTarget';
 export * from './ProgramSource';
 export * from './ScheduleProgramSessionRequest';

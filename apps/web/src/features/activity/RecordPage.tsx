@@ -33,6 +33,7 @@ export function RecordPage({ type }: { type: RecordType }) {
   const { draft, update, clear } = useRecordDraft(`${type}:${taskId}`)
   const { date, note, workout, workoutFields, study, climbing, start, end, snapshot, uncertain, blocked, error } = draft
   const latestTemplate = recordTemplate.data?.linked ? recordTemplate.data.template?.currentVersion : undefined
+  const programSession = type === 'WORKOUT' ? recordTemplate.data?.programSession : undefined
   const currentTemplate = draft.template ?? latestTemplate
   const templateChanged = Boolean(draft.template && latestTemplate && draft.template.templateVersion !== latestTemplate.templateVersion)
   useEffect(() => { if (latestTemplate && !draft.template) update({ template: structuredClone(latestTemplate) }) }, [latestTemplate, draft.template])
@@ -54,7 +55,8 @@ export function RecordPage({ type }: { type: RecordType }) {
     if (Boolean(startedAt) !== Boolean(endedAt)) throw new Error('시작과 종료 시간을 모두 선택해 주세요.')
     if (startedAt && endedAt && endedAt <= startedAt) throw new Error('종료 시간은 시작 시간보다 늦어야 합니다.')
     if (currentTemplate) validateStudyFields(type === 'STUDY' ? study : type === 'WORKOUT' ? { fields: workoutFields } : { fields: climbing.fields })
-    return { commandId: timer?.commandId ?? crypto.randomUUID(), taskId, activityType: activity.ActivityType[type[0] + type.slice(1).toLowerCase() as 'Workout' | 'Study' | 'Climbing'], completionStatus: timer?.completionStatus === 'PARTIAL' ? activity.ActivityCompletionStatus.Partial : activity.ActivityCompletionStatus.Completed, performedAt: midnightSeoul(performedDate), ...(currentTemplate ? { expectedTemplateVersion: currentTemplate.templateVersion } : {}), ...(startedAt && endedAt ? { startedAt, endedAt } : {}), ...(note.trim() ? { note: note.trim() } : {}), detail: timer ? { climbing: timer.detail } : type === 'WORKOUT' ? { workout: { ...(workout.length ? { sets: workout } : {}), ...(currentTemplate ? { fields: workoutFields } : {}) } } : type === 'STUDY' ? { study } : { climbing } }
+    if (draft.repeatProgramWeek && !programSession?.canRepeatWeek) throw new Error('프로그램 상태가 변경되었습니다. 현재 회차를 다시 확인해 주세요.')
+    return { ...(draft.repeatProgramWeek ? { repeatProgramWeek: true } : {}), commandId: timer?.commandId ?? crypto.randomUUID(), taskId, activityType: activity.ActivityType[type[0] + type.slice(1).toLowerCase() as 'Workout' | 'Study' | 'Climbing'], completionStatus: timer?.completionStatus === 'PARTIAL' ? activity.ActivityCompletionStatus.Partial : activity.ActivityCompletionStatus.Completed, performedAt: midnightSeoul(performedDate), ...(currentTemplate ? { expectedTemplateVersion: currentTemplate.templateVersion } : {}), ...(startedAt && endedAt ? { startedAt, endedAt } : {}), ...(note.trim() ? { note: note.trim() } : {}), detail: timer ? { climbing: timer.detail } : type === 'WORKOUT' ? { workout: { ...(workout.length ? { sets: workout } : {}), ...(currentTemplate ? { fields: workoutFields } : {}) } } : type === 'STUDY' ? { study } : { climbing } }
   }
   async function submit(retry = false, timer?: CrimpTimerRecord): Promise<boolean> {
     if (busy || blocked || (templateChanged && !uncertain)) return false
@@ -125,13 +127,17 @@ export function RecordPage({ type }: { type: RecordType }) {
       ) : (
         <><ClimbingFields detail={climbing} change={(v) => update({ climbing: v, snapshot: null })}/>{currentTemplate && <StudyTemplateFields legend="사용자 기록 항목" definitions={currentTemplate.fields} value={{ fields: climbing.fields }} change={(value) => update({ climbing: { ...climbing, fields: value.fields ?? [] }, snapshot: null })}/>}</>
       )}
+      {programSession?.canRepeatWeek && <fieldset><legend>{programSession.week}주차 마지막 회차</legend>
+        <button type="button" aria-pressed={Boolean(draft.repeatProgramWeek)} onClick={() => update({ repeatProgramWeek: !draft.repeatProgramWeek, snapshot: null })}>이번 주 다시하기</button>
+        <p>{draft.repeatProgramWeek ? `기록을 저장하고 ${programSession.week}주차 1회차부터 다시 시작합니다.` : '목표를 채우기 어려웠다면 이번 주를 다시 할 수 있습니다.'}</p>
+      </fieldset>}
       <RecordTimeFields start={start} end={end} setStart={(v) => update({ start: v, snapshot: null })} setEnd={(v) => update({ end: v, snapshot: null })}/>
       <label>기록 메모<textarea value={note} onChange={(e) => update({ note: e.target.value, snapshot: null })} /></label>
       </fieldset>
       {templateChanged && currentTemplate && latestTemplate && <TemplateChange before={currentTemplate} after={latestTemplate} study={type === 'STUDY' ? study : type === 'WORKOUT' ? { fields: workoutFields } : { fields: climbing.fields }} apply={applyTemplate} disabled={busy || uncertain} />}
       {draft.previousInputs?.map((previous, index) => <PreviousStudyInput key={index} {...previous} />)}
       {error && <p role="alert">{error}</p>}
-      <div className="form-actions"><button className="secondary" type="button" onClick={leave}>{blocked ? '오늘에서 할 일 확인' : '취소'}</button><button className="primary" type="submit" disabled={busy || blocked || (templateChanged && !uncertain)}>{busy ? '저장 중…' : blocked ? '충돌 상태 확인 필요' : uncertain ? '같은 요청 다시 보내기' : '기록 저장'}</button></div>
+      <div className="form-actions"><button className="secondary" type="button" onClick={leave}>{blocked ? '오늘에서 할 일 확인' : '취소'}</button><button className="primary" type="submit" disabled={busy || blocked || (templateChanged && !uncertain)}>{busy ? '저장 중…' : blocked ? '충돌 상태 확인 필요' : uncertain ? '같은 요청 다시 보내기' : draft.repeatProgramWeek ? '기록 저장 · 이번 주 다시하기' : '기록 저장'}</button></div>
     </form>}
     {saved && error && <p role="alert">{error}</p>}
   </section>

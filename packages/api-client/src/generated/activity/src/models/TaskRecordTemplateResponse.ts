@@ -20,6 +20,13 @@ import {
     TemplateResponseToJSON,
     TemplateResponseToJSONTyped,
 } from './TemplateResponse';
+import type { ProgramSessionContext } from './ProgramSessionContext';
+import {
+    ProgramSessionContextFromJSON,
+    ProgramSessionContextFromJSONTyped,
+    ProgramSessionContextToJSON,
+    ProgramSessionContextToJSONTyped,
+} from './ProgramSessionContext';
 import type { TemplateLink } from './TemplateLink';
 import {
     TemplateLinkFromJSON,
@@ -52,6 +59,12 @@ export interface TaskRecordTemplateResponse {
      * @memberof TaskRecordTemplateResponse
      */
     template?: TemplateResponse;
+    /**
+     *
+     * @type {ProgramSessionContext}
+     * @memberof TaskRecordTemplateResponse
+     */
+    programSession?: ProgramSessionContext;
 }
 
 /**
@@ -75,6 +88,7 @@ export function TaskRecordTemplateResponseFromJSONTyped(json: any, ignoreDiscrim
         'linked': json['linked'],
         'templateLink': json['templateLink'] == null ? undefined : TemplateLinkFromJSON(json['templateLink']),
         'template': json['template'] == null ? undefined : TemplateResponseFromJSON(json['template']),
+        'programSession': json['programSession'] == null ? undefined : ProgramSessionContextFromJSON(json['programSession']),
     };
 }
 
@@ -92,5 +106,6 @@ export function TaskRecordTemplateResponseToJSONTyped(value?: TaskRecordTemplate
         'linked': value['linked'],
         'templateLink': TemplateLinkToJSON(value['templateLink']),
         'template': TemplateResponseToJSON(value['template']),
+        'programSession': ProgramSessionContextToJSON(value['programSession']),
     };
 }

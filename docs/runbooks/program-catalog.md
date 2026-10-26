@@ -71,6 +71,12 @@ activity-service는 시작 시 빈 값이면 아무 catalog도 import하지 않�
 
 ## 완료 후 권장 다음 일정 (2026-10-15)
 
+2026-10-23 완료 판정 보완: `COMPLETED` 운동 기록에서 모든 세트의 횟수를 생략하면 사용자가 선언한 완주로 판정한다. 누락 값을 0회로 간주해 주차를 반복하지 않는다. 실제 횟수가 하나라도 입력되면 입력한 합계를 해당 회차의 목표 합계와 비교하며, 명시적 0회와 목표 미달은 기존 실패/주차 반복 규칙을 따른다. 생성과 정정에 같은 규칙을 적용하고, 생략한 실제 횟수를 목표 횟수로 채워 저장하지 않는다. `PARTIAL` 기록은 진급에 반영하지 않는다. 주차 경계는 각 catalog의 `sessionsPerWeek` 설정을 따른다.
+
+같은 날 추가한 프로그램 상태 수정은 운동 탭의 등록 프로그램 카드에서 주차·회차를 골라 기존 enrollment의 진행 위치를 변경한다. 선택 범위는 등록된 catalog 버전의 `totalWeeks`·`sessionsPerWeek`를 사용하고, 완료된 프로그램도 다시 시작할 수 있다. 기존 회차 선택 API의 revision 검사·command 재전송·진행 epoch 분리를 사용하며 기존 활동 기록은 유지한다.
+
+사용자 선택에 따른 주차 반복은 상태 수정 창이 아니라 마지막 회차 기록 저장에서 결정한다. `GET /tasks/{taskId}/record-template`의 선택적 `programSession` 정보가 현재 활성 마지막 회차임을 확인하면 기록 화면에 `이번 주 다시하기` 버튼을 표시한다. 선택 후 저장은 `CreateActivityRequest.repeatProgramWeek=true`를 보내며, 활동 저장·주차 반복 판정·같은 주차 1회 일정 생성을 한 트랜잭션으로 수행한다. 최종 주차도 반복할 수 있다. 다음 주차 일정을 먼저 만든 뒤 진행 위치를 되돌리지 않는다. V13 migration의 `program_session.repeat_week`에 선택을 보존하므로 실제 횟수 정정으로 반복 선택이 사라지지 않는다. 중간 회차·다른 진행 epoch·부분 기록의 반복 요청은 거절하며, 재전송은 같은 명령 ID와 요청 본문을 유지한다. 기존 명령의 fingerprint는 새 선택 필드가 없거나 false이면 이전 형태를 유지한다.
+
 사용자는 다음 날 고정 생성 대신 프로그램의 권장 간격을 요청했다. `ProgramSchedulePolicy`는 설치된 푸시업 3난이도와 풀업 주 3회 변형에 회차 간 2일·2일·주차 경계 3일 간격을 적용한다. 실제 기록 수행일의 Asia/Seoul 날짜를 기준으로 계산하고, 오래된 기록이면 다음 날짜를 오늘보다 과거로 만들지 않는다. 날짜 단위의 휴식일 배치이며 시각 단위 48시간 예약은 아니다. 기타 기존 catalog는 종전 하루 간격을 유지한다. 불변 v1 catalog의 checksum/목표 수치를 교체하지 않는다.
 
 푸시업 공식 [FAQ](https://hundredpushups.com/questions.html)와 [1주차](https://hundredpushups.com/week1.html)는 주 3회와 회복일을 안내한다. 풀업은 현재 앱에 설정된 38주·주 3회 변형의 cadence를 유지한다. [1981년 Recon Ron 원문 재인쇄](https://sustainableevolution.wordpress.com/wp-content/uploads/2013/06/recon-ron-pullup.pdf)의 매일 수행·2주 step 방식은 다른 표이므로 해당 원문의 빈도와 같다고 주장하지 않는다.

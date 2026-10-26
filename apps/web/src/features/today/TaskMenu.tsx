@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Task } from './model'
 
-export function TaskMenu({ task, busy, edit }: { task: Task; busy: boolean; edit: (mode: 'task' | 'repeat' | 'memo') => void }) {
+export function TaskMenu({ task, busy, edit, remove }: { task: Task; busy: boolean; edit: (mode: 'task' | 'repeat' | 'memo') => void; remove?: () => void }) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const toggle = useRef<HTMLButtonElement>(null)
@@ -25,6 +25,7 @@ export function TaskMenu({ task, busy, edit }: { task: Task; busy: boolean; edit
       <button ref={item} type="button" role="menuitem" disabled={busy} onClick={() => { setOpen(false); edit('task') }}>일정 수정</button>
       <button type="button" role="menuitem" disabled={busy || (!task.seriesId && (task.taskType !== 'GENERAL' || task.status !== 'PLANNED'))} onClick={() => { setOpen(false); edit('repeat') }}>반복 설정</button>
       <button type="button" role="menuitem" disabled={busy} onClick={() => { setOpen(false); edit('memo') }}>메모</button>
+      {remove && <button type="button" role="menuitem" disabled={busy} onClick={() => { setOpen(false); remove() }}>삭제</button>}
     </div>}
   </div>
 }

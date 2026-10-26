@@ -28,6 +28,7 @@ docs/ProblemDetails.md
 docs/ProblemDetailsFieldErrorsInner.md
 docs/ProgramCatalogSummary.md
 docs/ProgramEnrollmentResponse.md
+docs/ProgramSessionContext.md
 docs/ProgramSessionTarget.md
 docs/ProgramSource.md
 docs/ScheduleProgramSessionRequest.md
@@ -77,6 +78,7 @@ src/models/ProblemDetails.ts
 src/models/ProblemDetailsFieldErrorsInner.ts
 src/models/ProgramCatalogSummary.ts
 src/models/ProgramEnrollmentResponse.ts
+src/models/ProgramSessionContext.ts
 src/models/ProgramSessionTarget.ts
 src/models/ProgramSource.ts
 src/models/ScheduleProgramSessionRequest.ts

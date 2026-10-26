@@ -7,6 +7,7 @@ import { useRecordTemplates } from '../study/useStudyTemplates'
 import { FloatingScheduleAdd } from '../activity/FloatingScheduleAdd'
 import { TaskFloatingPanel } from '../today/TaskFloatingPanel'
 import { ProgramPresetDialog } from './ProgramPresetDialog'
+import { ProgramProgressDialog } from './ProgramProgressDialog'
 
 const nameFor = (catalogs: activity.ProgramCatalogSummary[] | undefined, enrollment: activity.ProgramEnrollmentResponse) =>
   catalogs?.find((catalog) => catalog.catalogKey === enrollment.catalogKey && catalog.catalogVersion === enrollment.catalogVersion)?.name ?? enrollment.catalogKey
@@ -19,6 +20,7 @@ export function ProgramPanel() {
   const [selected, setSelected] = useState<activity.ProgramCatalogSummary | null>(null)
   const [selectedBuiltin,setSelectedBuiltin]=useState<typeof builtinPrograms[number]|null>(()=>builtinPrograms.find(program=>program.key===new URLSearchParams(location.search).get('program'))??null)
   const [adding,setAdding]=useState<{templateId?:string;title?:string}|null>(null)
+  const [editingProgress, setEditingProgress] = useState<string | null>(null)
   const templatesApi=useMemo(()=>new activity.TemplateApi(new activity.Configuration({basePath:'/api/activity/v1',fetchApi:session.fetch})),[session])
   const customTypes=useRecordTemplates(templatesApi,state.userId,activity.TemplateDomain.Workout,activity.TemplateKind.FreeWorkout,false)
   const customTemplates=customTypes.data?.pages.flatMap(page=>page.items).filter(item=>!item.archived)??[]
@@ -33,7 +35,7 @@ export function ProgramPanel() {
     },
     onError: () => setError('프로그램 등록을 완료하지 못했습니다. 입력과 연결 상태를 확인한 뒤 다시 시도해 주세요.'),
   })
-  const active = (enrollments.data ?? []).filter((enrollment) => enrollment.status === activity.ProgramEnrollmentResponseStatusEnum.Active)
+  const active = enrollments.data ?? []
 
   function begin(catalog: activity.ProgramCatalogSummary) {
     setAdding(null)
@@ -65,10 +67,16 @@ export function ProgramPanel() {
     {adding&&<FloatingScheduleAdd key={`${adding.templateId??'free'}-${adding.title??''}`} type="WORKOUT" initialTitle={adding.title} initialTemplateId={adding.templateId} close={()=>setAdding(current=>current===adding?null:current)}/>}
     {enrollments.isPending && <p role="status">등록한 프로그램을 불러오는 중…</p>}
     {enrollments.isError && <p role="alert">등록한 프로그램을 불러오지 못했습니다.</p>}
-    {active.length > 0 && <section className="program-current"><h3>진행 중인 프로그램</h3>{active.map((enrollment) => <article key={enrollment.enrollmentId}>
+    {active.length > 0 && <section className="program-current"><h3>프로그램 상태</h3>{active.map((enrollment) => <article key={enrollment.enrollmentId}>
       <strong>{nameFor(catalogs.data, enrollment)}</strong>
       <span>{enrollment.currentWeek}주차 {enrollment.currentSession}회</span>
       <small>권장 세트</small><b>{enrollment.target.targetSets.join(' · ')}회</b>
+      {enrollment.status === activity.ProgramEnrollmentResponseStatusEnum.Completed && <small>프로그램 완료</small>}
+      <button type="button" aria-label={`${nameFor(catalogs.data, enrollment)} 상태 수정`}
+        disabled={!catalogs.data?.some(catalog => catalog.catalogKey === enrollment.catalogKey && catalog.catalogVersion === enrollment.catalogVersion)}
+        onClick={() => { setSelectedBuiltin(null); setSelected(null); setAdding(null); setEditingProgress(enrollment.enrollmentId) }}>상태 수정</button>
+      {editingProgress === enrollment.enrollmentId && catalogs.data?.filter(catalog => catalog.catalogKey === enrollment.catalogKey && catalog.catalogVersion === enrollment.catalogVersion).map(catalog =>
+        <ProgramProgressDialog key={enrollment.enrollmentId} enrollment={enrollment} catalog={catalog} close={() => setEditingProgress(null)} />)}
     </article>)}</section>}
     {catalogs.isPending && <p role="status">프로그램을 불러오는 중…</p>}
     {catalogs.isError && <p role="alert">프로그램을 불러오지 못했습니다.</p>}

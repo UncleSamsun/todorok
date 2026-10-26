@@ -9,6 +9,7 @@ Name | Type
 `linked` | boolean
 `templateLink` | [TemplateLink](TemplateLink.md)
 `template` | [TemplateResponse](TemplateResponse.md)
+`programSession` | [ProgramSessionContext](ProgramSessionContext.md)
 
 ## Example
 
@@ -20,6 +21,7 @@ const example = {
   "linked": null,
   "templateLink": null,
   "template": null,
+  "programSession": null,
 } satisfies TaskRecordTemplateResponse
 
 console.log(example)

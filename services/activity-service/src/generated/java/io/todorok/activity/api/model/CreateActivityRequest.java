@@ -41,6 +41,9 @@ public class CreateActivityRequest {
 
   private ActivityCompletionStatus completionStatus;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Boolean repeatProgramWeek;
+
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private OffsetDateTime performedAt;
 
@@ -175,6 +178,27 @@ public class CreateActivityRequest {
     this.completionStatus = completionStatus;
   }
 
+  public CreateActivityRequest repeatProgramWeek(@Nullable Boolean repeatProgramWeek) {
+    this.repeatProgramWeek = repeatProgramWeek;
+    return this;
+  }
+
+  /**
+   * When true
+   * @return repeatProgramWeek
+   */
+
+  @JsonProperty("repeatProgramWeek")
+  public @Nullable Boolean getRepeatProgramWeek() {
+    return repeatProgramWeek;
+  }
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  @JsonProperty("repeatProgramWeek")
+  public void setRepeatProgramWeek(@Nullable Boolean repeatProgramWeek) {
+    this.repeatProgramWeek = repeatProgramWeek;
+  }
+
   public CreateActivityRequest performedAt(OffsetDateTime performedAt) {
     this.performedAt = performedAt;
     return this;
@@ -292,6 +316,7 @@ public class CreateActivityRequest {
         Objects.equals(this.expectedTemplateVersion, createActivityRequest.expectedTemplateVersion) &&
         Objects.equals(this.activityType, createActivityRequest.activityType) &&
         Objects.equals(this.completionStatus, createActivityRequest.completionStatus) &&
+        Objects.equals(this.repeatProgramWeek, createActivityRequest.repeatProgramWeek) &&
         Objects.equals(this.performedAt, createActivityRequest.performedAt) &&
         Objects.equals(this.startedAt, createActivityRequest.startedAt) &&
         Objects.equals(this.endedAt, createActivityRequest.endedAt) &&
@@ -301,7 +326,7 @@ public class CreateActivityRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(commandId, taskId, expectedTemplateVersion, activityType, completionStatus, performedAt, startedAt, endedAt, note, detail);
+    return Objects.hash(commandId, taskId, expectedTemplateVersion, activityType, completionStatus, repeatProgramWeek, performedAt, startedAt, endedAt, note, detail);
   }
 
   @Override
@@ -313,6 +338,7 @@ public class CreateActivityRequest {
     sb.append("    expectedTemplateVersion: ").append(toIndentedString(expectedTemplateVersion)).append("\n");
     sb.append("    activityType: ").append(toIndentedString(activityType)).append("\n");
     sb.append("    completionStatus: ").append(toIndentedString(completionStatus)).append("\n");
+    sb.append("    repeatProgramWeek: ").append(toIndentedString(repeatProgramWeek)).append("\n");
     sb.append("    performedAt: ").append(toIndentedString(performedAt)).append("\n");
     sb.append("    startedAt: ").append(toIndentedString(startedAt)).append("\n");
     sb.append("    endedAt: ").append(toIndentedString(endedAt)).append("\n");

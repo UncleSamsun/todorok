@@ -44,6 +44,22 @@ public class TemplateController implements TemplateApi {
                 link.getSelectedTemplateVersion(), link.getName(), link.getFieldSummary()));
             response.template(templates.get(owner(), link.getTemplateId()));
         }
+        var programSessions = jdbc.queryForList("""
+            select s.week,s.session,(c.definition->>'sessionsPerWeek')::int as sessions_per_week,
+                (e.status='ACTIVE' and s.progress_epoch=e.progress_epoch and s.cycle=e.current_cycle
+                    and s.session=e.current_session and s.outcome is null) as is_current
+            from program_session s join program_enrollment e on e.id=s.enrollment_id
+            join program_catalog c on c.catalog_key=e.catalog_key and c.catalog_version=e.catalog_version
+            where s.task_id=? and e.user_id=?
+            """, taskId, owner());
+        if (!programSessions.isEmpty()) {
+            var program = programSessions.getFirst();
+            int slot = ((Number) program.get("session")).intValue();
+            int count = ((Number) program.get("sessions_per_week")).intValue();
+            response.programSession(new io.todorok.activity.api.model.ProgramSessionContext(
+                ((Number) program.get("week")).intValue(), slot, count,
+                Boolean.TRUE.equals(program.get("is_current")) && slot == count));
+        }
         return ResponseEntity.ok(response);
     }
 

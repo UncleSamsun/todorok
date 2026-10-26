@@ -7,6 +7,7 @@ type Draft = {
   date: string; note: string; workout: activity.WorkoutSet[]; workoutFields: activity.FieldInput[]; study: activity.StudyDetail; climbing: activity.ClimbingDetail
   start: TimeValue; end: TimeValue; snapshot: activity.CreateActivityRequest | null
   uncertain: boolean; blocked: boolean; error: string
+  repeatProgramWeek?: boolean
   template?: activity.TemplateVersion
   previousInputs?: { template: activity.TemplateVersion; study: activity.StudyDetail }[]
 }

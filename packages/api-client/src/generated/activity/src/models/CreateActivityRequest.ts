@@ -72,6 +72,12 @@ export interface CreateActivityRequest {
      */
     completionStatus: ActivityCompletionStatus;
     /**
+     * When true
+     * @type {boolean}
+     * @memberof CreateActivityRequest
+     */
+    repeatProgramWeek?: boolean;
+    /**
      *
      * @type {Date}
      * @memberof CreateActivityRequest
@@ -133,6 +139,7 @@ export function CreateActivityRequestFromJSONTyped(json: any, ignoreDiscriminato
         'expectedTemplateVersion': json['expectedTemplateVersion'] == null ? undefined : json['expectedTemplateVersion'],
         'activityType': ActivityTypeFromJSON(json['activityType']),
         'completionStatus': ActivityCompletionStatusFromJSON(json['completionStatus']),
+        'repeatProgramWeek': json['repeatProgramWeek'] == null ? undefined : json['repeatProgramWeek'],
         'performedAt': (new Date(json['performedAt'])),
         'startedAt': json['startedAt'] == null ? undefined : (new Date(json['startedAt'])),
         'endedAt': json['endedAt'] == null ? undefined : (new Date(json['endedAt'])),
@@ -157,6 +164,7 @@ export function CreateActivityRequestToJSONTyped(value?: CreateActivityRequest |
         'expectedTemplateVersion': value['expectedTemplateVersion'],
         'activityType': ActivityTypeToJSON(value['activityType']),
         'completionStatus': ActivityCompletionStatusToJSON(value['completionStatus']),
+        'repeatProgramWeek': value['repeatProgramWeek'],
         'performedAt': value['performedAt'].toISOString(),
         'startedAt': value['startedAt'] == null ? value['startedAt'] : value['startedAt'].toISOString(),
         'endedAt': value['endedAt'] == null ? value['endedAt'] : value['endedAt'].toISOString(),

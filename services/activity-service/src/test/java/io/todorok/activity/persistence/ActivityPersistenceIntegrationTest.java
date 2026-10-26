@@ -463,7 +463,7 @@ class ActivityPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from activity.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(12);
+                Integer.class)).isEqualTo(14); // V1–V13 plus the test-only V9000 fixture.
         assertThat(jdbc.queryForList(
                 "select schema_name from information_schema.schemata "
                         + "where schema_name in ('planner','activity','notification') "
@@ -477,7 +477,7 @@ class ActivityPersistenceIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from activity.flyway_schema_history "
                         + "where success and version is not null",
-                Integer.class)).isEqualTo(12);
+                Integer.class)).isEqualTo(14); // V1–V13 plus the test-only V9000 fixture.
     }
 
     @Test

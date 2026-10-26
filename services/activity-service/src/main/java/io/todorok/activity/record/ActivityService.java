@@ -166,6 +166,8 @@ public class ActivityService {
         UUID id = UUID.randomUUID();
         boolean complete =
             request.getCompletionStatus() == ActivityCompletionStatus.COMPLETED;
+        if (Boolean.TRUE.equals(request.getRepeatProgramWeek()) && (!complete || request.getActivityType() != ActivityType.WORKOUT))
+            throw new ApiFailure(400, "PROGRAM_REPEAT_INVALID", "Invalid program repeat", "Only a completed program workout can repeat its week.", false);
         jdbc.update(
             """
             insert into activity_record(id,user_id,task_id,activity_type,performed_at,status,command_id,fingerprint,note,sync_state,started_at,ended_at,
@@ -192,10 +194,8 @@ public class ActivityService {
         );
         details.save(id, request.getActivityType(), request.getDetail(), template, template == null ? null : templateValues);
         if (complete && request.getActivityType() == ActivityType.WORKOUT && programs != null) {
-            int repetitions = request.getDetail().getWorkout() == null || request.getDetail().getWorkout().getSets() == null ? 0
-                : request.getDetail().getWorkout().getSets().stream().mapToInt(set -> set.getReps() == null ? 0 : set.getReps()).sum();
-            programs.recordOutcome(request.getTaskId(), id, repetitions, false,
-                request.getPerformedAt().atZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDate());
+            programs.recordOutcome(request.getTaskId(), id, repetitions(request.getDetail()), false,
+                request.getPerformedAt().atZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDate(), Boolean.TRUE.equals(request.getRepeatProgramWeek()));
         }
         if (complete) outbox.append(
             "activity",
@@ -477,9 +477,10 @@ public class ActivityService {
         return get(owner, id);
     }
 
-    private int repetitions(ActivityDetail detail) {
-        return detail == null || detail.getWorkout() == null || detail.getWorkout().getSets() == null ? 0
-            : detail.getWorkout().getSets().stream().mapToInt(set -> set.getReps() == null ? 0 : set.getReps()).sum();
+    private Integer repetitions(ActivityDetail detail) {
+        if (detail == null || detail.getWorkout() == null || detail.getWorkout().getSets() == null) return null;
+        var recorded = detail.getWorkout().getSets().stream().map(set -> set.getReps()).filter(Objects::nonNull).toList();
+        return recorded.isEmpty() ? null : recorded.stream().mapToInt(Integer::intValue).sum();
     }
 
     private String summary(CreateActivityRequest request) {
@@ -512,6 +513,8 @@ public class ActivityService {
         try {
             // Canonical object keys and normalized Instant make retransmission independent of JSON member order/offset spelling.
             var tree = mapper.valueToTree(request);
+            // Preserve fingerprints for commands saved before this optional field existed.
+            if (!Boolean.TRUE.equals(request.getRepeatProgramWeek())) ((tools.jackson.databind.node.ObjectNode) tree).remove("repeatProgramWeek");
             ((tools.jackson.databind.node.ObjectNode) tree).put(
                 "performedAt",
                 request.getPerformedAt().toInstant().toString()

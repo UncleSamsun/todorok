@@ -35,6 +35,142 @@ import tools.jackson.databind.ObjectMapper;
     "todorok.messaging.enabled=false"
 })
 class StudyTemplateRecordHttpTest {
+    @Test void lastSessionCanSaveAndRepeatItsWeekAtomicallyIncludingTheFinalProgramWeek() throws Exception {
+        for (int week : List.of(1, 6)) {
+            UUID owner = UUID.randomUUID();
+            var enrollment = enrollments.enroll(owner, UUID.randomUUID(), "hundred-pushups-level-1", 1, 0, week, 3);
+            UUID task = projectProgramTask(owner, enrollment.sessionId());
+            var context = ok(send("GET", "/tasks/" + task + "/record-template", null, owner), 200).path("programSession");
+            assertThat(context.path("week").asInt()).isEqualTo(week);
+            assertThat(context.path("session").asInt()).isEqualTo(3);
+            assertThat(context.path("sessionsPerWeek").asInt()).isEqualTo(3);
+            assertThat(context.path("canRepeatWeek").asBoolean()).isTrue();
+            var request = Map.of("commandId", UUID.randomUUID(), "taskId", task, "activityType", "WORKOUT",
+                "completionStatus", "COMPLETED", "performedAt", "2026-10-23T10:00:00+09:00",
+                "repeatProgramWeek", true, "detail", Map.of("workout", Map.of()));
+            var saved = ok(send("POST", "/activities", request, owner), 201);
+            ok(send("POST", "/activities", request, owner), 201);
+            var next = enrollments.get(owner, enrollment.id());
+            assertThat(next.currentWeek()).isEqualTo(week);
+            assertThat(next.currentSession()).isOne();
+            assertThat(next.status()).isEqualTo("ACTIVE");
+            assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, next.id())).isEqualTo(2);
+            assertThat(jdbc.queryForObject("select payload->'payload'->>'title' from outbox_event where aggregateid=?", String.class, next.sessionId().toString()))
+                .endsWith(week + "주차 1회");
+            // Editing optional details must preserve the user's explicit repeat decision.
+            ok(send("PATCH", "/activities/" + saved.path("activityId").asText(), Map.of("expectedVersion", 0,
+                "performedAt", "2026-10-23T10:00:00+09:00", "detail", Map.of("workout", Map.of("sets", List.of(Map.of("reps", 1000))))), owner), 200);
+            assertThat(enrollments.get(owner, next.id()).currentWeek()).isEqualTo(week);
+            assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?", Integer.class, next.id())).isEqualTo(2);
+            for (int slot = 1; slot <= 3; slot++) {
+                var current = enrollments.get(owner, next.id());
+                UUID retryTask = projectProgramTask(owner, current.sessionId());
+                ok(send("POST", "/activities", Map.of("commandId", UUID.randomUUID(), "taskId", retryTask,
+                    "activityType", "WORKOUT", "completionStatus", "COMPLETED", "performedAt", "2026-10-23T10:00:00+09:00",
+                    "detail", Map.of("workout", Map.of())), owner), 201);
+            }
+            var finished = enrollments.get(owner, next.id());
+            assertThat(finished.status()).isEqualTo(week == 6 ? "COMPLETED" : "ACTIVE");
+            assertThat(finished.currentWeek()).isEqualTo(week == 6 ? 6 : 2);
+            assertThat(finished.currentSession()).isEqualTo(week == 6 ? 3 : 1);
+        }
+    }
+
+    @Test void repeatWeekIsRejectedBeforeTheLastSession() throws Exception {
+        UUID owner = UUID.randomUUID();
+        var enrollment = enrollments.enroll(owner, UUID.randomUUID(), "hundred-pushups-level-1", 1, 0, 1, 2);
+        UUID task = projectProgramTask(owner, enrollment.sessionId());
+        var request = Map.of("commandId", UUID.randomUUID(), "taskId", task, "activityType", "WORKOUT",
+            "completionStatus", "COMPLETED", "performedAt", "2026-10-23T10:00:00+09:00",
+            "repeatProgramWeek", true, "detail", Map.of("workout", Map.of()));
+        assertThat(ok(send("POST", "/activities", request, owner), 400).path("code").asText()).isEqualTo("PROGRAM_REPEAT_INVALID");
+        assertThat(jdbc.queryForObject("select count(*) from activity_record where task_id=?", Integer.class, task)).isZero();
+        assertThat(enrollments.get(owner, enrollment.id()).currentSession()).isEqualTo(2);
+    }
+
+    @Test void repeatWeekCannotBeRequestedForPartialOrStaleProgramSessions() throws Exception {
+        UUID owner = UUID.randomUUID();
+        var enrollment = enrollments.enroll(owner, UUID.randomUUID(), "hundred-pushups-level-1", 1, 0, 2, 3);
+        UUID task = projectProgramTask(owner, enrollment.sessionId());
+        var request = new LinkedHashMap<String, Object>(Map.of("commandId", UUID.randomUUID(), "taskId", task,
+            "activityType", "WORKOUT", "completionStatus", "PARTIAL", "performedAt", "2026-10-23T10:00:00+09:00",
+            "repeatProgramWeek", true, "detail", Map.of("workout", Map.of())));
+        assertThat(ok(send("POST", "/activities", request, owner), 400).path("code").asText()).isEqualTo("PROGRAM_REPEAT_INVALID");
+        enrollments.schedule(owner, enrollment.id(), UUID.randomUUID(), 3, 1, 0);
+        request.put("completionStatus", "COMPLETED");
+        assertThat(ok(send("POST", "/activities", request, owner), 400).path("code").asText()).isEqualTo("PROGRAM_REPEAT_INVALID");
+        assertThat(jdbc.queryForObject("select count(*) from activity_record where task_id=?", Integer.class, task)).isZero();
+        assertThat(ok(send("GET", "/tasks/" + task + "/record-template", null, owner), 200)
+            .path("programSession").path("canRepeatWeek").asBoolean()).isFalse();
+    }
+
+    @Test void completedWorkoutsWithoutRepetitionsAdvanceUsingEachCatalogsSessionCount() throws Exception {
+        for (int sessionsPerWeek : List.of(1, 2, 3, 5, 7)) {
+            var catalog = (tools.jackson.databind.node.ObjectNode) mapper.readTree(java.nio.file.Files.readString(
+                Path.of(System.getProperty("todorok.repository.root"), "contracts/fixtures/catalog/program-v1-valid.json")));
+            String key = "completion-without-reps-" + sessionsPerWeek;
+            catalog.put("catalogKey", key);
+            catalog.put("sessionsPerWeek", sessionsPerWeek);
+            for (var week : catalog.path("weeks")) {
+                var sessions = ((tools.jackson.databind.node.ObjectNode) week).putArray("sessions");
+                for (int slot = 1; slot <= sessionsPerWeek; slot++) {
+                    var session = sessions.addObject().put("session", slot).put("targetTotal", 8);
+                    session.putArray("sets").add(3).add(3).add(2);
+                }
+            }
+            catalog.put("checksum", new io.todorok.activity.program.ProgramCatalogImporter(mapper).checksum(catalog));
+            catalogs.importCatalog(catalog);
+            UUID owner = UUID.randomUUID();
+            var enrollment = enrollments.enroll(owner, UUID.randomUUID(), key, 1, 0, 1);
+            for (int slot = 1; slot <= sessionsPerWeek; slot++) {
+                UUID task = projectProgramTask(owner, enrollment.sessionId());
+                // The record form can send no sets, an empty list, or sets without reps.
+                Map<String, Object> workout = switch (slot % 3) {
+                    case 0 -> Map.of("sets", List.of(Map.of("exercise", "푸시업")));
+                    case 1 -> Map.of();
+                    default -> Map.of("sets", List.of());
+                };
+                var request = Map.of("commandId", UUID.randomUUID(), "taskId", task, "activityType", "WORKOUT",
+                    "completionStatus", "COMPLETED", "performedAt", "2026-10-23T10:00:00+09:00",
+                    "detail", Map.of("workout", workout));
+                var saved = ok(send("POST", "/activities", request, owner), 201);
+                ok(send("POST", "/activities", request, owner), 201);
+                assertThat(saved.path("detail").path("workout").path("sets").findValues("reps")).isEmpty();
+                enrollment = enrollments.get(owner, enrollment.id());
+                assertThat(enrollment.currentWeek()).as("week after slot %s of %s", slot, sessionsPerWeek)
+                    .isEqualTo(slot == sessionsPerWeek ? 2 : 1);
+                assertThat(enrollment.currentSession()).isEqualTo(slot == sessionsPerWeek ? 1 : slot + 1);
+            }
+            assertThat(jdbc.queryForObject("select count(*) from program_session where enrollment_id=?",
+                Integer.class, enrollment.id())).isEqualTo(sessionsPerWeek + 1);
+        }
+    }
+
+    @Test void correctingExplicitZeroToCompletionWithoutRepsRecalculatesProgramOutcome() throws Exception {
+        UUID owner = UUID.randomUUID();
+        var enrollment = enrollments.enroll(owner, UUID.randomUUID(), "hundred-pushups-level-1", 1, 0, 1, 3);
+        UUID task = projectProgramTask(owner, enrollment.sessionId());
+        var saved = ok(send("POST", "/activities", Map.of("commandId", UUID.randomUUID(), "taskId", task,
+            "activityType", "WORKOUT", "completionStatus", "COMPLETED", "performedAt", "2026-10-23T10:00:00+09:00",
+            "detail", Map.of("workout", Map.of("sets", List.of(Map.of("reps", 0))))), owner), 201);
+        assertThat(enrollments.get(owner, enrollment.id()).currentWeek()).isOne();
+        ok(send("PATCH", "/activities/" + saved.path("activityId").asText(), Map.of("expectedVersion", 0,
+            "performedAt", "2026-10-23T10:00:00+09:00", "detail", Map.of("workout", Map.of())), owner), 200);
+        assertThat(enrollments.get(owner, enrollment.id()).currentWeek()).isEqualTo(2);
+        assertThat(enrollments.get(owner, enrollment.id()).currentSession()).isOne();
+    }
+
+    private UUID projectProgramTask(UUID owner, UUID sessionId) {
+        UUID task = jdbc.queryForObject("select task_id from program_session where id=?", UUID.class, sessionId);
+        var projection = new LinkedHashMap<String, Object>(Map.of("taskId", task, "taskType", "WORKOUT",
+            "status", "PLANNED", "scheduledDate", "2026-10-23"));
+        projection.put("seriesId", null);
+        projection.put("templateLink", null);
+        consumer.receive(mapper.writeValueAsString(Map.of("eventId", UUID.randomUUID(), "type", "TASK_SCHEDULED",
+            "version", 2, "aggregateVersion", 0, "occurredAt", Instant.now().toString(), "userId", owner, "payload", projection)));
+        return task;
+    }
+
     @Test void builtinCompletionEmitsNextTaskAfterRecommendedRestAndOnlyOnce() {
         UUID owner=UUID.randomUUID();
         var enrolled=enrollments.enroll(owner,UUID.randomUUID(),"hundred-pushups-level-1",1,0,1,3);
